@@ -99,7 +99,7 @@ const CustomerSubscriptions = () => {
       />
 
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
-        <div className="p-6">
+        <div className="px-6">
           {/* Header */}
           <motion.div 
             className="mb-8"
@@ -107,7 +107,7 @@ const CustomerSubscriptions = () => {
             animate={{ opacity: 1, y: 0 }}
           >
             <div className="flex items-center gap-4 mb-6">
-              <Button
+              {/* <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate('/customer/dashboard')}
@@ -115,11 +115,11 @@ const CustomerSubscriptions = () => {
               >
                 <FaArrowLeft className="w-4 h-4" />
                 Back to Dashboard
-              </Button>
+              </Button> */}
             </div>
             
             <h1 className="text-4xl font-bold text-foreground font-montserrat flex items-center gap-3">
-              <FaShoppingCart className="w-10 h-10 text-primary" />
+              {/* <FaShoppingCart className="w-10 h-10 text-primary" /> */}
               My Subscriptions
             </h1>
             <p className="text-muted-foreground font-inter mt-2">
