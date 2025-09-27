@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const generateToken = (userId, firebaseUid, role) => {
   return jwt.sign(
     { userId, firebaseUid, role },
-    process.env.JWT_SECRET || 'nourishnet_secret_key_2024',
+    process.env.JWT_SECRET, 
     { expiresIn: '7d' }
   );
 };
