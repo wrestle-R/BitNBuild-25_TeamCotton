@@ -18,7 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
 
 const VendorPlans = () => {
-  const { user } = useUserContext();
+  const { user, vendorProfile } = useUserContext();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [plans, setPlans] = useState([]);
   const [menus, setMenus] = useState([]);
@@ -270,7 +270,11 @@ const safePrice = (plan) => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <VendorSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      <VendorSidebar
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
+        profileImage={vendorProfile?.profileImage}
+      />
 
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
         <div className="p-6">
