@@ -106,20 +106,21 @@ const VendorDetails = () => {
         setLoading(true);
         setError(null);
         const vendorData = await getVendorDetails(vendorId);
+        console.log('🏪 Fetched vendor data:', vendorData);
         setVendor(vendorData);
 
-        // Fetch meal plans if vendor has plans
-        if (vendorData && vendorData.plans > 0) {
-          setPlansLoading(true);
-          try {
-            const plansData = await getVendorPlans(vendorId);
-            setMealPlans(plansData);
-          } catch (planError) {
-            console.error('Error fetching meal plans:', planError);
-            toast.error('Failed to load meal plans');
-          } finally {
-            setPlansLoading(false);
-          }
+        // Always try to fetch meal plans regardless of vendor.plans count
+        setPlansLoading(true);
+        try {
+          const plansData = await getVendorPlans(vendorId);
+          console.log('📋 Fetched meal plans:', plansData);
+          setMealPlans(plansData || []);
+        } catch (planError) {
+          console.error('Error fetching meal plans:', planError);
+          setMealPlans([]);
+          toast.error('Failed to load meal plans');
+        } finally {
+          setPlansLoading(false);
         }
       } catch (error) {
         console.error('Error fetching vendor details:', error);
@@ -133,13 +134,97 @@ const VendorDetails = () => {
     fetchVendorDetails();
   }, [user, token, vendorId]);
 
-  const handleGoBack = () => {
-    navigate('/customer/market');
-  };
+  // const handleGoBack = () => {
+  //   navigate('/customer/market');
+  // };
 
-  const handleSubscribe = (planId) => {
-    // TODO: Implement subscription functionality
-    toast.success('Subscription feature coming soon!');
+  const handleSubscribe = async (planId) => {
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      
+      // Create Razorpay order
+      const orderResponse = await fetch(`${API_BASE}/api/payment/create-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          plan_id: planId,
+          vendor_id: vendorId
+        })
+      });
+
+      if (!orderResponse.ok) {
+        const errorData = await orderResponse.json();
+        throw new Error(errorData.message || 'Failed to create order');
+      }
+
+      const orderData = await orderResponse.json();
+
+      // Razorpay options
+      const options = {
+        key: orderData.key,
+        amount: orderData.amount,
+        currency: 'INR',
+        name: 'NourishNet',
+        description: `Meal Plan Subscription - ${vendor?.name}`,
+        order_id: orderData.order_id,
+        handler: async function (response) {
+          try {
+            // Verify payment
+            const verifyResponse = await fetch(`${API_BASE}/api/payment/verify`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${idToken}`,
+              },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                payment_id: orderData.payment_id
+              })
+            });
+
+            if (verifyResponse.ok) {
+              toast.success('🎉 Payment successful! Your subscription is now active.');
+              // Redirect to subscriptions page
+              navigate('/customer/subscriptions');
+            } else {
+              const errorData = await verifyResponse.json();
+              toast.error(errorData.message || 'Payment verification failed');
+            }
+          } catch (error) {
+            console.error('Payment verification error:', error);
+            toast.error('Payment verification failed. Please contact support.');
+          }
+        },
+        prefill: {
+          name: user?.name || '',
+          email: user?.email || '',
+          contact: user?.contactNumber || ''
+        },
+        theme: {
+          color: '#3B82F6'
+        },
+        modal: {
+          ondismiss: function() {
+            toast.info('Payment cancelled');
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response) {
+        toast.error('Payment failed: ' + response.error.description);
+      });
+      
+      rzp.open();
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast.error(error.message || 'Failed to initiate payment');
+    }
   };
 
   const getMealPlanIcon = (meals) => {
@@ -167,7 +252,11 @@ const VendorDetails = () => {
         <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
           <div className="p-6">
             <div className="mb-6">
-              <Button variant="outline" onClick={handleGoBack} className="flex items-center gap-2">
+              <Button 
+                onClick={() => navigate('/customer/market')} 
+                variant="outline"
+                className="flex items-center gap-2 hover:bg-primary text-primary-foreground transition-all duration-200"
+              >
                 <FaArrowLeft className="w-4 h-4" />
                 Back to Market
               </Button>
@@ -216,7 +305,11 @@ const VendorDetails = () => {
         <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
           <div className="p-6">
             <div className="mb-6">
-              <Button variant="outline" onClick={handleGoBack} className="flex items-center gap-2">
+              <Button 
+                onClick={() => navigate('/customer/market')} 
+                variant="outline"
+                className="flex items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+              >
                 <FaArrowLeft className="w-4 h-4" />
                 Back to Market
               </Button>
@@ -243,8 +336,13 @@ const VendorDetails = () => {
             className="mb-6"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
           >
-            <Button variant="outline" onClick={handleGoBack} className="flex items-center gap-2">
+            <Button 
+              onClick={() => navigate('/customer/market')} 
+              variant="outline"
+              className="flex items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-200"
+            >
               <FaArrowLeft className="w-4 h-4" />
               Back to Market
             </Button>
@@ -303,9 +401,9 @@ const VendorDetails = () => {
                     )}
                   </div>
 
-                  <div className="flex flex-col gap-2">
-                    <Button 
-                      className="w-full md:w-auto" 
+                  <div className="flex flex-col gap-3">
+                    {/* <Button 
+                      className="w-full md:w-auto bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg hover:shadow-xl transition-all duration-300" 
                       disabled={!vendor.plans || vendor.plans === 0}
                       onClick={() => {
                         if (vendor.plans > 0) {
@@ -315,12 +413,13 @@ const VendorDetails = () => {
                           });
                         }
                       }}
+                      size="lg"
                     >
                       <FaShoppingCart className="w-4 h-4 mr-2" />
                       {vendor.plans > 0 ? `View ${vendor.plans} Meal Plans` : 'No Plans Available'}
-                    </Button>
+                    </Button> */}
                     {vendor.contactNumber && (
-                      <Button variant="outline" className="w-full md:w-auto">
+                      <Button variant="outline" className="w-full md:w-auto border-2 hover:bg-primary/5 hover:border-primary/50 transition-all duration-300">
                         <FaPhone className="w-4 h-4 mr-2" />
                         Call Now
                       </Button>
@@ -376,24 +475,19 @@ const VendorDetails = () => {
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <FaMapMarkerAlt className="w-5 h-5 text-primary" />
-                    Address & Location
+                    Address & Location ({vendor.address.pincode})
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-4">
                   {vendor.address ? (
                     <>
-                      <div className="p-3 bg-muted/50 rounded-lg">
-                        {vendor.address.street && (
-                          <div className="font-medium">{vendor.address.street}</div>
-                        )}
-                        <div>
-                          {vendor.address.city}
-                          {vendor.address.state && `, ${vendor.address.state}`}
-                        </div>
-                        {vendor.address.pincode && (
-                          <div className="text-sm text-muted-foreground">PIN: {vendor.address.pincode}</div>
-                        )}
-                      </div>
+                      <p className="p-3 bg-muted/50 rounded-lg">
+  {vendor.address.street && `${vendor.address.street}, `}
+  {vendor.address.city}
+  {vendor.address.state && `, ${vendor.address.state}`}
+  {vendor.address.pincode && ``}
+</p>
+
                       {vendor.address.coordinates && user && user.address && user.address.coordinates && (
                         <div className="flex items-center gap-2 text-sm bg-primary/10 text-primary p-3 rounded-lg">
                           <FaMapMarkerAlt className="w-4 h-4" />
@@ -430,10 +524,10 @@ const VendorDetails = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-4">
-                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  {/* <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                     <FaShoppingCart className="w-4 h-4 text-muted-foreground" />
                     <span><strong>{vendor.plans || 0}</strong> meal plans available</span>
-                  </div>
+                  </div> */}
                   <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                     <FaClock className="w-4 h-4 text-muted-foreground" />
                     <span>Joined on <strong>{new Date(vendor.createdAt).toLocaleDateString()}</strong></span>
@@ -450,7 +544,7 @@ const VendorDetails = () => {
           </div>
 
           {/* Meal Plans Section */}
-          {vendor.plans && vendor.plans > 0 && (
+          {vendor && (
             <motion.div
               id="meal-plans-section"
               initial={{ opacity: 0, y: 20 }}
@@ -462,7 +556,7 @@ const VendorDetails = () => {
                 <CardHeader>
                   <CardTitle className="text-xl flex items-center gap-2">
                     <FaShoppingCart className="w-5 h-5 text-primary" />
-                    Available Meal Plans ({vendor.plans})
+                    Available Meal Plans ({mealPlans?.length || 0})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -478,7 +572,7 @@ const VendorDetails = () => {
                       ))}
                     </div>
                   ) : mealPlans && mealPlans.length > 0 ? (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
                       {mealPlans.map((plan, index) => (
                         <motion.div
                           key={plan._id}
@@ -487,62 +581,73 @@ const VendorDetails = () => {
                           transition={{ delay: 0.1 * index }}
                           className="group"
                         >
-                          <Card className="h-full border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg">
-                            <CardContent className="p-6">
-                              <div className="text-center mb-4">
-                                <div className="text-3xl mb-2">{getMealPlanIcon(plan.selected_meals)}</div>
-                                <h3 className="text-xl font-bold text-foreground font-montserrat mb-1">
+                          <Card className="h-full bg-gradient-to-br from-card to-card/50 border border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg overflow-hidden">
+                            {/* Gradient overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            
+                            <CardContent className="relative p-3">
+                              <div className="text-center mb-3">
+                                <div className="text-2xl mb-1">
+                                  {getMealPlanIcon(plan.selected_meals)}
+                                </div>
+                                <h3 className="text-sm font-bold text-foreground font-montserrat mb-1">
                                   {plan.name}
                                 </h3>
-                                <p className="text-sm text-muted-foreground">
+                                <Badge variant="outline" className="text-xs">
                                   {getPlanDuration(plan.duration_days)} Plan
-                                </p>
+                                </Badge>
                               </div>
 
-                              <div className="space-y-3 mb-6">
-                                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                                  <span className="text-sm font-medium">Duration</span>
-                                  <Badge variant="secondary">
-                                    {plan.duration_days} {plan.duration_days === 1 ? 'day' : 'days'}
+                              <div className="space-y-1.5 mb-3">
+                                <div className="flex items-center justify-between p-1.5 bg-muted/20 rounded border border-muted/30">
+                                  <span className="text-xs font-medium">Duration</span>
+                                  <Badge variant="secondary" className="bg-primary/10 text-primary text-xs px-1.5 py-0.5">
+                                    {plan.duration_days}d
                                   </Badge>
                                 </div>
                                 
-                                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                                  <span className="text-sm font-medium">Meals</span>
-                                  <span className="text-sm font-semibold">
+                                <div className="flex items-center justify-between p-1.5 bg-muted/20 rounded border border-muted/30">
+                                  <span className="text-xs font-medium">Meals</span>
+                                  <span className="text-xs font-semibold text-foreground">
                                     {formatMealTypes(plan.selected_meals)}
                                   </span>
                                 </div>
 
-                                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                                  <span className="text-sm font-medium">Per Day</span>
-                                  <span className="text-sm font-semibold">
+                                <div className="flex items-center justify-between p-1.5 bg-muted/20 rounded border border-muted/30">
+                                  <span className="text-xs font-medium">Per Day</span>
+                                  <span className="text-xs font-semibold text-foreground">
                                     {plan.meals_per_day} meal{plan.meals_per_day > 1 ? 's' : ''}
                                   </span>
                                 </div>
                               </div>
 
-                              <div className="text-center mb-6">
-                                <div className="text-3xl font-bold text-primary mb-1">
-                                  ₹{plan.price}
+                              <div className="text-center mb-3 p-2 bg-gradient-to-br from-primary/10 to-primary/5 rounded border border-primary/20">
+                                <div className="flex items-center justify-center mb-1">
+                                  <span className="text-xl font-bold text-primary">
+                                    ₹{plan.price}
+                                  </span>
                                 </div>
-                                <p className="text-xs text-muted-foreground">
-                                  Total for {plan.duration_days} {plan.duration_days === 1 ? 'day' : 'days'}
-                                </p>
-                                {plan.duration_days > 1 && (
-                                  <p className="text-xs text-green-600 font-medium mt-1">
-                                    ₹{Math.round(plan.price / plan.duration_days)} per day
+                                <div className="space-y-0.5">
+                                  <p className="text-xs text-muted-foreground">
+                                    Total for {plan.duration_days}d
                                   </p>
-                                )}
+                                  {plan.duration_days > 1 && (
+                                    <div className="flex items-center justify-center">
+                                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-200 px-1 py-0.5">
+                                        ₹{Math.round(plan.price / plan.duration_days)}/day
+                                      </Badge>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
 
                               <Button 
                                 onClick={() => handleSubscribe(plan._id)}
-                                className="w-full group-hover:bg-primary/90 transition-colors duration-300"
-                                size="lg"
+                                className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-200 text-xs py-1.5"
+                                size="sm"
                               >
-                                <FaShoppingCart className="w-4 h-4 mr-2" />
-                                Subscribe Now
+                                <FaShoppingCart className="w-3 h-3 mr-1" />
+                                Subscribe
                               </Button>
                             </CardContent>
                           </Card>
