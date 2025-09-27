@@ -1,7 +1,11 @@
 import Testimonials from '../ui/Testimonials';
 
 const TestimonialsSection = () => {
-  return <Testimonials />;
+  return (
+    <section id="testimonials" className="">
+      <Testimonials />
+    </section>
+  );
 };
 
 export default TestimonialsSection;

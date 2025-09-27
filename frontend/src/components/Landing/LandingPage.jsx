@@ -1,13 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useUserContext } from '../../../context/UserContextSimplified';
-import Navbar from '../ui/Navbar';
+import Navbar from './Navbar';
 import HeroSection from './HeroSection';
-import AboutSection from './AboutSection';
-import ArenaSection from './ArenaSection';
+import FeaturesSection from './FeaturesSection';
 import TestimonialsSection from './TestimonialsSection';
 import ContactSection from './ContactSection';
 import FooterSection from './FooterSection';
-import { LogoCloud } from '../ui/LogoCloud';
 
 const LandingPage = () => {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -23,11 +21,9 @@ const LandingPage = () => {
       
       <main className="overflow-hidden">
         <HeroSection user={user} />
-        {/* <LogoCloud /> */}
       </main>
 
-      <AboutSection />
-      {/* <ArenaSection /> */}
+      <FeaturesSection />
       <TestimonialsSection />
       <ContactSection user={user} />
       <FooterSection />

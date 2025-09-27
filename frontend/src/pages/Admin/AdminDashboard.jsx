@@ -15,7 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Badge } from '../../components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import AdminSidebar from '../../components/Admin/AdminSidebar';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();

@@ -10,10 +10,8 @@ import {
   FaTachometerAlt
 } from 'react-icons/fa';
 import { Button } from '../ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Badge } from '../ui/badge';
 import ThemeToggle from '../ui/ThemeToggle';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const AdminSidebar = ({ isOpen, setIsOpen }) => {
   const { user } = useUserContext();

@@ -2,9 +2,9 @@ import React from 'react'
 import { ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../ui/button'
-import { TextEffect } from '../motion-primitives/text-effect'
-import { AnimatedGroup } from '../motion-primitives/animated-group'
-import NavbarComponent from '../ui/Navbar'
+import { TextEffect } from '../ui/text-effect'
+import { AnimatedGroup } from '../ui/animated-group'
+import NavbarComponent from './Navbar'
 
 const transitionVariants = {
     item: {

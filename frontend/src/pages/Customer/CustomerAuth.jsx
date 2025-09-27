@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Separator } from '../../components/ui/separator';
 import { Label } from '../../components/ui/label';
 import { Alert, AlertDescription } from '../../components/ui/alert';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const CustomerAuth = () => {
   const { 
