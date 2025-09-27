@@ -13,11 +13,17 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useUserContext();
   const navigate = useNavigate();
 
+  // Debug logging
+  console.log('🎯 CustomerSidebar Props:', { isOpen, setIsOpen: !!setIsOpen });
+  console.log('🎯 CustomerSidebar User:', user);
+
   const handleLogout = async () => {
     try {
+      console.log('🚪 CustomerSidebar - Initiating logout');
       await logout();
       navigate('/');
     } catch (error) {
+      console.error('💥 CustomerSidebar - Logout error:', error);
       // Error handled in context
     }
   };
@@ -115,7 +121,7 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
             <div className="p-4 border-b border-sidebar-border">
               <div className="flex items-center gap-3">
                 <Avatar className="w-10 h-10 flex-shrink-0">
-                  <AvatarImage src={user.photoURL} alt={user.displayName} />
+                  <AvatarImage src={user.photoURL} alt={user.name} />
                   <AvatarFallback>
                     <FaUser className="w-5 h-5" />
                   </AvatarFallback>
@@ -128,7 +134,7 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
                     className="overflow-hidden flex-1 min-w-0"
                   >
                     <p className="text-sidebar-foreground font-medium truncate">
-                      {user.displayName}
+                      {user.name}
                     </p>
                     <Badge variant="secondary" className="text-xs mt-1 bg-orange-100 text-orange-700">
                       {user.customerTier || 'Regular'}

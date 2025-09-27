@@ -28,6 +28,21 @@ export const UserProvider = ({ children }) => {
 
   const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
+  // Enhanced logging for debugging
+  console.log('🔧 UserContext State:', {
+    user: user ? {
+      uid: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      role: user.role,
+      id: user.id
+    } : null,
+    userType,
+    loading,
+    error,
+    API_BASE
+  });
+
   // Create user profile in backend
   const createUserProfile = async (firebaseUser, userData) => {
     try {
@@ -266,28 +281,47 @@ export const UserProvider = ({ children }) => {
 
   // Firebase auth state listener
   useEffect(() => {
+    console.log('🔥 Setting up Firebase Auth Listener');
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log('🔥 Auth State Changed:', {
+        firebaseUser: firebaseUser ? {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName
+        } : null,
+        currentUser: user ? user.id : null,
+        userType
+      });
+
       try {
         if (firebaseUser && !user) {
+          console.log('🔑 User signed in, validating with backend...');
           // User is signed in but we don't have user data yet
           // This happens on page refresh - try to validate with backend
           try {
             const userData = await validateUserRole(firebaseUser.uid);
+            console.log('✅ User validation successful:', {
+              user: userData.user,
+              token: userData.token ? 'Present' : 'Missing'
+            });
             localStorage.setItem('nourishnet_token', userData.token);
             setUser(userData.user);
           } catch (error) {
             // If validation fails, user needs to re-authenticate
-            console.log('User validation failed on refresh:', error.message);
+            console.log('❌ User validation failed on refresh:', error.message);
             await signOut(auth);
           }
         } else if (!firebaseUser) {
+          console.log('🚪 User signed out, clearing state...');
           // User is signed out
           localStorage.removeItem('nourishnet_token');
           setUser(null);
           setError('');
+        } else if (firebaseUser && user) {
+          console.log('🔄 User already authenticated, skipping validation');
         }
       } catch (err) {
-        console.error('Auth state change error:', err);
+        console.error('💥 Auth state change error:', err);
         setError(err.message);
       } finally {
         setLoading(false);
