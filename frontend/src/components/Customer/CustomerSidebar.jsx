@@ -31,8 +31,9 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
 
   const menuItems = [
     { icon: FaTachometerAlt, label: 'Dashboard', path: '/customer/dashboard' },
-    { icon: FaStore, label: 'Market', path: '/customer/market' },
     { icon: FaUser, label: 'Profile', path: '/customer/profile' },
+    { icon: FaStore, label: 'Market', path: '/customer/market' },
+    { icon: FaShoppingCart, label: 'Subscriptions', path: '/customer/subscriptions' }, // Add this line
   ];
 
   return (

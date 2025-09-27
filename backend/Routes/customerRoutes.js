@@ -33,4 +33,10 @@ router.get('/preferences', authMiddleware, customerController.getPreferences);
 // Upload customer profile image
 router.post('/upload/image', authMiddleware, upload.single('image'), uploadController.uploadImage);
 
+// Get single vendor details
+router.get('/vendor/:vendorId', authMiddleware, customerController.getVendorById);
+
+// Get vendor plans
+router.get('/vendor/:vendorId/plans', authMiddleware, customerController.getVendorPlans);
+
 module.exports = router;
