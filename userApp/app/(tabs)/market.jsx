@@ -9,9 +9,10 @@ import {
   RefreshControl,
   TextInput,
   Platform,
-  StatusBar,
-  Dimensions
+  Dimensions,
+  SafeAreaView
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useColorScheme } from 'react-native';
@@ -128,8 +129,12 @@ export default function Market() {
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <StatusBar barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'} />
+    <SafeAreaView style={{flex: 1}}>
+      <ThemedView style={styles.container}>
+        <StatusBar 
+          style={colorScheme === 'dark' ? 'light' : 'dark'} 
+          translucent={true}
+        />
       
       {/* Search bar */}
       <View style={[
@@ -185,19 +190,20 @@ export default function Market() {
 
       {/* Vendors Count */}
       <View style={styles.headerContainer}>
-        <ThemedText style={styles.headerText}>
-          {filteredVendors.length} RESTAURANTS DELIVERING TO YOU
-        </ThemedText>
+        <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}}>
+          <ThemedText style={styles.headerText}>
+            {filteredVendors.length} RESTAURANTS DELIVERING TO YOU
+          </ThemedText>
+          <TouchableOpacity
+            onPress={() => {
+              setLoading(true);
+              loadVendors();
+            }}
+          >
+            <Ionicons name="sync" size={20} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
         <ThemedText style={styles.subHeaderText}>Featured</ThemedText>
-        <TouchableOpacity
-          onPress={() => {
-            setLoading(true);
-            loadVendors();
-          }}
-          style={{ position: 'absolute', right: 16, top: 18 }}
-        >
-          <Ionicons name="sync" size={20} color={colors.primary} />
-        </TouchableOpacity>
       </View>
 
       {error && (
@@ -387,13 +393,14 @@ export default function Market() {
         )}
       />
     </ThemedView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: Platform.OS === 'ios' ? 0 : 0,
+    paddingTop: Platform.OS === 'ios' ? 20 : 20,
   },
   loadingContainer: {
     flex: 1,
@@ -410,6 +417,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.05)',
+    width: '100%',
+    paddingTop: 20,
   },
   searchBar: {
     flex: 1,
@@ -418,6 +427,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     height: 48,
     borderRadius: borderRadius.lg,
+    marginRight: 8,
   },
   searchIcon: {
     marginRight: 8,
@@ -426,6 +436,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
     fontSize: 16,
+    paddingHorizontal: 4,
   },
   vegModeContainer: {
     marginLeft: 10,
@@ -450,17 +461,20 @@ const styles = StyleSheet.create({
   headerContainer: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 8,
+    paddingBottom: 12,
+    backgroundColor: 'transparent',
   },
   headerText: {
     fontSize: 14,
     fontWeight: 'bold',
     letterSpacing: 0.5,
     marginBottom: 8,
+    opacity: 0.9,
   },
   subHeaderText: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: 'bold',
+    marginTop: 4,
   },
   errorText: {
     textAlign: 'center',
@@ -470,11 +484,13 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingHorizontal: 16,
     paddingBottom: 20,
+    paddingTop: 4,
   },
   vendorCard: {
     marginVertical: 12,
     borderRadius: borderRadius.lg,
     overflow: 'hidden',
+    elevation: 3,
   },
   imageContainer: {
     position: 'relative',

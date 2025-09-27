@@ -223,20 +223,24 @@ export const uploadProfileImage = async (uri, filename = 'profile.jpg') => {
     console.error('UploadProfileImage error:', err);
     throw err;
   }
+};
 
-  const json = await res.json();
-  if (!res.ok || !json) {
-    const text = JSON.stringify(json) || 'Failed to upload image';
-    throw new Error(text);
+export const getSubscriptions = async () => {
+  const headers = await getAuthHeaders();
+  try {
+    const res = await fetch(`${API_URL}/api/payment/subscriptions`, {
+      method: 'GET',
+      headers,
+    });
+    
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || 'Failed to fetch subscriptions');
+    }
+    
+    return res.json();
+  } catch (error) {
+    console.error('Error fetching subscriptions:', error);
+    throw error;
   }
-
-  // Backend returns { success: true, data: { url: ... } }
-  if (json.success && json.data && json.data.url) {
-    return { url: json.data.url, publicId: json.data.publicId };
-  }
-
-  // Fallback: if backend returned direct shape
-  if (json.url) return { url: json.url };
-
-  throw new Error('Failed to upload image: Empty response');
 };

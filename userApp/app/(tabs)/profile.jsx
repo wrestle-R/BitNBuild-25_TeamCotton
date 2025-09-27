@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, Image, Alert, ActivityIndicator, DeviceEventEmitter } from 'react-native';
+import { View, Text, Button, StyleSheet, Image, Alert, ActivityIndicator, DeviceEventEmitter, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { getProfile } from '../../api/customerApi';
 import { useRouter } from 'expo-router';
+import { useColorScheme } from 'react-native';
+import { lightColors, darkColors } from '../../constants/Colors';
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const colorScheme = useColorScheme();
+  const colors = colorScheme === 'dark' ? darkColors : lightColors;
 
   useEffect(() => { fetchProfile(); }, []);
 
@@ -49,7 +54,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.avatarWrap}>
         {profile.photoUrl ? (
           <Image source={{ uri: profile.photoUrl }} style={styles.avatar} />
@@ -60,20 +65,37 @@ export default function ProfileScreen() {
         )}
       </View>
 
-      <Text style={styles.label}>Name</Text>
-      <Text style={styles.readonly}>{profile.name || ''}</Text>
+      <Text style={[styles.label, { color: colors.foreground }]}>Name</Text>
+      <Text style={[styles.readonly, { color: colors.foreground }]}>{profile.name || ''}</Text>
 
-      <Text style={styles.label}>Email</Text>
-      <Text style={styles.readonly}>{profile.email || ''}</Text>
+      <Text style={[styles.label, { color: colors.foreground }]}>Email</Text>
+      <Text style={[styles.readonly, { color: colors.foreground }]}>{profile.email || ''}</Text>
 
-      <Text style={styles.label}>Contact Number</Text>
-      <Text style={styles.readonly}>{profile.contactNumber || ''}</Text>
+      <Text style={[styles.label, { color: colors.foreground }]}>Contact Number</Text>
+      <Text style={[styles.readonly, { color: colors.foreground }]}>{profile.contactNumber || ''}</Text>
 
-      <Text style={styles.label}>Address</Text>
-      <Text style={styles.readonly}>{[profile.address?.street, profile.address?.city, profile.address?.state, profile.address?.pincode].filter(Boolean).join(', ')}</Text>
+      <Text style={[styles.label, { color: colors.foreground }]}>Address</Text>
+      <Text style={[styles.readonly, { color: colors.foreground }]}>{[profile.address?.street, profile.address?.city, profile.address?.state, profile.address?.pincode].filter(Boolean).join(', ')}</Text>
 
-  <View style={{ height: 12 }} />
-  <Button title="Edit Profile" onPress={() => router.push('/edit-profile')} />
+  <View style={{ height: 24 }} />
+  
+  <TouchableOpacity
+    style={styles.profileButton}
+    onPress={() => router.push('/edit-profile')}
+  >
+    <Ionicons name="create-outline" size={20} color="#fff" style={styles.buttonIcon} />
+    <Text style={styles.buttonText}>Edit Profile</Text>
+  </TouchableOpacity>
+  
+  <View style={{ height: 16 }} />
+  
+  <TouchableOpacity
+    style={[styles.profileButton, { backgroundColor: '#6C63FF' }]}
+    onPress={() => router.push('/subscriptions')}
+  >
+    <Ionicons name="cart-outline" size={20} color="#fff" style={styles.buttonIcon} />
+    <Text style={styles.buttonText}>My Subscriptions</Text>
+  </TouchableOpacity>
     </View>
   );
 }
@@ -85,10 +107,33 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff'
   },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  avatarWrap: { alignSelf: 'center', marginBottom: 12 },
+  avatarWrap: { alignSelf: 'center', marginBottom: 16 },
   avatar: { width: 96, height: 96, borderRadius: 48 },
   avatarPlaceholder: { backgroundColor: '#999', alignItems: 'center', justifyContent: 'center' },
   label: { marginTop: 8, marginBottom: 4, fontWeight: '600' },
+  readonly: { marginBottom: 12, fontSize: 16 },
   input: { borderWidth: 1, borderColor: '#ddd', padding: 8, borderRadius: 8 },
-  locationRow: { flexDirection: 'row', justifyContent: 'space-between', marginVertical: 12 }
+  locationRow: { flexDirection: 'row', justifyContent: 'space-between', marginVertical: 12 },
+  profileButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16
+  },
+  buttonIcon: {
+    marginRight: 8
+  }
 });
