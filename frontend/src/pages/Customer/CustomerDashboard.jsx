@@ -82,7 +82,7 @@ const CustomerDashboard = () => {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Customer Sidebar */}
-      <CustomerSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} profileImage={user?.photoURL} />
+      <CustomerSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
       {/* Main Content */}
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>

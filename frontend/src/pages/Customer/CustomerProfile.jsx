@@ -24,7 +24,7 @@ L.Icon.Default.mergeOptions({
 });
 
 const CustomerProfile = () => {
-  const { user } = useUserContext();
+  const { user, updateProfileImage } = useUserContext();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -81,6 +81,11 @@ const CustomerProfile = () => {
               : null
           }
         });
+        
+        // Update the profile image in context when profile is loaded
+        if (data.photoUrl) {
+          updateProfileImage(data.photoUrl);
+        }
       } else {
         throw new Error('Profile fetch failed');
       }
@@ -116,6 +121,8 @@ const CustomerProfile = () => {
           ...prev,
           photoUrl: data.data.url
         }));
+        // Update the profile image in the context for sidebar
+        updateProfileImage(data.data.url);
         toast.success('Profile image uploaded successfully!');
       }
     } catch (error) {
@@ -145,6 +152,10 @@ const CustomerProfile = () => {
       });
 
       if (response.ok) {
+        // Update the profile image in context if it was changed
+        if (formData.photoUrl) {
+          updateProfileImage(formData.photoUrl);
+        }
         toast.success('Profile updated successfully!');
         fetchProfile(); // Refresh to get updated coordinates
       } else {
@@ -171,7 +182,6 @@ const CustomerProfile = () => {
       <CustomerSidebar
         isOpen={sidebarOpen}
         setIsOpen={setSidebarOpen}
-        profileImage={formData.photoUrl}
       />
 
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>

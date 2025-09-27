@@ -96,7 +96,6 @@ const CustomerSubscriptions = () => {
       <CustomerSidebar
         isOpen={sidebarOpen}
         setIsOpen={setSidebarOpen}
-        profileImage={user?.photoUrl || user?.photoURL}
       />
 
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
