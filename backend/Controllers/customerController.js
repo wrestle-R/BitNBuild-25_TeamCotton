@@ -155,6 +155,30 @@ const customerController = {
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
+  },
+
+  // Get vendor meal plans
+  async getVendorPlans(req, res) {
+    try {
+      const { vendorId } = req.params;
+      
+      // Verify vendor exists and is verified
+      const vendor = await Vendor.findById(vendorId);
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      if (!vendor.verified) {
+        return res.status(403).json({ message: 'Vendor is not verified' });
+      }
+
+      // Get all plans for the vendor
+      const plans = await Plan.find({ vendor_id: vendorId }).select('-__v');
+      
+      res.json(plans);
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
   }
 };
 
