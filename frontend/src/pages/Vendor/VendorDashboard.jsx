@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from '../../components/ui/alert';
 import { toast } from 'sonner';
 
 const VendorDashboard = () => {
-  const { user, userType, loading, logout } = useUserContext();
+  const { user, userType, loading, logout, vendorProfile } = useUserContext();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [stats, setStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -118,7 +118,11 @@ const VendorDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <VendorSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      <VendorSidebar
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
+        profileImage={vendorProfile?.profileImage}
+      />
 
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
         <div className="p-6">
