@@ -158,6 +158,7 @@
 }
 
 body {
+  background: var(--background); /* Use theme variable for background */
   letter-spacing: var(--tracking-normal);
 }
 

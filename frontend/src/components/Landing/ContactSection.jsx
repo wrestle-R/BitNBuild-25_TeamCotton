@@ -30,7 +30,7 @@ const ContactSection = () => {
           <Button 
             onClick={handleVendorAuth}
             size="lg"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-200 hover:scale-105 flex items-center gap-2"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 rounded-lg font-medium text-lg transition-all duration-200 hover:scale-105 flex items-center gap-2"
           >
             <FaStore className="w-5 h-5" />
             Join as Vendor
@@ -40,7 +40,7 @@ const ContactSection = () => {
             onClick={handleCustomerAuth}
             size="lg"
             variant="outline"
-            className="border-accent text-accent hover:bg-accent hover:text-accent-foreground px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-200 hover:scale-105 flex items-center gap-2"
+            className="text-primary px-8 py-3 rounded-lg font-medium text-lg transition-all duration-200 hover:scale-105 flex items-center gap-2"
           >
             <FaShoppingBasket className="w-5 h-5" />
             Order Now
