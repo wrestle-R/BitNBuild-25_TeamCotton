@@ -227,7 +227,7 @@ const CustomerMarket = () => {
             {/* Header */}
             <div className="mb-8">
               <h1 className="text-4xl font-bold text-foreground font-montserrat flex items-center gap-3">
-                <FaStore className="w-10 h-10 text-primary" />
+                {/* <FaStore className="w-10 h-10 text-primary" /> */}
                 Market
               </h1>
               <p className="text-muted-foreground font-inter mt-2">
@@ -282,7 +282,7 @@ const CustomerMarket = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-4xl font-bold text-foreground font-montserrat flex items-center gap-3">
-                  <FaStore className="w-10 h-10 text-primary" />
+                  {/* <FaStore className="w-10 h-10 text-primary" /> */}
                   Market
                 </h1>
                 <p className="text-muted-foreground font-inter mt-2">
@@ -348,6 +348,7 @@ const CustomerMarket = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Vendors</SelectItem>
+                        
                         <SelectItem value="nearest">Nearest First</SelectItem>
                         <SelectItem value="newest">Newest First</SelectItem>
                       </SelectContent>
@@ -417,6 +418,36 @@ const CustomerMarket = () => {
                   </CardHeader>
                   
                   <CardContent className="relative space-y-4">
+                    {/* Food Types */}
+                    {vendor.foodTypes && vendor.foodTypes.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {vendor.foodTypes.map((foodType, idx) => (
+                          <Badge 
+                            key={`food-${idx}`}
+                            variant={foodType === 'Vegetarian' ? 'secondary' : 'outline'}
+                            className={`text-xs ${
+                              foodType === 'Vegetarian' 
+                                ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200' 
+                                : 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200'
+                            }`}
+                          >
+                            {foodType === 'Vegetarian' ? '🥬 Veg' : '🍖 Non-Veg'}
+                          </Badge>
+                        ))}
+                        {vendor.mealTypes && vendor.mealTypes.length > 0 && (
+                          vendor.mealTypes.map((mealType, idx) => (
+                            <Badge 
+                              key={`meal-${idx}`}
+                              variant="outline" 
+                              className="text-xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                            >
+                              {mealType.charAt(0).toUpperCase() + mealType.slice(1)}
+                            </Badge>
+                          ))
+                        )}
+                      </div>
+                    )}
+
                     {/* Location Info */}
                     {vendor.address && vendor.address.city && (
                       <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">

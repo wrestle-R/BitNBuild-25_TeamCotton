@@ -1,6 +1,7 @@
 const Customer = require('../Models/Customer');
 const Vendor = require('../Models/Vendor');
 const Plan = require('../Models/Plan');
+const Menu = require('../Models/Menu');
 const axios = require('axios');
 
 const customerController = {
@@ -8,9 +9,10 @@ const customerController = {
   async getVerifiedVendors(req, res) {
     try {
       const vendors = await Vendor.find({ verified: true }).select('-firebaseUid -__v');
+      const Menu = require('../Models/Menu');
       
-      // Get plan count for each vendor and filter vendors with at least one meal plan
-      const vendorsWithPlanCount = await Promise.all(
+      // Get plan count and food types for each vendor
+      const vendorsWithDetails = await Promise.all(
         vendors.map(async (vendor) => {
           const planCount = await Plan.countDocuments({ vendor_id: vendor._id });
           
@@ -19,8 +21,24 @@ const customerController = {
             return null;
           }
           
-          // Generate a random but consistent specialty based on vendor ID
-          const specialty = (vendor._id.toString().charCodeAt(0) % 2 === 0) ? 'veg' : 'nonveg';
+          // Get menu information to determine food types
+          const menus = await Menu.find({ vendor_id: vendor._id });
+          
+          // Determine food types based on actual menus
+          const hasVeg = menus.some(menu => !menu.non_veg);
+          const hasNonVeg = menus.some(menu => menu.non_veg);
+          
+          let foodTypes = [];
+          if (hasVeg) foodTypes.push('Vegetarian');
+          if (hasNonVeg) foodTypes.push('Non-Vegetarian');
+          
+          // Get meal types offered
+          const mealTypes = [...new Set(menus.map(menu => menu.meal_type))];
+          
+          // Determine specialty for description
+          let specialty = 'mixed';
+          if (hasVeg && !hasNonVeg) specialty = 'veg';
+          else if (hasNonVeg && !hasVeg) specialty = 'nonveg';
           
           // Generate a consistent rating between 4.0 and 5.0
           const ratingSeed = vendor._id.toString().charCodeAt(vendor._id.toString().length - 1);
@@ -29,15 +47,17 @@ const customerController = {
           return {
             ...vendor.toObject(),
             plans: planCount,
+            foodTypes: foodTypes,
+            mealTypes: mealTypes,
             specialty: specialty,
             rating: rating,
-            description: `Delicious ${specialty === 'veg' ? 'vegetarian' : 'non-vegetarian'} meals prepared with care and quality ingredients.`
+            description: `Delicious ${foodTypes.join(' & ').toLowerCase()} meals prepared with care and quality ingredients.`
           };
         })
       );
       
       // Filter out null values (vendors with no meal plans)
-      const filteredVendors = vendorsWithPlanCount.filter(vendor => vendor !== null);
+      const filteredVendors = vendorsWithDetails.filter(vendor => vendor !== null);
       
       res.json(filteredVendors);
     } catch (error) {
@@ -228,6 +248,32 @@ const customerController = {
       res.json(plans);
     } catch (error) {
       console.error('Error fetching vendor plans:', error);
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Get vendor menus for customers
+  async getVendorMenus(req, res) {
+    try {
+      const { vendorId } = req.params;
+      
+      // Verify vendor exists and is verified
+      const vendor = await Vendor.findById(vendorId);
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      if (!vendor.verified) {
+        return res.status(403).json({ message: 'Vendor not verified' });
+      }
+
+      // Get menus for this vendor
+      const Menu = require('../Models/Menu');
+      const menus = await Menu.find({ vendor_id: vendorId }).lean();
+
+      res.json(menus);
+    } catch (error) {
+      console.error('Error fetching vendor menus:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }

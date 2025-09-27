@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
-import { FaStore, FaShoppingCart, FaMapMarkerAlt, FaPhone, FaEnvelope, FaClock, FaArrowLeft, FaExclamationCircle, FaCheckCircle } from 'react-icons/fa';
+import { FaStore, FaShoppingCart, FaMapMarkerAlt, FaPhone, FaEnvelope, FaClock, FaArrowLeft, FaExclamationCircle, FaCheckCircle, FaInfoCircle, FaTimes } from 'react-icons/fa';
 import CustomerSidebar from '../../components/Customer/CustomerSidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -22,6 +22,10 @@ const VendorDetails = () => {
   const [error, setError] = useState(null);
   const [mealPlans, setMealPlans] = useState([]);
   const [plansLoading, setPlansLoading] = useState(false);
+  const [menus, setMenus] = useState([]);
+  const [menusLoading, setMenusLoading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [showPlanModal, setShowPlanModal] = useState(false);
 
   const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
@@ -94,6 +98,9 @@ const VendorDetails = () => {
   // Get vendor meal plans
   const getVendorPlans = (id) => apiCall(`/api/customer/vendors/${id}/plans`);
 
+  // Get vendor menus
+  const getVendorMenus = (id) => apiCall(`/api/customer/vendors/${id}/menus`);
+
   useEffect(() => {
     const fetchVendorDetails = async () => {
       if (!user || !token || !vendorId) {
@@ -121,6 +128,19 @@ const VendorDetails = () => {
           toast.error('Failed to load meal plans');
         } finally {
           setPlansLoading(false);
+        }
+
+        // Fetch vendor menus to show food types
+        setMenusLoading(true);
+        try {
+          const menusData = await getVendorMenus(vendorId);
+          console.log('🍽️ Fetched menus:', menusData);
+          setMenus(menusData || []);
+        } catch (menuError) {
+          console.error('Error fetching menus:', menuError);
+          setMenus([]);
+        } finally {
+          setMenusLoading(false);
         }
       } catch (error) {
         console.error('Error fetching vendor details:', error);
@@ -245,6 +265,65 @@ const VendorDetails = () => {
     return `${days} days`;
   };
 
+  // Helper function to get food types from menus
+  const getFoodTypes = () => {
+    if (!menus || menus.length === 0) return [];
+    
+    const hasVeg = menus.some(menu => !menu.non_veg);
+    const hasNonVeg = menus.some(menu => menu.non_veg);
+    
+    const types = [];
+    if (hasVeg) types.push('Vegetarian');
+    if (hasNonVeg) types.push('Non-Vegetarian');
+    
+    return types;
+  };
+
+  // Helper function to get meal types from menus
+  const getMealTypes = () => {
+    if (!menus || menus.length === 0) return [];
+    return [...new Set(menus.map(menu => menu.meal_type))];
+  };
+
+  // Helper function to group menus by meal type
+  const getMenusByMealType = () => {
+    if (!menus || menus.length === 0) return {};
+    
+    const grouped = {};
+    menus.forEach(menu => {
+      if (!grouped[menu.meal_type]) {
+        grouped[menu.meal_type] = [];
+      }
+      grouped[menu.meal_type].push(menu);
+    });
+    
+    return grouped;
+  };
+
+  // Function to get plan details and open modal
+  const handleViewPlanDetails = (plan) => {
+    setSelectedPlan(plan);
+    setShowPlanModal(true);
+  };
+
+  // Function to get menus for specific meal types in a plan
+  const getPlanMenus = (selectedMeals) => {
+    if (!menus || menus.length === 0) return [];
+    return menus.filter(menu => selectedMeals.includes(menu.meal_type));
+  };
+
+  // Function to get food types for a specific plan
+  const getPlanFoodTypes = (planMenus) => {
+    const hasVeg = planMenus.some(menu => !menu.non_veg);
+    const hasNonVeg = planMenus.some(menu => menu.non_veg);
+    
+    const types = [];
+    if (hasVeg) types.push('Vegetarian');
+    if (hasNonVeg) types.push('Non-Vegetarian');
+    
+    return types;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex">
@@ -271,6 +350,32 @@ const VendorDetails = () => {
                     <div className="flex-1">
                       <div className="h-8 w-48 bg-muted animate-pulse rounded mb-2"></div>
                       <div className="h-4 w-24 bg-muted animate-pulse rounded"></div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Loading skeleton for menu section */}
+              <Card>
+                <CardHeader>
+                  <div className="h-6 w-64 bg-muted animate-pulse rounded"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-3">
+                      <div className="h-4 w-32 bg-muted animate-pulse rounded"></div>
+                      <div className="flex gap-2">
+                        <div className="h-6 w-20 bg-muted animate-pulse rounded"></div>
+                        <div className="h-6 w-24 bg-muted animate-pulse rounded"></div>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="h-4 w-36 bg-muted animate-pulse rounded"></div>
+                      <div className="flex gap-2">
+                        <div className="h-6 w-18 bg-muted animate-pulse rounded"></div>
+                        <div className="h-6 w-16 bg-muted animate-pulse rounded"></div>
+                        <div className="h-6 w-18 bg-muted animate-pulse rounded"></div>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -429,6 +534,8 @@ const VendorDetails = () => {
               </CardContent>
             </Card>
           </motion.div>
+
+
 
           {/* Content Grid */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -641,14 +748,25 @@ const VendorDetails = () => {
                                 </div>
                               </div>
 
-                              <Button 
-                                onClick={() => handleSubscribe(plan._id)}
-                                className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-200 text-xs py-1.5"
-                                size="sm"
-                              >
-                                <FaShoppingCart className="w-3 h-3 mr-1" />
-                                Subscribe
-                              </Button>
+                              <div className="space-y-1.5">
+                                <Button 
+                                  onClick={() => handleViewPlanDetails(plan)}
+                                  variant="outline"
+                                  className="w-full border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary hover:text-primary transition-all duration-200 text-xs py-1.5"
+                                  size="sm"
+                                >
+                                  <FaInfoCircle className="w-3 h-3 mr-1" />
+                                  Details
+                                </Button>
+                                <Button 
+                                  onClick={() => handleSubscribe(plan._id)}
+                                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-200 text-xs py-1.5"
+                                  size="sm"
+                                >
+                                  <FaShoppingCart className="w-3 h-3 mr-1" />
+                                  Subscribe
+                                </Button>
+                              </div>
                             </CardContent>
                           </Card>
                         </motion.div>
@@ -668,6 +786,202 @@ const VendorDetails = () => {
                 </CardContent>
               </Card>
             </motion.div>
+          )}
+
+          {/* Plan Details Modal */}
+          {showPlanModal && selectedPlan && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-background rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+              >
+                <div className="sticky top-0 bg-background border-b p-6 flex justify-between items-center">
+                  <div>
+                    <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                      {getMealPlanIcon(selectedPlan.selected_meals)} {selectedPlan.name}
+                    </h2>
+                    <p className="text-muted-foreground">Plan Details & Menu Information</p>
+                  </div>
+                  <Button
+                    onClick={() => setShowPlanModal(false)}
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <FaTimes className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                <div className="p-6">
+                  {/* Plan Overview */}
+                  <div className="grid gap-4 md:grid-cols-3 mb-6">
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-primary">₹{selectedPlan.price}</div>
+                        <div className="text-sm text-muted-foreground">Total Price</div>
+                        {selectedPlan.duration_days > 1 && (
+                          <div className="text-xs text-green-600 mt-1">
+                            ₹{Math.round(selectedPlan.price / selectedPlan.duration_days)}/day
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-primary">{selectedPlan.duration_days}</div>
+                        <div className="text-sm text-muted-foreground">Days</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4 text-center">
+                        <div className="text-2xl font-bold text-primary">{selectedPlan.meals_per_day}</div>
+                        <div className="text-sm text-muted-foreground">Meals/Day</div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Meal Types Included */}
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                      🍽️ Included Meal Times
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedPlan.selected_meals.map((mealType, idx) => (
+                        <Badge 
+                          key={idx}
+                          variant="outline" 
+                          className="bg-blue-50 text-blue-700 border-blue-200"
+                        >
+                          {mealType === 'breakfast' && '🌅 '}
+                          {mealType === 'lunch' && '☀️ '}
+                          {mealType === 'dinner' && '🌙 '}
+                          {mealType.charAt(0).toUpperCase() + mealType.slice(1)}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Food Types Available */}
+                  {(() => {
+                    const planMenus = getPlanMenus(selectedPlan.selected_meals);
+                    const foodTypes = getPlanFoodTypes(planMenus);
+                    
+                    return foodTypes.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                          🥗 Food Types Available
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {foodTypes.map((foodType, idx) => (
+                            <Badge 
+                              key={idx}
+                              variant="secondary"
+                              className={`${
+                                foodType === 'Vegetarian' 
+                                  ? 'bg-green-100 text-green-700 border-green-200' 
+                                  : 'bg-red-100 text-red-700 border-red-200'
+                              }`}
+                            >
+                              {foodType === 'Vegetarian' ? '🥬 Vegetarian' : '🍖 Non-Vegetarian'}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Sample Menu Items */}
+                  {(() => {
+                    const planMenus = getPlanMenus(selectedPlan.selected_meals);
+                    
+                    return planMenus.length > 0 && (
+                      <div className="mb-6">
+                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                          📋 Sample Menu Items
+                        </h3>
+                        <div className="grid gap-4">
+                          {selectedPlan.selected_meals.map((mealType) => {
+                            const mealMenus = planMenus.filter(menu => menu.meal_type === mealType);
+                            
+                            return mealMenus.length > 0 && (
+                              <Card key={mealType}>
+                                <CardHeader className="pb-3">
+                                  <CardTitle className="text-base flex items-center gap-2">
+                                    <span>
+                                      {mealType === 'breakfast' && '🌅'}
+                                      {mealType === 'lunch' && '☀️'}
+                                      {mealType === 'dinner' && '🌙'}
+                                    </span>
+                                    {mealType.charAt(0).toUpperCase() + mealType.slice(1)} Options
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="grid gap-3 md:grid-cols-2">
+                                    {mealMenus.map((menu, menuIdx) => (
+                                      <div key={menuIdx} className="p-3 bg-muted/30 rounded-lg">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <span className={`w-3 h-3 rounded-full ${menu.non_veg ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                                          <span className="font-medium text-sm">
+                                            {menu.non_veg ? 'Non-Vegetarian' : 'Vegetarian'} Menu
+                                          </span>
+                                        </div>
+                                        {menu.items && menu.items.length > 0 && (
+                                          <div className="space-y-1">
+                                            {menu.items.slice(0, 5).map((item, itemIdx) => (
+                                              <div key={itemIdx} className="text-sm text-muted-foreground flex items-center gap-2">
+                                                <span>•</span>
+                                                <span>{item.name}</span>
+                                                {item.description && (
+                                                  <span className="text-xs text-muted-foreground/70">
+                                                    ({item.description})
+                                                  </span>
+                                                )}
+                                              </div>
+                                            ))}
+                                            {menu.items.length > 5 && (
+                                              <div className="text-xs text-primary font-medium">
+                                                + {menu.items.length - 5} more items
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-4 border-t">
+                    <Button
+                      onClick={() => setShowPlanModal(false)}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      Close
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setShowPlanModal(false);
+                        handleSubscribe(selectedPlan._id);
+                      }}
+                      className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                    >
+                      <FaShoppingCart className="w-4 h-4 mr-2" />
+                      Subscribe Now
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
           )}
         </div>
       </div>
