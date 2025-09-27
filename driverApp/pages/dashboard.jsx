@@ -15,6 +15,24 @@ export default function Dashboard() {
     if (!driver) return false;
     
     const requiredFields = ['contactNumber', 'vehicleType', 'vehicleNumber'];
+    const fieldStatus = {};
+    
+    requiredFields.forEach(field => {
+      fieldStatus[field] = {
+        value: driver[field],
+        hasValue: !!driver[field],
+        isNotEmpty: driver[field] && driver[field].toString().trim() !== ''
+      };
+    });
+    
+    console.log('🔍 Profile Completion Check:', {
+      driverEmail: driver.email,
+      fieldStatus,
+      isComplete: requiredFields.every(field => 
+        driver[field] && driver[field].toString().trim() !== ''
+      )
+    });
+    
     return requiredFields.every(field => 
       driver[field] && driver[field].toString().trim() !== ''
     );
