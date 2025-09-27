@@ -73,8 +73,8 @@ const NavbarComponent = () => {
   return (
     <motion.div
       ref={ref}
-      className="fixed inset-x-0 top-0 z-50 mb-16 md:mb-0"
-      style={{ maxWidth: visible ? '1280px' : '100%', margin: visible ? '0 auto' : '0' }}
+      className="fixed inset-x-0 top-0 z-50 mb-16 md:mb-0 flex justify-center"
+      style={{ maxWidth: visible ? '1280px' : '100%' }}
     >
       {/* Desktop Navbar */}
       <motion.div
@@ -90,7 +90,7 @@ const NavbarComponent = () => {
           damping: 40,
           duration: 0.3,
         }}
-        className="relative z-[60] hidden w-full flex-row items-center justify-between px-8 py-4 md:flex shadow-2xl border border-border/20 bg-background/80 dark:bg-background/90"
+        className="relative z-[60] hidden max-w-7xl mx-auto flex-row items-center justify-between px-8 py-4 md:flex shadow-2xl border border-border/20 bg-background/80 dark:bg-background/90"
         style={{ 
           backdropFilter: 'blur(16px)',
           borderRadius: visible ? '50px' : '0px'
@@ -221,7 +221,7 @@ const NavbarComponent = () => {
           stiffness: 400,
           damping: 40,
         }}
-        className="md:hidden flex items-center justify-between px-6 py-4 mt-4 shadow-2xl border border-border/20 bg-background/80 dark:bg-background/90"
+        className="md:hidden max-w-7xl mx-auto flex items-center justify-between px-6 py-4 mt-4 shadow-2xl border border-border/20 bg-background/80 dark:bg-background/90"
         style={{ 
           backdropFilter: 'blur(16px)',
           borderRadius: visible ? '50px' : '0px',
