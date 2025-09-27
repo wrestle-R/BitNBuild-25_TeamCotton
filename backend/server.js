@@ -9,20 +9,15 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-// Middleware
 app.use(cors({
   origin: 'http://localhost:5173',
   credentials: true
 }));
 app.use(express.json());
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGO_URL, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('🍽️ MongoDB connected successfully'))
-.catch(err => console.error('💥 MongoDB connection error:', err));
+mongoose.connect(process.env.MONGO_URL)
+.then(() => console.log('MongoDB connected successfully'))
+.catch(err => console.error('MongoDB connection error:', err));
 
 // Firebase Admin SDK (you'll need to add your service account key)
 try {
@@ -40,7 +35,7 @@ app.use('/api/auth', authRoutesUnified); // Unified routes for dual user system
 
 // Health check
 app.get('/', (req, res) => {
-  res.json({ message: '🍽️ NourishNet Backend is running!' });
+  res.json({ message: 'NourishNet Backend is running!' });
 });
 
 app.listen(PORT, () => {
