@@ -8,7 +8,7 @@ const adminRoutes = require('./Routes/adminRoutes');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT ;
+const PORT = process.env.PORT || 8000;
 
 app.use(cors({
   origin: true, // Allow all origins for development
