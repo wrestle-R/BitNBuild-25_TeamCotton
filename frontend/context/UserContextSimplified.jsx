@@ -37,7 +37,8 @@ export const UserProvider = ({ children }) => {
       contactNumber: user.contactNumber,
       address: user.address,
       role: user.role,
-      firebaseUid: user.firebaseUid
+      firebaseUid: user.firebaseUid,
+      mongoid: user.mongoid
     } : null,
     userType,
     loading,
@@ -133,9 +134,13 @@ export const UserProvider = ({ children }) => {
         role: userType,
       });
 
-      // Store token and user data
+      // Store token and user data (including mongoid)
       localStorage.setItem('nourishnet_token', profileData.token);
-      setUser(profileData.user);
+      const userWithMongoId = {
+        ...profileData.user,
+        mongoid: profileData.user.id // MongoDB _id is returned as 'id' from backend
+      };
+      setUser(userWithMongoId);
 
       toast.success('Account created successfully!');
     } catch (error) {
@@ -165,21 +170,48 @@ export const UserProvider = ({ children }) => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
-      // Create a basic user object without role validation
-      const userData = {
-        user: {
+      // Get user data from backend to include mongoid
+      try {
+        const response = await fetch(`${API_BASE}/api/auth/user/${firebaseUser.uid}`);
+        if (response.ok) {
+          const backendUserData = await response.json();
+          
+          // Store token and user data (including mongoid)
+          localStorage.setItem('nourishnet_token', backendUserData.token);
+          const userWithMongoId = {
+            ...backendUserData.user,
+            mongoid: backendUserData.user.id // MongoDB _id is returned as 'id' from backend
+          };
+          setUser(userWithMongoId);
+        } else {
+          // Fallback to basic user object if backend call fails
+          const userData = {
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName,
+            email: firebaseUser.email,
+            role: userType,
+            firebaseUid: firebaseUser.uid,
+            mongoid: null // Will be null if we can't get it from backend
+          };
+          
+          localStorage.setItem('nourishnet_token', await firebaseUser.getIdToken());
+          setUser(userData);
+        }
+      } catch (backendError) {
+        console.error('Error fetching user data from backend:', backendError);
+        // Fallback to basic user object
+        const userData = {
           id: firebaseUser.uid,
           name: firebaseUser.displayName,
           email: firebaseUser.email,
-          role: userType, // Use the current userType
-          firebaseUid: firebaseUser.uid
-        },
-        token: await firebaseUser.getIdToken()
-      };
-
-      // Store token and user data
-      localStorage.setItem('nourishnet_token', userData.token);
-      setUser(userData.user);
+          role: userType,
+          firebaseUid: firebaseUser.uid,
+          mongoid: null
+        };
+        
+        localStorage.setItem('nourishnet_token', await firebaseUser.getIdToken());
+        setUser(userData);
+      }
 
       toast.success('Welcome back!');
     } catch (error) {
@@ -228,9 +260,13 @@ export const UserProvider = ({ children }) => {
         }
       }
 
-      // Store token and user data
+      // Store token and user data (including mongoid)
       localStorage.setItem('nourishnet_token', userData.token);
-      setUser(userData.user);
+      const userWithMongoId = {
+        ...userData.user,
+        mongoid: userData.user.id // MongoDB _id is returned as 'id' from backend
+      };
+      setUser(userWithMongoId);
 
     } catch (error) {
       console.error('Google authentication error:', error);
@@ -305,19 +341,51 @@ export const UserProvider = ({ children }) => {
           // Get or refresh the token
           const token = await firebaseUser.getIdToken();
           
-          // Create user object from Firebase data
-          const userData = {
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName,
-            email: firebaseUser.email,
-            role: userType,
-            firebaseUid: firebaseUser.uid,
-            emailVerified: firebaseUser.emailVerified
-          };
+          // Try to get user data from backend to include mongoid
+          try {
+            const response = await fetch(`${API_BASE}/api/auth/user/${firebaseUser.uid}`);
+            if (response.ok) {
+              const backendUserData = await response.json();
+              
+              // Store token and user data with mongoid
+              localStorage.setItem('nourishnet_token', backendUserData.token);
+              const userWithMongoId = {
+                ...backendUserData.user,
+                mongoid: backendUserData.user.id,
+                emailVerified: firebaseUser.emailVerified
+              };
+              setUser(userWithMongoId);
+            } else {
+              // Fallback to Firebase data if backend call fails
+              const userData = {
+                id: firebaseUser.uid,
+                name: firebaseUser.displayName,
+                email: firebaseUser.email,
+                role: userType,
+                firebaseUid: firebaseUser.uid,
+                emailVerified: firebaseUser.emailVerified,
+                mongoid: null
+              };
 
-          // Store token and set user
-          localStorage.setItem('nourishnet_token', token);
-          setUser(userData);
+              localStorage.setItem('nourishnet_token', token);
+              setUser(userData);
+            }
+          } catch (backendError) {
+            console.error('Error fetching user data from backend in auth state listener:', backendError);
+            // Fallback to Firebase data
+            const userData = {
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName,
+              email: firebaseUser.email,
+              role: userType,
+              firebaseUid: firebaseUser.uid,
+              emailVerified: firebaseUser.emailVerified,
+              mongoid: null
+            };
+
+            localStorage.setItem('nourishnet_token', token);
+            setUser(userData);
+          }
           
           console.log('✅ User data set from Firebase auth state');
         } else {

@@ -10,6 +10,11 @@ const customerUserSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  firebaseUid: {
+    type: String,
+    required: true,
+    unique: true
+  },
   contactNumber: {
     type: String,
     required: false
