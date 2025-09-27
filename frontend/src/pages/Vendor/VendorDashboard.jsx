@@ -17,8 +17,11 @@ const VendorDashboard = () => {
   const navigate = useNavigate();
   const backendError = false; // Simplified context doesn't have this
 
-  console.log('🏪 VendorDashboard - User data:', {
+  console.log('🏪 VendorDashboard - Render State:', {
     userType,
+    loading,
+    backendError,
+    sidebarOpen,
     user: user ? {
       id: user.id,
       displayName: user.displayName,
@@ -28,11 +31,13 @@ const VendorDashboard = () => {
   });
 
   useEffect(() => {
+    console.log('🏪 VendorDashboard - useEffect triggered:', { user, userType });
     // Redirect if user is not vendor type
     if (user && userType !== 'vendor') {
       console.log('🚫 VendorDashboard - Wrong user type, redirecting to customer dashboard');
+      console.log('Current user role:', user.role, 'Expected:', 'vendor');
       toast.error('Access denied: This is for vendors only!');
-      navigate('/user2/dashboard', { replace: true });
+      navigate('/customer/dashboard', { replace: true });
       return;
     }
   }, [user, userType, navigate]);
@@ -132,7 +137,7 @@ const VendorDashboard = () => {
       <VendorSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
       {/* Main Content */}
-      <div className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
+      <div className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
         <div className="p-6">
         {/* Header */}
         <motion.div 

@@ -17,23 +17,29 @@ const CustomerDashboard = () => {
   const navigate = useNavigate();
   const backendError = false; // Simplified context doesn't have this
 
-  console.log('🍽️ CustomerDashboard - User data:', {
+  console.log('🍽️ CustomerDashboard - Render State:', {
     userType,
+    loading,
+    backendError,
+    sidebarOpen,
     user: user ? {
       id: user.id,
       displayName: user.displayName,
       email: user.email,
       phoneNumber: user.phoneNumber,
-      photoURL: user.photoURL
+      photoURL: user.photoURL,
+      role: user.role
     } : null
   });
 
   useEffect(() => {
+    console.log('🍽️ CustomerDashboard - useEffect triggered:', { user, userType });
     // Redirect if user is not customer type
     if (user && userType !== 'customer') {
       console.log('🚫 CustomerDashboard - Wrong user type, redirecting to vendor dashboard');
+      console.log('Current user role:', user.role, 'Expected:', 'customer');
       toast.error('Access denied: This is for customers only!');
-      navigate('/user1/dashboard', { replace: true });
+      navigate('/vendor/dashboard', { replace: true });
       return;
     }
   }, [user, userType, navigate]);
@@ -124,7 +130,7 @@ const CustomerDashboard = () => {
       <CustomerSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
       {/* Main Content */}
-      <div className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
+      <div className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
         {/* Header */}
         {/* <header className="bg-card border-b border-border px-6 py-4">
           <div className="flex items-center justify-between">
