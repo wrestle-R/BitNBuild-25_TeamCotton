@@ -126,7 +126,7 @@ const CustomerDashboard = () => {
       {/* Main Content */}
       <div className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
         {/* Header */}
-        <header className="bg-card border-b border-border px-6 py-4">
+        {/* <header className="bg-card border-b border-border px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
@@ -165,7 +165,7 @@ const CustomerDashboard = () => {
               )}
             </div>
           </div>
-        </header>
+        </header> */}
 
         {/* Dashboard Content */}
         <main className="p-6">
