@@ -4,15 +4,54 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   Alert,
   ActivityIndicator,
+  useColorScheme,
+  StyleSheet,
+  StatusBar,
+  Dimensions
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { getColors } from '../constants/Colors';
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const Login = ({ navigation }) => {
+  const systemColorScheme = useColorScheme(); // Ensure useColorScheme is properly imported
+  const isDarkMode = systemColorScheme === 'dark';
+  const colors = getColors(isDarkMode); // Initialize colors using getColors
+
+  // Create styles inside component to access colors
+  const styles = StyleSheet.create({
+    fullScreen: {
+      width: screenWidth,
+      height: screenHeight,
+      backgroundColor: colors.background,
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+    },
+    keyboardAvoidingView: {
+      flex: 1,
+      width: '100%',
+      height: '100%',
+      backgroundColor: colors.background,
+    },
+    content: {
+      flex: 1,
+      width: '100%',
+      paddingHorizontal: 24,
+      paddingTop: Platform.OS === 'ios' ? 60 : 40,
+      paddingBottom: 20,
+      justifyContent: 'center',
+      backgroundColor: colors.background,
+    },
+  });
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -104,39 +143,52 @@ const Login = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <View style={styles.fullScreen}>
+      <StatusBar 
+        barStyle={'light-content'}
+        backgroundColor={colors.background}
+        translucent={true}
+      />
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
+        style={styles.keyboardAvoidingView}
       >
-        <View className="flex-1 px-6 justify-center">
+        <View style={styles.content}>
           {/* Header */}
-          <View className="items-center mb-12">
-            <View className="w-20 h-20 bg-orange-500 rounded-full items-center justify-center mb-4">
-              <Feather name="home" size={32} color="white" />
+          <View style={{ alignItems: 'center', marginBottom: 48 }}>
+            <View style={{ width: 80, height: 80, backgroundColor: colors.primary, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+              <Feather name="home" size={32} color={colors.primaryForeground} />
             </View>
-            <Text className="text-3xl font-bold text-gray-800 mb-2">
+            <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.foreground, marginBottom: 8 }}>
               NourishNet
             </Text>
-            <Text className="text-lg text-gray-600 text-center">
+            <Text style={{ fontSize: 16, color: colors.mutedForeground, textAlign: 'center' }}>
               Your daily tiffin, delivered fresh
             </Text>
           </View>
 
           {/* Login Form */}
-          <View className="space-y-6">
+          <View style={{ gap: 24 }}>
             {/* Email Input */}
             <View>
-              <Text className="text-base font-medium text-gray-700 mb-2">
+              <Text style={{ fontSize: 16, fontWeight: '500', color: colors.foreground, marginBottom: 8 }}>
                 Email Address
               </Text>
-              <View className="relative">
+              <View style={{ position: 'relative' }}>
                 <TextInput
-                  className={`w-full p-4 pl-12 bg-gray-50 border rounded-xl text-base ${
-                    errors.email ? 'border-red-500' : 'border-gray-200'
-                  }`}
+                  style={{
+                    width: '100%',
+                    padding: 16,
+                    paddingLeft: 48,
+                    backgroundColor: colors.input,
+                    borderColor: errors.email ? colors.destructive : colors.border,
+                    borderWidth: 1,
+                    borderRadius: 12,
+                    fontSize: 16,
+                    color: colors.foreground,
+                  }}
                   placeholder="Enter your email"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.mutedForeground}
                   value={formData.email}
                   onChangeText={(value) => handleInputChange('email', value)}
                   keyboardType="email-address"
@@ -146,28 +198,36 @@ const Login = ({ navigation }) => {
                 <Feather
                   name="mail"
                   size={20}
-                  color="#9CA3AF"
-                  className="absolute left-4 top-4"
+                  color={colors.mutedForeground}
                   style={{ position: 'absolute', left: 16, top: 16 }}
                 />
               </View>
               {errors.email && (
-                <Text className="text-red-500 text-sm mt-1">{errors.email}</Text>
+                <Text style={{ color: colors.destructive, fontSize: 14, marginTop: 4 }}>{errors.email}</Text>
               )}
             </View>
 
             {/* Password Input */}
             <View>
-              <Text className="text-base font-medium text-gray-700 mb-2">
+              <Text style={{ fontSize: 16, fontWeight: '500', color: colors.foreground, marginBottom: 8 }}>
                 Password
               </Text>
-              <View className="relative">
+              <View style={{ position: 'relative' }}>
                 <TextInput
-                  className={`w-full p-4 pl-12 pr-12 bg-gray-50 border rounded-xl text-base ${
-                    errors.password ? 'border-red-500' : 'border-gray-200'
-                  }`}
+                  style={{
+                    width: '100%',
+                    padding: 16,
+                    paddingLeft: 48,
+                    paddingRight: 48,
+                    backgroundColor: colors.input,
+                    borderColor: errors.password ? colors.destructive : colors.border,
+                    borderWidth: 1,
+                    borderRadius: 12,
+                    fontSize: 16,
+                    color: colors.foreground,
+                  }}
                   placeholder="Enter your password"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.mutedForeground}
                   value={formData.password}
                   onChangeText={(value) => handleInputChange('password', value)}
                   secureTextEntry={!showPassword}
@@ -176,29 +236,28 @@ const Login = ({ navigation }) => {
                 <Feather
                   name="lock"
                   size={20}
-                  color="#9CA3AF"
+                  color={colors.mutedForeground}
                   style={{ position: 'absolute', left: 16, top: 16 }}
                 />
                 <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-4"
                   style={{ position: 'absolute', right: 16, top: 16 }}
                 >
                   <Feather
                     name={showPassword ? 'eye-off' : 'eye'}
                     size={20}
-                    color="#9CA3AF"
+                    color={colors.mutedForeground}
                   />
                 </TouchableOpacity>
               </View>
               {errors.password && (
-                <Text className="text-red-500 text-sm mt-1">{errors.password}</Text>
+                <Text style={{ color: colors.destructive, fontSize: 14, marginTop: 4 }}>{errors.password}</Text>
               )}
             </View>
 
             {/* Forgot Password */}
-            <TouchableOpacity onPress={handleForgotPassword} className="self-end">
-              <Text className="text-orange-500 font-medium">
+            <TouchableOpacity onPress={handleForgotPassword} style={{ alignSelf: 'flex-end' }}>
+              <Text style={{ color: colors.primary, fontWeight: '500' }}>
                 Forgot Password?
               </Text>
             </TouchableOpacity>
@@ -207,47 +266,53 @@ const Login = ({ navigation }) => {
             <TouchableOpacity
               onPress={handleLogin}
               disabled={isLoading}
-              className={`w-full py-4 rounded-xl items-center ${
-                isLoading ? 'bg-gray-400' : 'bg-orange-500'
-              }`}
+              style={{
+                width: '100%',
+                paddingVertical: 16,
+                borderRadius: 12,
+                alignItems: 'center',
+                backgroundColor: isLoading ? colors.muted : colors.primary,
+              }}
             >
               {isLoading ? (
-                <ActivityIndicator color="white" size="small" />
+                <ActivityIndicator color={colors.primaryForeground} size="small" />
               ) : (
-                <Text className="text-white text-lg font-semibold">
+                <Text style={{ color: colors.primaryForeground, fontSize: 18, fontWeight: '600' }}>
                   Sign In
                 </Text>
               )}
             </TouchableOpacity>
 
             {/* Social Login Divider */}
-            <View className="flex-row items-center my-6">
-              <View className="flex-1 h-px bg-gray-300" />
-              <Text className="mx-4 text-gray-500">or continue with</Text>
-              <View className="flex-1 h-px bg-gray-300" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 24 }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+              <Text style={{ marginHorizontal: 16, color: colors.mutedForeground }}>
+                or continue with
+              </Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
             </View>
 
             {/* Social Login Buttons */}
-            <View className="flex-row space-x-4">
-              <TouchableOpacity className="flex-1 py-3 border border-gray-300 rounded-xl items-center">
-                <Text className="text-gray-700 font-medium">Google</Text>
+            <View style={{ flexDirection: 'row', gap: 16 }}>
+              <TouchableOpacity style={{ flex: 1, paddingVertical: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 12, alignItems: 'center' }}>
+                <Text style={{ color: colors.foreground, fontWeight: '500' }}>Google</Text>
               </TouchableOpacity>
-              <TouchableOpacity className="flex-1 py-3 border border-gray-300 rounded-xl items-center">
-                <Text className="text-gray-700 font-medium">Facebook</Text>
+              <TouchableOpacity style={{ flex: 1, paddingVertical: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 12, alignItems: 'center' }}>
+                <Text style={{ color: colors.foreground, fontWeight: '500' }}>Facebook</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Sign Up Link */}
-          <View className="flex-row justify-center mt-8">
-            <Text className="text-gray-600">Don't have an account? </Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 32 }}>
+            <Text style={{ color: colors.mutedForeground }}>Don't have an account? </Text>
             <TouchableOpacity onPress={handleSignUp}>
-              <Text className="text-orange-500 font-semibold">Sign Up</Text>
+              <Text style={{ color: colors.primary, fontWeight: '600' }}>Sign Up</Text>
             </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 
