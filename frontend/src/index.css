@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "./styles/sidebar-fix.css";
 
 :root {
   --background: oklch(0.9940 0 0);
