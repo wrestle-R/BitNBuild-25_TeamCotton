@@ -790,69 +790,63 @@ const VendorDetails = () => {
 
           {/* Plan Details Modal */}
           {showPlanModal && selectedPlan && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-background rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+                className="bg-background border border-border/50 rounded-xl shadow-2xl max-w-lg w-full mx-4 max-h-[85vh] overflow-y-auto"
               >
-                <div className="sticky top-0 bg-background border-b p-6 flex justify-between items-center">
+                <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border/50 p-4 flex justify-between items-center">
                   <div>
-                    <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                       {getMealPlanIcon(selectedPlan.selected_meals)} {selectedPlan.name}
                     </h2>
-                    <p className="text-muted-foreground">Plan Details & Menu Information</p>
+                    <p className="text-sm text-muted-foreground">Plan Details & Menu</p>
                   </div>
                   <Button
                     onClick={() => setShowPlanModal(false)}
                     variant="ghost"
                     size="sm"
-                    className="text-muted-foreground hover:text-foreground"
+                    className="text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   >
                     <FaTimes className="w-4 h-4" />
                   </Button>
                 </div>
 
-                <div className="p-6">
+                <div className="p-4 space-y-4">
                   {/* Plan Overview */}
-                  <div className="grid gap-4 md:grid-cols-3 mb-6">
-                    <Card>
-                      <CardContent className="p-4 text-center">
-                        <div className="text-2xl font-bold text-primary">₹{selectedPlan.price}</div>
-                        <div className="text-sm text-muted-foreground">Total Price</div>
-                        {selectedPlan.duration_days > 1 && (
-                          <div className="text-xs text-green-600 mt-1">
-                            ₹{Math.round(selectedPlan.price / selectedPlan.duration_days)}/day
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="p-4 text-center">
-                        <div className="text-2xl font-bold text-primary">{selectedPlan.duration_days}</div>
-                        <div className="text-sm text-muted-foreground">Days</div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="p-4 text-center">
-                        <div className="text-2xl font-bold text-primary">{selectedPlan.meals_per_day}</div>
-                        <div className="text-sm text-muted-foreground">Meals/Day</div>
-                      </CardContent>
-                    </Card>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="text-center p-3 bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-lg">
+                      <div className="text-lg font-bold text-primary">₹{selectedPlan.price}</div>
+                      <div className="text-xs text-muted-foreground">Total</div>
+                      {selectedPlan.duration_days > 1 && (
+                        <div className="text-xs text-green-600 dark:text-green-400">
+                          ₹{Math.round(selectedPlan.price / selectedPlan.duration_days)}/day
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{selectedPlan.duration_days}</div>
+                      <div className="text-xs text-muted-foreground">Days</div>
+                    </div>
+                    <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg">
+                      <div className="text-lg font-bold text-orange-600 dark:text-orange-400">{selectedPlan.meals_per_day}</div>
+                      <div className="text-xs text-muted-foreground">Meals/Day</div>
+                    </div>
                   </div>
 
-                  {/* Meal Types Included */}
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                      🍽️ Included Meal Times
+                  {/* Meal Times & Food Types Combined */}
+                  <div>
+                    <h3 className="text-sm font-semibold mb-2 flex items-center gap-2 text-foreground">
+                      🍽️ Plan Includes
                     </h3>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 mb-3">
                       {selectedPlan.selected_meals.map((mealType, idx) => (
                         <Badge 
                           key={idx}
                           variant="outline" 
-                          className="bg-blue-50 text-blue-700 border-blue-200"
+                          className="bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 text-xs"
                         >
                           {mealType === 'breakfast' && '🌅 '}
                           {mealType === 'lunch' && '☀️ '}
@@ -861,97 +855,106 @@ const VendorDetails = () => {
                         </Badge>
                       ))}
                     </div>
-                  </div>
 
-                  {/* Food Types Available */}
-                  {(() => {
-                    const planMenus = getPlanMenus(selectedPlan.selected_meals);
-                    const foodTypes = getPlanFoodTypes(planMenus);
-                    
-                    return foodTypes.length > 0 && (
-                      <div className="mb-6">
-                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                          🥗 Food Types Available
-                        </h3>
+                    {/* Food Types */}
+                    {(() => {
+                      const planMenus = getPlanMenus(selectedPlan.selected_meals);
+                      const foodTypes = getPlanFoodTypes(planMenus);
+                      
+                      return foodTypes.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {foodTypes.map((foodType, idx) => (
                             <Badge 
                               key={idx}
                               variant="secondary"
-                              className={`${
+                              className={`text-xs ${
                                 foodType === 'Vegetarian' 
-                                  ? 'bg-green-100 text-green-700 border-green-200' 
-                                  : 'bg-red-100 text-red-700 border-red-200'
+                                  ? 'bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800' 
+                                  : 'bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800'
                               }`}
                             >
-                              {foodType === 'Vegetarian' ? '🥬 Vegetarian' : '🍖 Non-Vegetarian'}
+                              {foodType === 'Vegetarian' ? '🥬 Veg' : '🍖 Non-Veg'}
                             </Badge>
                           ))}
                         </div>
-                      </div>
-                    );
-                  })()}
+                      );
+                    })()}
+                  </div>
 
-                  {/* Sample Menu Items */}
+                  {/* Sample Menu Items - Combined and Simplified */}
                   {(() => {
                     const planMenus = getPlanMenus(selectedPlan.selected_meals);
                     
                     return planMenus.length > 0 && (
-                      <div className="mb-6">
-                        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                      <div>
+                        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-foreground">
                           📋 Sample Menu Items
                         </h3>
-                        <div className="grid gap-4">
+                        <div className="space-y-3">
                           {selectedPlan.selected_meals.map((mealType) => {
                             const mealMenus = planMenus.filter(menu => menu.meal_type === mealType);
                             
-                            return mealMenus.length > 0 && (
-                              <Card key={mealType}>
-                                <CardHeader className="pb-3">
-                                  <CardTitle className="text-base flex items-center gap-2">
-                                    <span>
+                            if (mealMenus.length === 0) return null;
+                            
+                            // Combine all items from all menus for this meal type
+                            const allItems = [];
+                            const hasVeg = mealMenus.some(menu => !menu.non_veg);
+                            const hasNonVeg = mealMenus.some(menu => menu.non_veg);
+                            
+                            mealMenus.forEach(menu => {
+                              if (menu.items && menu.items.length > 0) {
+                                menu.items.forEach(item => {
+                                  allItems.push({
+                                    ...item,
+                                    isVeg: !menu.non_veg
+                                  });
+                                });
+                              }
+                            });
+                            
+                            // Remove duplicates and limit to 4 items
+                            const uniqueItems = allItems
+                              .filter((item, index, self) => 
+                                self.findIndex(i => i.name === item.name) === index
+                              )
+                              .slice(0, 4);
+                            
+                            return (
+                              <div key={mealType} className="p-3 bg-muted/20 dark:bg-muted/10 border border-border/30 rounded-lg">
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm">
                                       {mealType === 'breakfast' && '🌅'}
                                       {mealType === 'lunch' && '☀️'}
                                       {mealType === 'dinner' && '🌙'}
                                     </span>
-                                    {mealType.charAt(0).toUpperCase() + mealType.slice(1)} Options
-                                  </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="grid gap-3 md:grid-cols-2">
-                                    {mealMenus.map((menu, menuIdx) => (
-                                      <div key={menuIdx} className="p-3 bg-muted/30 rounded-lg">
-                                        <div className="flex items-center gap-2 mb-2">
-                                          <span className={`w-3 h-3 rounded-full ${menu.non_veg ? 'bg-red-500' : 'bg-green-500'}`}></span>
-                                          <span className="font-medium text-sm">
-                                            {menu.non_veg ? 'Non-Vegetarian' : 'Vegetarian'} Menu
-                                          </span>
-                                        </div>
-                                        {menu.items && menu.items.length > 0 && (
-                                          <div className="space-y-1">
-                                            {menu.items.slice(0, 5).map((item, itemIdx) => (
-                                              <div key={itemIdx} className="text-sm text-muted-foreground flex items-center gap-2">
-                                                <span>•</span>
-                                                <span>{item.name}</span>
-                                                {item.description && (
-                                                  <span className="text-xs text-muted-foreground/70">
-                                                    ({item.description})
-                                                  </span>
-                                                )}
-                                              </div>
-                                            ))}
-                                            {menu.items.length > 5 && (
-                                              <div className="text-xs text-primary font-medium">
-                                                + {menu.items.length - 5} more items
-                                              </div>
-                                            )}
-                                          </div>
-                                        )}
+                                    <span className="text-sm font-medium text-foreground">
+                                      {mealType.charAt(0).toUpperCase() + mealType.slice(1)}
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    {hasVeg && <span className="w-2 h-2 rounded-full bg-green-500"></span>}
+                                    {hasNonVeg && <span className="w-2 h-2 rounded-full bg-red-500"></span>}
+                                  </div>
+                                </div>
+                                
+                                {uniqueItems.length > 0 && (
+                                  <div className="grid grid-cols-2 gap-1">
+                                    {uniqueItems.map((item, itemIdx) => (
+                                      <div key={itemIdx} className="text-xs text-muted-foreground flex items-center gap-1">
+                                        <span className={`w-1.5 h-1.5 rounded-full ${item.isVeg ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                        <span className="truncate">{item.name}</span>
                                       </div>
                                     ))}
                                   </div>
-                                </CardContent>
-                              </Card>
+                                )}
+                                
+                                {allItems.length > 4 && (
+                                  <div className="text-xs text-primary font-medium mt-2">
+                                    + {allItems.length - 4} more options
+                                  </div>
+                                )}
+                              </div>
                             );
                           })}
                         </div>
@@ -960,11 +963,12 @@ const VendorDetails = () => {
                   })()}
 
                   {/* Action Buttons */}
-                  <div className="flex gap-3 pt-4 border-t">
+                  <div className="flex gap-3 pt-2 border-t border-border/30">
                     <Button
                       onClick={() => setShowPlanModal(false)}
                       variant="outline"
-                      className="flex-1"
+                      className="flex-1 text-sm"
+                      size="sm"
                     >
                       Close
                     </Button>
@@ -973,10 +977,11 @@ const VendorDetails = () => {
                         setShowPlanModal(false);
                         handleSubscribe(selectedPlan._id);
                       }}
-                      className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                      className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-sm"
+                      size="sm"
                     >
-                      <FaShoppingCart className="w-4 h-4 mr-2" />
-                      Subscribe Now
+                      <FaShoppingCart className="w-3 h-3 mr-1" />
+                      Subscribe
                     </Button>
                   </div>
                 </div>
