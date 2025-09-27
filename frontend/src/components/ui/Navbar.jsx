@@ -22,7 +22,7 @@ const NavbarComponent = () => {
     target: ref,
     offset: ["start start", "end start"],
   });
-  const [visible, setVisible] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, loading, logout } = useUserContext();
   const navigate = useNavigate();
@@ -36,9 +36,9 @@ const NavbarComponent = () => {
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     if (latest > 50) {
-      setVisible(true);
+      setScrolled(true);
     } else {
-      setVisible(false);
+      setScrolled(false);
     }
   });
 
@@ -71,309 +71,323 @@ const NavbarComponent = () => {
   };
 
   return (
-    <motion.div
-      ref={ref}
-      className="fixed inset-x-0 top-0 z-50 mb-16 md:mb-0 flex justify-center"
-      style={{ maxWidth: visible ? '1280px' : '100%' }}
-    >
-      {/* Desktop Navbar */}
+    <>
+      {/* Navbar spacer to prevent content from appearing behind navbar */}
+      <div className="h-16 md:h-20" />
+      
+      {/* Background overlay to prevent content showing behind navbar when it shrinks */}
       <motion.div
         animate={{
-          backdropFilter: "blur(16px)",
-          borderRadius: visible ? "50px" : "0px",
-          width: visible ? "90%" : "100%",
-          y: visible ? 16 : 0,
+          opacity: scrolled ? 1 : 0,
         }}
         transition={{
           type: "spring",
           stiffness: 400,
           damping: 40,
-          duration: 0.3,
         }}
-        className="relative z-[60] hidden max-w-7xl mx-auto flex-row items-center justify-between px-8 py-4 md:flex shadow-2xl border border-border/20 bg-background/80 dark:bg-background/90"
-        style={{ 
-          backdropFilter: 'blur(16px)',
-          borderRadius: visible ? '50px' : '0px'
-        }}
+        className="fixed inset-x-0 top-0 z-40 h-24 bg-background/95 backdrop-blur-xl"
+      />
+      
+      <motion.div
+        ref={ref}
+        className="fixed inset-x-0 top-0 z-50 flex justify-center"
       >
-        <div className="flex w-full items-center justify-between">
+        {/* Desktop Navbar */}
+        <motion.div
+          animate={{
+            backdropFilter: "blur(16px)",
+            borderRadius: scrolled ? "50px" : "0px",
+            width: scrolled ? "80%" : "100%",
+            marginTop: scrolled ? "12px" : "0px",
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 400,
+            damping: 40,
+            duration: 0.3,
+          }}
+          className="relative z-[60] hidden max-w-7xl mx-auto flex-row items-center justify-between px-8 py-4 md:flex shadow-2xl border border-border/20 bg-background/95 dark:bg-background/95"
+          style={{ 
+            backdropFilter: 'blur(16px)',
+          }}
+        >
+          <div className="flex w-full items-center justify-between">
+            <motion.h1
+              animate={{
+                scale: scrolled ? 0.85 : 1,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 400,
+                damping: 30,
+              }}
+              className="text-xl font-bold text-foreground tracking-wider font-montserrat cursor-pointer flex items-center gap-2"
+              onClick={() => scrollToSection('#home')}
+            >
+              <FaHatCowboy className="w-6 h-6" />
+              {scrolled ? "Nourish Me" : "Nourish Me"}
+            </motion.h1>
+
+            <motion.nav
+              animate={{
+                opacity: 1,
+                scale: scrolled ? 0.85 : 1,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 400,
+                damping: 30,
+              }}
+              className="absolute left-1/2 flex -translate-x-1/2 items-center space-x-2"
+            >
+              {navItems.map((item, idx) => (
+                <NavItem key={idx} item={item} onNavigate={() => scrollToSection(item.link)} />
+              ))}
+            </motion.nav>
+
+            {/* Auth Section */}
+            <motion.div
+              animate={{
+                scale: scrolled ? 0.85 : 1,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 400,
+                damping: 30,
+              }}
+              className="flex items-center space-x-4"
+            >
+              {/* Theme Toggle */}
+              <ThemeToggle 
+                variant="ghost" 
+                size="sm"
+                className="text-foreground hover:bg-accent border border-border"
+              />
+              {loading ? (
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+              ) : user ? (
+                <div className="flex items-center space-x-3">
+                  {/* User Profile */}
+                  <div className="flex items-center space-x-2 bg-accent/30 rounded-lg px-3 py-2 border border-border">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={user.photoURL || '/default-cowboy-avatar.png'} alt={user.displayName} />
+                      <AvatarFallback><FaUser /></AvatarFallback>
+                    </Avatar>
+                    <div className="text-foreground">
+                      <p className="font-inter text-sm font-medium">{user.displayName}</p>
+                      <Badge variant="secondary" className="text-xs">
+                        {user.cowboyLevel || 'Rookie'}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  {/* Dashboard Button */}
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button
+                      onClick={handleAuthAction}
+                      variant="secondary"
+                      size="sm"
+                      className="font-inter font-semibold shadow-lg"
+                    >
+                      <FaTachometerAlt className="w-4 h-4 mr-2" />
+                      Dashboard
+                    </Button>
+                  </motion.div>
+
+                  {/* Logout Button */}
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Button
+                      onClick={handleLogout}
+                      variant="destructive"
+                      size="sm"
+                      className="font-inter font-semibold shadow-lg"
+                    >
+                      <FaSignOutAlt className="w-4 h-4 mr-2" />
+                      Logout
+                    </Button>
+                  </motion.div>
+                </div>
+              ) : (
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    onClick={handleAuthAction}
+                    variant="secondary"
+                    className="font-inter font-semibold px-6 py-2 shadow-lg tracking-wide"
+                  >
+                    Join Arena
+                  </Button>
+                </motion.div>
+              )}
+            </motion.div>
+          </div>
+        </motion.div>
+
+        {/* Mobile navbar */}
+        <motion.div
+          animate={{
+            backdropFilter: "blur(16px)",
+            borderRadius: scrolled ? "50px" : "0px",
+            marginLeft: scrolled ? "16px" : "0px",
+            marginRight: scrolled ? "16px" : "0px",
+            marginTop: scrolled ? "12px" : "0px",
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 400,
+            damping: 40,
+          }}
+          className="md:hidden max-w-7xl mx-auto flex items-center justify-between px-6 py-4 shadow-2xl border border-border/20 bg-background/95 dark:bg-background/95"
+          style={{ 
+            backdropFilter: 'blur(16px)',
+          }}
+        >
           <motion.h1
             animate={{
-              scale: visible ? 0.9 : 1,
+              scale: scrolled ? 0.85 : 1,
             }}
             transition={{
               type: "spring",
               stiffness: 400,
               damping: 30,
             }}
-            className="text-xl font-bold text-foreground tracking-wider font-montserrat cursor-pointer flex items-center gap-2"
+            className="text-lg font-bold text-foreground tracking-wider font-montserrat flex items-center gap-2 cursor-pointer"
             onClick={() => scrollToSection('#home')}
           >
-            <FaHatCowboy className="w-6 h-6" />
-            {visible ? "Nourish Me" : "Nourish Me"}
+            <FaHatCowboy className="w-5 h-5" />
+            {scrolled ? "WWA" : "Wild West Arena"}
           </motion.h1>
 
-          <motion.nav
-            animate={{
-              opacity: 1,
-              scale: visible ? 0.9 : 1,
-            }}
-            transition={{
-              type: "spring",
-              stiffness: 400,
-              damping: 30,
-            }}
-            className="absolute left-1/2 flex -translate-x-1/2 items-center space-x-2"
-          >
-            {navItems.map((item, idx) => (
-              <NavItem key={idx} item={item} onNavigate={() => scrollToSection(item.link)} />
-            ))}
-          </motion.nav>
-
-          {/* Auth Section */}
-          <motion.div
-            animate={{
-              scale: visible ? 0.9 : 1,
-            }}
-            transition={{
-              type: "spring",
-              stiffness: 400,
-              damping: 30,
-            }}
-            className="flex items-center space-x-4"
-          >
-            {/* Theme Toggle */}
+          <div className="flex items-center space-x-2">
+            {/* Mobile Theme Toggle */}
             <ThemeToggle 
               variant="ghost" 
               size="sm"
               className="text-foreground hover:bg-accent border border-border"
             />
-            {loading ? (
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-            ) : user ? (
-              <div className="flex items-center space-x-3">
-                {/* User Profile */}
-                <div className="flex items-center space-x-2 bg-accent/30 rounded-lg px-3 py-2 border border-border">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={user.photoURL || '/default-cowboy-avatar.png'} alt={user.displayName} />
-                    <AvatarFallback><FaUser /></AvatarFallback>
-                  </Avatar>
-                  <div className="text-foreground">
-                    <p className="font-inter text-sm font-medium">{user.displayName}</p>
-                    <Badge variant="secondary" className="text-xs">
-                      {user.cowboyLevel || 'Rookie'}
-                    </Badge>
-                  </div>
+            
+            <Button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              variant="ghost"
+              size="sm"
+              className="text-foreground p-2 bg-accent/50 border border-border hover:bg-accent"
+            >
+              {mobileMenuOpen ? (
+                <FaTimes className="w-5 h-5" />
+              ) : (
+                <FaBars className="w-5 h-5" />
+              )}
+            </Button>
+          </div>
+        </motion.div>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{
+                type: "spring",
+                stiffness: 500,
+                damping: 30,
+              }}
+              className="md:hidden absolute top-full left-0 right-0 mt-2 mx-4"
+              style={{ marginTop: scrolled ? "14px" : "2px" }}
+            >
+              <div className="bg-background/95 backdrop-blur-xl border-2 border-border rounded-2xl p-4 space-y-3 shadow-2xl">
+                {navItems.map((item, idx) => (
+                  <motion.a
+                    key={idx}
+                    href={item.link}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      scrollToSection(item.link);
+                    }}
+                    className="block w-full text-left text-foreground py-3 px-4 rounded-xl hover:bg-accent transition-colors font-inter font-medium tracking-wide"
+                    whileTap={{ scale: 0.95 }}
+                    whileHover={{ x: 4 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 500,
+                      damping: 25,
+                    }}
+                  >
+                    {item.name}
+                  </motion.a>
+                ))}
+
+                {/* Mobile Theme Toggle */}
+                <div className="pt-3 mt-3">
+                  <Separator className="mb-3 bg-border" />
+                  <ThemeToggle 
+                    variant="ghost"
+                    size="default"
+                    showLabel={true}
+                    className="w-full text-foreground hover:bg-accent border border-border justify-start"
+                  />
                 </div>
-                
-                {/* Dashboard Button */}
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button
-                    onClick={handleAuthAction}
-                    variant="secondary"
-                    size="sm"
-                    className="font-inter font-semibold shadow-lg"
-                  >
-                    <FaTachometerAlt className="w-4 h-4 mr-2" />
-                    Dashboard
-                  </Button>
-                </motion.div>
 
-                {/* Logout Button */}
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Button
-                    onClick={handleLogout}
-                    variant="destructive"
-                    size="sm"
-                    className="font-inter font-semibold shadow-lg"
-                  >
-                    <FaSignOutAlt className="w-4 h-4 mr-2" />
-                    Logout
-                  </Button>
-                </motion.div>
-              </div>
-            ) : (
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  onClick={handleAuthAction}
-                  variant="secondary"
-                  className="font-inter font-semibold px-6 py-2 shadow-lg tracking-wide"
-                >
-                  Join Arena
-                </Button>
-              </motion.div>
-            )}
-          </motion.div>
-        </div>
-      </motion.div>
-
-      {/* Mobile navbar */}
-      <motion.div
-        animate={{
-          backdropFilter: "blur(16px)",
-          borderRadius: visible ? "50px" : "0px",
-          marginLeft: visible ? "16px" : "0px",
-          marginRight: visible ? "16px" : "0px",
-          y: visible ? 16 : 0,
-        }}
-        transition={{
-          type: "spring",
-          stiffness: 400,
-          damping: 40,
-        }}
-        className="md:hidden max-w-7xl mx-auto flex items-center justify-between px-6 py-4 mt-4 shadow-2xl border border-border/20 bg-background/80 dark:bg-background/90"
-        style={{ 
-          backdropFilter: 'blur(16px)',
-          borderRadius: visible ? '50px' : '0px',
-          marginLeft: visible ? '16px' : '0px',
-          marginRight: visible ? '16px' : '0px'
-        }}
-      >
-        <motion.h1
-          animate={{
-            scale: visible ? 0.9 : 1,
-          }}
-          transition={{
-            type: "spring",
-            stiffness: 400,
-            damping: 30,
-          }}
-          className="text-lg font-bold text-foreground tracking-wider font-montserrat flex items-center gap-2 cursor-pointer"
-          onClick={() => scrollToSection('#home')}
-        >
-          <FaHatCowboy className="w-5 h-5" />
-          {visible ? "WWA" : "Wild West Arena"}
-        </motion.h1>
-
-        <div className="flex items-center space-x-2">
-          {/* Mobile Theme Toggle */}
-          <ThemeToggle 
-            variant="ghost" 
-            size="sm"
-            className="text-foreground hover:bg-accent border border-border"
-          />
-          
-          <Button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            variant="ghost"
-            size="sm"
-            className="text-foreground p-2 bg-accent/50 border border-border hover:bg-accent"
-          >
-            {mobileMenuOpen ? (
-              <FaTimes className="w-5 h-5" />
-            ) : (
-              <FaBars className="w-5 h-5" />
-            )}
-          </Button>
-        </div>
-      </motion.div>
-
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{
-              type: "spring",
-              stiffness: 500,
-              damping: 30,
-            }}
-            className="md:hidden absolute top-full left-0 right-0 mt-2 mx-4"
-          >
-            <div className="bg-background/95 backdrop-blur-xl border-2 border-border rounded-2xl p-4 space-y-3 shadow-2xl">
-              {navItems.map((item, idx) => (
-                <motion.a
-                  key={idx}
-                  href={item.link}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    scrollToSection(item.link);
-                  }}
-                  className="block w-full text-left text-foreground py-3 px-4 rounded-xl hover:bg-accent transition-colors font-inter font-medium tracking-wide"
-                  whileTap={{ scale: 0.95 }}
-                  whileHover={{ x: 4 }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 500,
-                    damping: 25,
-                  }}
-                >
-                  {item.name}
-                </motion.a>
-              ))}
-
-              {/* Mobile Theme Toggle */}
-              <div className="pt-3 mt-3">
-                <Separator className="mb-3 bg-border" />
-                <ThemeToggle 
-                  variant="ghost"
-                  size="default"
-                  showLabel={true}
-                  className="w-full text-foreground hover:bg-accent border border-border justify-start"
-                />
-              </div>
-
-              {/* Mobile Auth */}
-              <div className="pt-3 mt-3">
-                <Separator className="mb-3 bg-border" />
-                {loading ? (
-                  <div className="flex items-center justify-center py-2">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                  </div>
-                ) : user ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3 px-3 py-2 bg-accent/50 rounded-lg">
-                      <Avatar className="w-10 h-10">
-                        <AvatarImage src={user.photoURL || '/default-cowboy-avatar.png'} alt={user.displayName} />
-                        <AvatarFallback><FaUser /></AvatarFallback>
-                      </Avatar>
-                      <div className="text-foreground">
-                        <p className="font-inter font-medium">{user.displayName}</p>
-                        <Badge variant="secondary" className="text-xs">
-                          {user.cowboyLevel || 'Rookie'}
-                        </Badge>
-                      </div>
+                {/* Mobile Auth */}
+                <div className="pt-3 mt-3">
+                  <Separator className="mb-3 bg-border" />
+                  {loading ? (
+                    <div className="flex items-center justify-center py-2">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
                     </div>
+                  ) : user ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3 px-3 py-2 bg-accent/50 rounded-lg">
+                        <Avatar className="w-10 h-10">
+                          <AvatarImage src={user.photoURL || '/default-cowboy-avatar.png'} alt={user.displayName} />
+                          <AvatarFallback><FaUser /></AvatarFallback>
+                        </Avatar>
+                        <div className="text-foreground">
+                          <p className="font-inter font-medium">{user.displayName}</p>
+                          <Badge variant="secondary" className="text-xs">
+                            {user.cowboyLevel || 'Rookie'}
+                          </Badge>
+                        </div>
+                      </div>
+                      <motion.div whileTap={{ scale: 0.98 }}>
+                        <Button
+                          onClick={handleAuthAction}
+                          variant="secondary"
+                          className="w-full font-inter font-semibold"
+                        >
+                          <FaTachometerAlt className="w-4 h-4 mr-2" />
+                          Dashboard
+                        </Button>
+                      </motion.div>
+                      <motion.div whileTap={{ scale: 0.98 }}>
+                        <Button
+                          onClick={handleLogout}
+                          variant="destructive"
+                          className="w-full font-inter font-semibold"
+                        >
+                          <FaSignOutAlt className="w-4 h-4 mr-2" />
+                          Logout
+                        </Button>
+                      </motion.div>
+                    </div>
+                  ) : (
                     <motion.div whileTap={{ scale: 0.98 }}>
                       <Button
                         onClick={handleAuthAction}
                         variant="secondary"
-                        className="w-full font-inter font-semibold"
+                        className="w-full font-inter font-semibold tracking-wide"
                       >
-                        <FaTachometerAlt className="w-4 h-4 mr-2" />
-                        Dashboard
+                        Join Arena
                       </Button>
                     </motion.div>
-                    <motion.div whileTap={{ scale: 0.98 }}>
-                      <Button
-                        onClick={handleLogout}
-                        variant="destructive"
-                        className="w-full font-inter font-semibold"
-                      >
-                        <FaSignOutAlt className="w-4 h-4 mr-2" />
-                        Logout
-                      </Button>
-                    </motion.div>
-                  </div>
-                ) : (
-                  <motion.div whileTap={{ scale: 0.98 }}>
-                    <Button
-                      onClick={handleAuthAction}
-                      variant="secondary"
-                      className="w-full font-inter font-semibold tracking-wide"
-                    >
-                      Join Arena
-                    </Button>
-                  </motion.div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </>
   );
 };
 
