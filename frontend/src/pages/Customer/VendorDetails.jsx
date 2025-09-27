@@ -306,7 +306,7 @@ const VendorDetails = () => {
           <div className="p-6">
             <div className="mb-6">
               <Button 
-                // onClick={handleGoBack} 
+                onClick={() => navigate('/customer/market')} 
                 variant="outline"
                 className="flex items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-200"
               >
@@ -339,7 +339,7 @@ const VendorDetails = () => {
             transition={{ duration: 0.5, ease: "easeOut" }}
           >
             <Button 
-              // onClick={handleGoBack} 
+              onClick={() => navigate('/customer/market')} 
               variant="outline"
               className="flex items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-200"
             >
