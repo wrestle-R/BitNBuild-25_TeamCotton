@@ -93,7 +93,11 @@ const CustomerSubscriptions = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <CustomerSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      <CustomerSidebar
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
+        profileImage={user?.photoUrl || user?.photoURL}
+      />
 
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
         <div className="p-6">

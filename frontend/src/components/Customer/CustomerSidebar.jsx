@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
-import { FaShoppingCart, FaHeart, FaUser, FaTachometerAlt, FaSignOutAlt, FaBell, FaStore, FaClipboardList } from 'react-icons/fa';
+import { FaUser, FaTachometerAlt, FaUtensils, FaClipboardList, FaSignOutAlt, FaStore, FaHeart } from 'react-icons/fa';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import ThemeToggle from '../ui/ThemeToggle';
@@ -25,10 +25,8 @@ const CustomerSidebar = ({ isOpen, setIsOpen, profileImage }) => {
     { icon: FaTachometerAlt, label: 'Dashboard', path: '/customer/dashboard' },
     { icon: FaUser, label: 'Profile', path: '/customer/profile' },
     { icon: FaStore, label: 'Market', path: '/customer/market' },
-    { icon: FaShoppingCart, label: 'Subscriptions', path: '/customer/subscriptions' },
-    { icon: FaHeart, label: 'Favorites', path: '/customer/favorites' },
-    { icon: FaClipboardList, label: 'Orders', path: '/customer/orders' },
-    { icon: FaBell, label: 'Notifications', path: '/customer/notifications' }
+    { icon: FaClipboardList, label: 'Subscriptions', path: '/customer/subscriptions' },
+    { icon: FaHeart, label: 'Favorites', path: '/customer/favorites' }
   ];
 
   return (
@@ -55,7 +53,7 @@ const CustomerSidebar = ({ isOpen, setIsOpen, profileImage }) => {
         {/* Header */}
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <FaShoppingCart className="w-8 h-8 text-primary flex-shrink-0" />
+            <FaStore className="w-8 h-8 text-primary flex-shrink-0" />
             {isOpen && (
               <motion.div
                 initial={{ opacity: 0, x: -10 }}

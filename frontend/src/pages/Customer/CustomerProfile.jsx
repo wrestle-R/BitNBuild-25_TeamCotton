@@ -3,15 +3,13 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
 import { auth } from '../../../firebase.config';
-import { FaUser, FaPhone, FaMapMarkerAlt, FaCamera, FaSave, FaArrowLeft, FaEdit, FaTimes } from 'react-icons/fa';
+import { FaUser, FaPhone, FaMapMarkerAlt, FaCamera, FaSave, FaArrowLeft } from 'react-icons/fa';
 import CustomerSidebar from '../../components/Customer/CustomerSidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { toast } from 'sonner';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -37,7 +35,6 @@ const CustomerProfile = () => {
     name: '',
     contactNumber: '',
     photoUrl: '',
-    preference: '',
     address: {
       street: '',
       city: '',
@@ -64,14 +61,12 @@ const CustomerProfile = () => {
       });
 
       const text = await response.text();
-      console.log('Raw response:', text);
       if (response.ok) {
         const data = JSON.parse(text);
         setFormData({
           name: data.name || '',
           contactNumber: data.contactNumber || '',
           photoUrl: data.photoUrl || '',
-          preference: data.preference || '',
           address: {
             street: data.address?.street || '',
             city: data.address?.city || '',
@@ -173,7 +168,11 @@ const CustomerProfile = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <CustomerSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} profileImage={formData.photoUrl} />
+      <CustomerSidebar
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
+        profileImage={formData.photoUrl}
+      />
 
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
         <div className="p-6">
@@ -198,9 +197,7 @@ const CustomerProfile = () => {
               <FaUser className="w-10 h-10 text-primary" />
               Customer Profile
             </h1>
-            <p className="text-muted-foreground font-inter mt-2">
-              Manage your profile information and location details
-            </p>
+            
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -208,17 +205,18 @@ const CustomerProfile = () => {
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
+              className="h-full"
             >
-              <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
+              <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg h-full flex flex-col">
                 <CardHeader>
                   <CardTitle className="text-xl font-bold text-foreground font-montserrat">
                     Profile Information
                   </CardTitle>
                   <CardDescription>
-                    Update your personal details and preferences
+                    Update your basic profile details
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-6 flex-1">
                   {/* Profile Image */}
                   <div className="flex flex-col items-center space-y-4">
                     <Avatar className="w-24 h-24">
@@ -275,27 +273,9 @@ const CustomerProfile = () => {
                     />
                   </div>
 
-                  {/* Food Preference */}
-                  <div className="space-y-2">
-                    <Label>Food Preference</Label>
-                    <Select
-                      value={formData.preference}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, preference: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select your food preference" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="veg">Vegetarian</SelectItem>
-                        <SelectItem value="nonveg">Non-Vegetarian</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
                   {/* Address */}
                   <div className="space-y-4">
-                    <Label className="text-base font-semibold">Address Details</Label>
-                    
+                   
                     <div className="space-y-2">
                       <Label htmlFor="street">Street Address</Label>
                       <Input
@@ -367,8 +347,9 @@ const CustomerProfile = () => {
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
+              className="h-full"
             >
-              <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
+              <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg h-full flex flex-col">
                 <CardHeader>
                   <CardTitle className="text-xl font-bold text-foreground font-montserrat flex items-center gap-2">
                     <FaMapMarkerAlt className="w-5 h-5 text-primary" />
@@ -378,8 +359,8 @@ const CustomerProfile = () => {
                     Your location on the map
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="h-96 rounded-lg overflow-hidden border border-border">
+                <CardContent className="flex-1 flex flex-col">
+                  <div className="flex-1 rounded-lg overflow-hidden border border-border">
                     {formData.address.coordinates ? (
                       <MapContainer
                         center={[formData.address.coordinates.lat, formData.address.coordinates.lng]}
