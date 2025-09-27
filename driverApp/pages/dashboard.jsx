@@ -1,15 +1,15 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDriverContext } from '../context/DriverContext';
 import { Ionicons } from '@expo/vector-icons';
 import '../global.css';
 
 export default function Dashboard() {
-  const { driver, loading, logout } = useDriverContext();
+  const { driver, loading } = useDriverContext();
   const router = useRouter();
 
-  // Redirect to auth if not authenticated - this should trigger when logout clears driver state
+  // Redirect to auth if not authenticated
   useEffect(() => {
     console.log('🔍 Dashboard Auth Check:', { 
       loading, 
@@ -32,24 +32,6 @@ export default function Dashboard() {
     }
   }, [driver, loading, router]);
 
-  const handleLogout = async () => {
-    try {
-      console.log('🚪 Direct logout initiated');
-      
-      // Call logout to clear everything
-      await logout();
-      
-      // Immediately navigate to login
-      console.log('🧭 Navigating to login page');
-      router.replace('/auth/login');
-      
-    } catch (error) {
-      console.error('💥 Logout error:', error);
-      // Even if logout fails, navigate to login for security
-      router.replace('/auth/login');
-    }
-  };
-
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-gray-50">
@@ -65,14 +47,9 @@ export default function Dashboard() {
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="p-5">
           {/* Header */}
-          <View className="flex-row justify-between items-center mb-8 mt-10">
-            <View className="flex-1">
-              <Text className="text-base text-gray-600">Welcome back sir,</Text>
-              <Text className="text-2xl font-bold text-gray-900">{driver.name}!</Text>
-            </View>
-            <TouchableOpacity className="p-2.5" onPress={handleLogout}>
-              <Ionicons name="log-out-outline" size={24} color="#007AFF" />
-            </TouchableOpacity>
+          <View className="mb-8 mt-10">
+            <Text className="text-base text-gray-600">Welcome back sir,</Text>
+            <Text className="text-2xl font-bold text-gray-900">{driver.name}!</Text>
           </View>
 
       {/* Status Card */}
@@ -129,19 +106,8 @@ export default function Dashboard() {
         </TouchableOpacity>
       </View>
 
-      {/* Logout Section */}
+      {/* Quick Stats */}
       <View className="mt-8 pb-5">
-        <TouchableOpacity className="bg-white rounded-xl mb-4 shadow-lg" onPress={handleLogout}>
-          <View className="flex-row items-center p-4">
-            <Ionicons name="log-out-outline" size={28} color="#dc3545" />
-            <View className="flex-1 ml-4">
-              <Text className="text-base font-semibold text-red-600 mb-0.5">Sign Out</Text>
-              <Text className="text-sm text-gray-600">Logout from your driver account</Text>
-            </View>
-            <Ionicons name="chevron-forward-outline" size={20} color="#dc3545" />
-          </View>
-        </TouchableOpacity>
-        
         <View className="bg-gray-50 p-4 rounded-lg border border-gray-200">
           <Text className="text-xs text-gray-500 mb-0.5">Logged in as: {driver?.email}</Text>
           <Text className="text-xs text-gray-500">Driver ID: {driver?.mongoid || driver?.id}</Text>
