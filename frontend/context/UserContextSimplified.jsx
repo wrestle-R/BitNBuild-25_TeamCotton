@@ -25,6 +25,7 @@ export const UserProvider = ({ children }) => {
   const [userType, setUserType] = useState(localStorage.getItem('userType') || 'vendor');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [token, setToken] = useState(localStorage.getItem('nourishnet_token'));
 
   const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
@@ -136,6 +137,7 @@ export const UserProvider = ({ children }) => {
 
       // Store token and user data (including mongoid)
       localStorage.setItem('nourishnet_token', profileData.token);
+      setToken(profileData.token);
       const userWithMongoId = {
         ...profileData.user,
         mongoid: profileData.user.id // MongoDB _id is returned as 'id' from backend
@@ -178,6 +180,7 @@ export const UserProvider = ({ children }) => {
           
           // Store token and user data (including mongoid)
           localStorage.setItem('nourishnet_token', backendUserData.token);
+          setToken(backendUserData.token);
           const userWithMongoId = {
             ...backendUserData.user,
             mongoid: backendUserData.user.id // MongoDB _id is returned as 'id' from backend
@@ -194,7 +197,9 @@ export const UserProvider = ({ children }) => {
             mongoid: null // Will be null if we can't get it from backend
           };
           
-          localStorage.setItem('nourishnet_token', await firebaseUser.getIdToken());
+          const firebaseToken = await firebaseUser.getIdToken();
+          localStorage.setItem('nourishnet_token', firebaseToken);
+          setToken(firebaseToken);
           setUser(userData);
         }
       } catch (backendError) {
@@ -209,7 +214,9 @@ export const UserProvider = ({ children }) => {
           mongoid: null
         };
         
-        localStorage.setItem('nourishnet_token', await firebaseUser.getIdToken());
+        const firebaseToken = await firebaseUser.getIdToken();
+        localStorage.setItem('nourishnet_token', firebaseToken);
+        setToken(firebaseToken);
         setUser(userData);
       }
 
@@ -262,6 +269,7 @@ export const UserProvider = ({ children }) => {
 
       // Store token and user data (including mongoid)
       localStorage.setItem('nourishnet_token', userData.token);
+      setToken(userData.token);
       const userWithMongoId = {
         ...userData.user,
         mongoid: userData.user.id // MongoDB _id is returned as 'id' from backend
@@ -297,6 +305,7 @@ export const UserProvider = ({ children }) => {
       
       // Clear user state
       setUser(null);
+      setToken(null);
       setError('');
       
       toast.success(message);
@@ -349,6 +358,7 @@ export const UserProvider = ({ children }) => {
               
               // Store token and user data with mongoid
               localStorage.setItem('nourishnet_token', backendUserData.token);
+              setToken(backendUserData.token);
               const userWithMongoId = {
                 ...backendUserData.user,
                 mongoid: backendUserData.user.id,
@@ -368,6 +378,7 @@ export const UserProvider = ({ children }) => {
               };
 
               localStorage.setItem('nourishnet_token', token);
+              setToken(token);
               setUser(userData);
             }
           } catch (backendError) {
@@ -384,6 +395,7 @@ export const UserProvider = ({ children }) => {
             };
 
             localStorage.setItem('nourishnet_token', token);
+            setToken(token);
             setUser(userData);
           }
           
@@ -395,6 +407,7 @@ export const UserProvider = ({ children }) => {
           // Clear local storage and user state
           localStorage.removeItem('nourishnet_token');
           setUser(null);
+          setToken(null);
           setError('');
         }
       } catch (error) {
@@ -403,6 +416,7 @@ export const UserProvider = ({ children }) => {
         // Clear everything on error
         localStorage.removeItem('nourishnet_token');
         setUser(null);
+        setToken(null);
       } finally {
         setLoading(false);
       }
@@ -420,6 +434,7 @@ export const UserProvider = ({ children }) => {
     userType,
     loading,
     error,
+    token,
     loginWithEmail,
     registerWithEmail,
     loginWithGoogle,

@@ -8,6 +8,7 @@ import VendorProfile from './pages/Vendor/VendorProfile'
 import VendorMenus from './pages/Vendor/VendorMenus'
 import CustomerAuth from './pages/Customer/CustomerAuth'
 import CustomerDashboard from './pages/Customer/CustomerDashboard'
+import CustomerProfile from './pages/Customer/CustomerProfile'
 import AdminAuth from './pages/Admin/AdminAuth'
 import AdminDashboard from './pages/Admin/AdminDashboard'
 import ManageVendors from './pages/Admin/ManageVendors'
@@ -121,6 +122,35 @@ const CustomerRoute = () => {
   return <CustomerDashboard />;
 };
 
+// Customer profile route  
+const CustomerProfileRoute = () => {
+  const { user, loading } = useUserContext();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary mx-auto mb-4"></div>
+          <p className="text-foreground font-inter text-lg">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/customer/auth" replace />;
+  }
+  
+  if (user.role !== 'customer') {
+    if (user.role === 'vendor') {
+      return <Navigate to="/vendor/dashboard" replace />;
+    }
+    return <Navigate to="/customer/auth" replace />;
+  }
+  
+  return <CustomerProfile />;
+};
+
 const App = () => {
   return (
     <UserProvider>
@@ -133,6 +163,8 @@ const App = () => {
           <Route path="/vendor/profile" element={<VendorProfile />} />
           <Route path="/vendor/menus" element={<VendorMenus />} />
           <Route path="/customer/dashboard" element={<CustomerRoute />} />
+          <Route path="/customer/profile" element={<CustomerProfileRoute />} />
+          {/* Hidden Admin Routes */}
           <Route path="/admin/auth" element={<AdminAuth />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/manage-vendors" element={<ManageVendors />} />

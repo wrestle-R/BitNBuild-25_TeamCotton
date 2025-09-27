@@ -9,13 +9,14 @@ const adminRoutes = require('./Routes/adminRoutes');
 const vendorRoutes = require('./Routes/vendorRoutes');
 const uploadRoutes = require('./Routes/uploadRoutes');
 
+const customerRoutes = require('./Routes/customerRoutes');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT ;
+const PORT = process.env.PORT || 8000;
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:8082', 'http://localhost:8081'],
+  origin: true, // Allow all origins for development
   credentials: true
 }));
 app.use(express.json());
@@ -33,12 +34,16 @@ app.use('/api/auth', authRoutes); // Unified routes for dual user system
 app.use('/api/admin', adminRoutes); // Admin routes
 app.use('/api/vendor', vendorRoutes); // Vendor routes
 app.use('/api/vendor/upload', uploadRoutes); // Upload routes
+app.use('/api/customer', customerRoutes); // Customer routes
 
 // Health check
 app.get('/', (req, res) => {
   res.json({ message: 'NourishNet Backend is running!' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`NourishNet server running on port ${PORT}`);
+  console.log(`Available at:`);
+  console.log(`  - Local: http://localhost:${PORT}`);
+  console.log(`  - Network: http://192.168.1.40:${PORT}`);
 });

@@ -18,6 +18,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { getColors } from '../constants/Colors';
 import { useRouter } from 'expo-router';
 import { useNavigation } from '@react-navigation/native';
+import { registerUser } from '../api/authApi';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -90,15 +91,51 @@ const SignUp = ({ navigation }) => {
     return Object.keys(e).length === 0;
   };
 
-  const handleSignUp = () => {
+  const handleSignUp = async () => {
     if (!validate()) return;
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      console.log('📝 Registering new user...');
+      
+      // Register user with backend API
+      const { user } = await registerUser({
+        name: form.name,
+        email: form.email,
+        password: form.password,
+      });
+
+      console.log('✅ Registration successful:', user);
+      
+      Alert.alert(
+        'Registration Successful!',
+        `Welcome to NourishNet, ${user.name}! You can now sign in with your credentials.`,
+        [
+          {
+            text: 'Sign In Now',
+            onPress: () => router.push('/')
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Registration error:', error);
+      
+      let errorMessage = 'Failed to create account. Please try again.';
+      
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = 'An account with this email already exists. Please sign in instead.';
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = 'Password is too weak. Please choose a stronger password.';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Please enter a valid email address.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('Registration Failed', errorMessage);
+    } finally {
       setLoading(false);
-      Alert.alert('Signed up!', 'You can now sign in');
-      // navigate to login route — using expo-router
-      router.push('/');
-    }, 1000);
+    }
   };
 
   return (
