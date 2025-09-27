@@ -17,6 +17,9 @@ import { Feather } from '@expo/vector-icons';
 import { FontAwesome } from '@expo/vector-icons';
 import { getColors } from '../constants/Colors';
 import { useRouter } from 'expo-router';
+import { loginUser } from '../api/authApi';
+import GoogleSignInButton from './GoogleSignInButton';
+import ApiTestComponent from './ApiTestComponent';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -107,29 +110,63 @@ const Login = ({ navigation }) => {
       return;
     }
 
+    // Log login attempt initiation
+    console.log('🚀 LOGIN ATTEMPT INITIATED');
+    console.log('📧 Email:', formData.email);
+    console.log('⏰ Attempt Time:', new Date().toISOString());
+    console.log('📱 Component: Login.jsx');
+
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Call the actual login API
+      const { user } = await loginUser(formData.email, formData.password);
       
-      // Mock successful login
+      // Log successful login completion in UI
+      console.log('✅ LOGIN UI FLOW COMPLETED SUCCESSFULLY');
+      console.log('👋 Welcome message for:', user.name);
+      console.log('🧭 Navigating to: /(tabs)/explore');
+      
+      // Successful login
       Alert.alert(
         'Login Successful!',
-        'Welcome to NourishNet',
+        `Welcome back, ${user.name}`,
         [
           {
             text: 'Continue',
             onPress: () => {
-              // Navigate to home screen
-              // navigation.navigate('Home');
-              console.log('Navigating to home...');
+              console.log('🏠 User navigated to home screen after login');
+              // Navigate to home/dashboard
+              router.replace('/(tabs)/explore');
             }
           }
         ]
       );
     } catch (error) {
-      Alert.alert('Login Failed', 'Please check your credentials and try again.');
+      // Log failed login attempt with details
+      console.log('❌ LOGIN ATTEMPT FAILED');
+      console.log('📧 Email:', formData.email);
+      console.log('🚫 Error Type:', error.code || 'Unknown');
+      console.log('💬 Error Message:', error.message || 'No message');
+      console.log('⏰ Failed At:', new Date().toISOString());
+      console.log('🔍 Full Error:', error);
+      
+      console.error('Login error:', error);
+      
+      let errorMessage = 'Please check your credentials and try again.';
+      
+      // Handle specific error messages
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        errorMessage = 'Invalid email or password.';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many failed login attempts. Please try again later.';
+      } else if (error.code === 'auth/network-request-failed') {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('Login Failed', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -297,10 +334,19 @@ const Login = ({ navigation }) => {
 
             {/* Social Login Buttons */}
             <View style={{ flexDirection: 'row', gap: 16 }}>
-              <TouchableOpacity style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 12 }}>
-                <FontAwesome name="google" size={18} color={colors.foreground} style={{ marginRight: 8 }} />
-                <Text style={{ color: colors.foreground, fontWeight: '500' }}>Google</Text>
-              </TouchableOpacity>
+              <GoogleSignInButton 
+                colors={colors} 
+                onSuccess={(data) => {
+                  Alert.alert(
+                    'Google Sign In Successful!',
+                    `Welcome, ${data.user.name}`,
+                    [{ text: 'Continue', onPress: () => router.replace('/(tabs)/explore') }]
+                  );
+                }}
+                onError={(error) => {
+                  Alert.alert('Google Sign In Failed', error?.message || 'Failed to sign in with Google');
+                }}
+              />
             </View>
           </View>
 
