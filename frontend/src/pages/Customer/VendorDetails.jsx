@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
-import { FaStore, FaShoppingCart, FaMapMarkerAlt, FaPhone, FaEnvelope, FaClock, FaArrowLeft, FaExclamationCircle } from 'react-icons/fa';
+import { FaStore, FaShoppingCart, FaMapMarkerAlt, FaPhone, FaEnvelope, FaClock, FaArrowLeft, FaExclamationCircle, FaCheckCircle } from 'react-icons/fa';
 import CustomerSidebar from '../../components/Customer/CustomerSidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -20,6 +20,8 @@ const VendorDetails = () => {
   const [loading, setLoading] = useState(true);
   const [vendor, setVendor] = useState(null);
   const [error, setError] = useState(null);
+  const [mealPlans, setMealPlans] = useState([]);
+  const [plansLoading, setPlansLoading] = useState(false);
 
   const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
@@ -89,6 +91,9 @@ const VendorDetails = () => {
   // Get vendor details
   const getVendorDetails = (id) => apiCall(`/api/customer/vendors/${id}`);
 
+  // Get vendor meal plans
+  const getVendorPlans = (id) => apiCall(`/api/customer/vendors/${id}/plans`);
+
   useEffect(() => {
     const fetchVendorDetails = async () => {
       if (!user || !token || !vendorId) {
@@ -102,6 +107,20 @@ const VendorDetails = () => {
         setError(null);
         const vendorData = await getVendorDetails(vendorId);
         setVendor(vendorData);
+
+        // Fetch meal plans if vendor has plans
+        if (vendorData && vendorData.plans > 0) {
+          setPlansLoading(true);
+          try {
+            const plansData = await getVendorPlans(vendorId);
+            setMealPlans(plansData);
+          } catch (planError) {
+            console.error('Error fetching meal plans:', planError);
+            toast.error('Failed to load meal plans');
+          } finally {
+            setPlansLoading(false);
+          }
+        }
       } catch (error) {
         console.error('Error fetching vendor details:', error);
         setError(error.message || 'Failed to load vendor details');
@@ -116,6 +135,29 @@ const VendorDetails = () => {
 
   const handleGoBack = () => {
     navigate('/customer/market');
+  };
+
+  const handleSubscribe = (planId) => {
+    // TODO: Implement subscription functionality
+    toast.success('Subscription feature coming soon!');
+  };
+
+  const getMealPlanIcon = (meals) => {
+    const mealCount = meals.length;
+    if (mealCount === 1) return '🍽️';
+    if (mealCount === 2) return '🍽️🍽️';
+    return '🍽️🍽️🍽️';
+  };
+
+  const formatMealTypes = (meals) => {
+    return meals.map(meal => meal.charAt(0).toUpperCase() + meal.slice(1)).join(', ');
+  };
+
+  const getPlanDuration = (days) => {
+    if (days === 1) return 'Daily';
+    if (days === 7) return 'Weekly';
+    if (days === 30) return 'Monthly';
+    return `${days} days`;
   };
 
   if (loading) {
@@ -262,9 +304,20 @@ const VendorDetails = () => {
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <Button className="w-full md:w-auto" disabled={!vendor.plans || vendor.plans === 0}>
+                    <Button 
+                      className="w-full md:w-auto" 
+                      disabled={!vendor.plans || vendor.plans === 0}
+                      onClick={() => {
+                        if (vendor.plans > 0) {
+                          document.getElementById('meal-plans-section')?.scrollIntoView({ 
+                            behavior: 'smooth',
+                            block: 'start'
+                          });
+                        }
+                      }}
+                    >
                       <FaShoppingCart className="w-4 h-4 mr-2" />
-                      {vendor.plans > 0 ? 'View Meal Plans' : 'No Plans Available'}
+                      {vendor.plans > 0 ? `View ${vendor.plans} Meal Plans` : 'No Plans Available'}
                     </Button>
                     {vendor.contactNumber && (
                       <Button variant="outline" className="w-full md:w-auto">
@@ -396,9 +449,10 @@ const VendorDetails = () => {
             </motion.div>
           </div>
 
-          {/* Meal Plans Section (if available) */}
+          {/* Meal Plans Section */}
           {vendor.plans && vendor.plans > 0 && (
             <motion.div
+              id="meal-plans-section"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
@@ -408,23 +462,104 @@ const VendorDetails = () => {
                 <CardHeader>
                   <CardTitle className="text-xl flex items-center gap-2">
                     <FaShoppingCart className="w-5 h-5 text-primary" />
-                    Available Meal Plans
+                    Available Meal Plans ({vendor.plans})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-center py-8">
-                    <FaShoppingCart className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                    <h3 className="text-lg font-semibold text-foreground mb-2">
-                      {vendor.plans} Meal Plans Available
-                    </h3>
-                    <p className="text-muted-foreground mb-4">
-                      Browse and select from various meal plans offered by this vendor.
-                    </p>
-                    <Button size="lg">
-                      <FaShoppingCart className="w-4 h-4 mr-2" />
-                      Explore Meal Plans
-                    </Button>
-                  </div>
+                  {plansLoading ? (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {[...Array(3)].map((_, index) => (
+                        <div key={`plan-skeleton-${index}`} className="p-6 border rounded-lg">
+                          <div className="h-6 w-32 bg-muted animate-pulse rounded mb-4"></div>
+                          <div className="h-4 w-full bg-muted animate-pulse rounded mb-2"></div>
+                          <div className="h-4 w-3/4 bg-muted animate-pulse rounded mb-4"></div>
+                          <div className="h-10 w-full bg-muted animate-pulse rounded"></div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : mealPlans && mealPlans.length > 0 ? (
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                      {mealPlans.map((plan, index) => (
+                        <motion.div
+                          key={plan._id}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.1 * index }}
+                          className="group"
+                        >
+                          <Card className="h-full border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-lg">
+                            <CardContent className="p-6">
+                              <div className="text-center mb-4">
+                                <div className="text-3xl mb-2">{getMealPlanIcon(plan.selected_meals)}</div>
+                                <h3 className="text-xl font-bold text-foreground font-montserrat mb-1">
+                                  {plan.name}
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {getPlanDuration(plan.duration_days)} Plan
+                                </p>
+                              </div>
+
+                              <div className="space-y-3 mb-6">
+                                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                                  <span className="text-sm font-medium">Duration</span>
+                                  <Badge variant="secondary">
+                                    {plan.duration_days} {plan.duration_days === 1 ? 'day' : 'days'}
+                                  </Badge>
+                                </div>
+                                
+                                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                                  <span className="text-sm font-medium">Meals</span>
+                                  <span className="text-sm font-semibold">
+                                    {formatMealTypes(plan.selected_meals)}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                                  <span className="text-sm font-medium">Per Day</span>
+                                  <span className="text-sm font-semibold">
+                                    {plan.meals_per_day} meal{plan.meals_per_day > 1 ? 's' : ''}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="text-center mb-6">
+                                <div className="text-3xl font-bold text-primary mb-1">
+                                  ₹{plan.price}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  Total for {plan.duration_days} {plan.duration_days === 1 ? 'day' : 'days'}
+                                </p>
+                                {plan.duration_days > 1 && (
+                                  <p className="text-xs text-green-600 font-medium mt-1">
+                                    ₹{Math.round(plan.price / plan.duration_days)} per day
+                                  </p>
+                                )}
+                              </div>
+
+                              <Button 
+                                onClick={() => handleSubscribe(plan._id)}
+                                className="w-full group-hover:bg-primary/90 transition-colors duration-300"
+                                size="lg"
+                              >
+                                <FaShoppingCart className="w-4 h-4 mr-2" />
+                                Subscribe Now
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <FaExclamationCircle className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                      <h3 className="text-lg font-semibold text-foreground mb-2">
+                        No Meal Plans Available
+                      </h3>
+                      <p className="text-muted-foreground">
+                        This vendor hasn't added any meal plans yet. Check back later!
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>

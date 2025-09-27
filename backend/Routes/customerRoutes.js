@@ -18,6 +18,9 @@ router.get('/vendors', authMiddleware, customerController.getVerifiedVendors);
 // Get single vendor by ID
 router.get('/vendors/:vendorId', authMiddleware, customerController.getVendorById);
 
+// Get vendor meal plans
+router.get('/vendors/:vendorId/plans', authMiddleware, customerController.getVendorPlans);
+
 // Get customer profile
 router.get('/profile', authMiddleware, customerController.getProfile);
 

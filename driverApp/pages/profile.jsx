@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDriverContext } from '../context/DriverContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,42 +10,33 @@ export default function Profile() {
   const router = useRouter();
 
   const handleLogout = async () => {
-    Alert.alert(
-      'Confirm Logout',
-      'Are you sure you want to sign out?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              console.log('🚪 Logout initiated from profile');
-              await logout();
-              router.replace('/auth/login');
-            } catch (error) {
-              console.error('💥 Logout error:', error);
-              router.replace('/auth/login');
-            }
-          },
-        },
-      ]
-    );
+    try {
+      console.log('🚪 Direct logout initiated from profile');
+      
+      // Call logout to clear everything
+      await logout();
+      
+      // Immediately navigate to login
+      console.log('🧭 Navigating to login page from profile');
+      router.replace('/auth/login');
+      
+    } catch (error) {
+      console.error('💥 Logout error:', error);
+      // Even if logout fails, navigate to login for security
+      router.replace('/auth/login');
+    }
   };
 
   const handleEditProfile = () => {
-    Alert.alert('Edit Profile', 'Profile editing will be available soon!');
+    console.log('Edit Profile clicked - feature coming soon');
   };
 
   const handleChangePassword = () => {
-    Alert.alert('Change Password', 'Password change will be available soon!');
+    console.log('Change Password clicked - feature coming soon');
   };
 
   const handleSupport = () => {
-    Alert.alert('Support', 'Support system will be available soon!');
+    console.log('Support clicked - feature coming soon');
   };
 
   if (loading) {
