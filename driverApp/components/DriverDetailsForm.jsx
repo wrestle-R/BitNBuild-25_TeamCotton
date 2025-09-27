@@ -19,11 +19,17 @@ const DriverDetailsForm = () => {
   const router = useRouter();
   const { driver, updateDriverProfile, loading } = useDriverContext();
   
+  console.log('🔍 DriverDetailsForm - Current driver data:', {
+    email: driver?.email,
+    contactNumber: driver?.contactNumber,
+    vehicleType: driver?.vehicleType,
+    vehicleNumber: driver?.vehicleNumber,
+  });
+  
   const [formData, setFormData] = useState({
     contactNumber: driver?.contactNumber || '',
     vehicleType: driver?.vehicleType || 'bike',
-    vehicleNumber: driver?.vehicleNumber || '',
-    address: driver?.address || ''
+    vehicleNumber: driver?.vehicleNumber || ''
   });
   
   const [formLoading, setFormLoading] = useState(false);
@@ -70,7 +76,10 @@ const DriverDetailsForm = () => {
 
       const result = await updateDriverProfile(formData);
       
+      console.log('📝 Profile update result:', result);
+      
       if (result.success) {
+        console.log('✅ Profile updated successfully, updated driver:', result.user);
         Alert.alert(
           'Profile Updated!',
           'Your driver profile has been completed successfully.',
@@ -85,6 +94,7 @@ const DriverDetailsForm = () => {
           ]
         );
       } else {
+        console.error('❌ Profile update failed:', result.error);
         Alert.alert('Error', result.error || 'Failed to update profile');
       }
     } catch (error) {
@@ -139,7 +149,7 @@ const DriverDetailsForm = () => {
             </View>
             <Text className="text-2xl font-bold text-gray-900 mb-2">Complete Your Profile</Text>
             <Text className="text-base text-gray-600 text-center">
-              Please provide your driver and vehicle details to start accepting rides
+              Please provide your phone number and vehicle details to start accepting rides
             </Text>
           </View>
 
@@ -206,24 +216,6 @@ const DriverDetailsForm = () => {
                   onChangeText={(value) => handleInputChange('vehicleNumber', value.toUpperCase())}
                   autoCapitalize="characters"
                   maxLength={12}
-                />
-              </View>
-            </View>
-
-            {/* Address */}
-            <View>
-              <Text className="text-base font-medium text-gray-900 mb-2">Address (Optional)</Text>
-              <View className="flex-row items-start bg-white rounded-xl px-4 py-4 border border-gray-200">
-                <Ionicons name="location-outline" size={20} color="#666" style={{ marginTop: 2 }} />
-                <TextInput
-                  className="flex-1 ml-3 text-base text-gray-900"
-                  placeholder="Enter your address"
-                  placeholderTextColor="#999"
-                  value={formData.address}
-                  onChangeText={(value) => handleInputChange('address', value)}
-                  multiline
-                  numberOfLines={3}
-                  textAlignVertical="top"
                 />
               </View>
             </View>

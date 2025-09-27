@@ -209,6 +209,13 @@ export const DriverProvider = ({ children }) => {
           const backendDriverData = await response.json();
           console.log('✅ Backend data received:', backendDriverData);
           
+          console.log('🔍 Login - Backend driver data received:', {
+            user: backendDriverData.user,
+            hasVehicleType: !!backendDriverData.user.vehicleType,
+            hasVehicleNumber: !!backendDriverData.user.vehicleNumber,
+            hasContactNumber: !!backendDriverData.user.contactNumber
+          });
+          
           // Check if user is actually a driver
           if (backendDriverData.user.role !== 'driver') {
             console.log('🚫 User is not a driver, role:', backendDriverData.user.role);
@@ -221,6 +228,15 @@ export const DriverProvider = ({ children }) => {
             ...backendDriverData.user,
             mongoid: backendDriverData.user.id // MongoDB _id is returned as 'id' from backend
           };
+          
+          console.log('🔍 Login - Final driver object being set:', {
+            email: driverWithMongoId.email,
+            contactNumber: driverWithMongoId.contactNumber,
+            vehicleType: driverWithMongoId.vehicleType,
+            vehicleNumber: driverWithMongoId.vehicleNumber,
+            role: driverWithMongoId.role
+          });
+          
           setDriver(driverWithMongoId);
           console.log('✅ Driver data set in context');
         } else {
@@ -358,6 +374,13 @@ export const DriverProvider = ({ children }) => {
             if (response.ok) {
               const backendDriverData = await response.json();
               
+              console.log('🔍 Backend driver data received:', {
+                user: backendDriverData.user,
+                hasVehicleType: !!backendDriverData.user.vehicleType,
+                hasVehicleNumber: !!backendDriverData.user.vehicleNumber,
+                hasContactNumber: !!backendDriverData.user.contactNumber
+              });
+              
               // Check if user is actually a driver
               if (backendDriverData.user.role !== 'driver') {
                 console.log('🚫 User is not a driver, logging out');
@@ -373,6 +396,15 @@ export const DriverProvider = ({ children }) => {
                 mongoid: backendDriverData.user.id,
                 emailVerified: firebaseUser.emailVerified
               };
+              
+              console.log('🔍 Final driver object being set:', {
+                email: driverWithMongoId.email,
+                contactNumber: driverWithMongoId.contactNumber,
+                vehicleType: driverWithMongoId.vehicleType,
+                vehicleNumber: driverWithMongoId.vehicleNumber,
+                role: driverWithMongoId.role
+              });
+              
               setDriver(driverWithMongoId);
             } else {
               // Try to validate as driver

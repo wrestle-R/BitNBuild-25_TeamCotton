@@ -243,16 +243,32 @@ const getUserByFirebaseUid = async (req, res) => {
     // Generate JWT token
     const token = generateToken(user._id, user.firebaseUid, role);
 
+    // Create response object with role-specific fields
+    let userResponse = {
+      id: user._id,
+      firebaseUid: user.firebaseUid,
+      name: user.name,
+      email: user.email,
+      contactNumber: user.contactNumber,
+      address: user.address,
+      role: role
+    };
+
+    // Add driver-specific fields if user is a driver
+    if (role === 'driver') {
+      userResponse = {
+        ...userResponse,
+        vehicleType: user.vehicleType,
+        vehicleNumber: user.vehicleNumber,
+        verified: user.verified,
+        available: user.available,
+        rating: user.rating,
+        earnings: user.earnings
+      };
+    }
+
     res.status(200).json({
-      user: {
-        id: user._id,
-        firebaseUid: user.firebaseUid,
-        name: user.name,
-        email: user.email,
-        contactNumber: user.contactNumber,
-        address: user.address,
-        role: role
-      },
+      user: userResponse,
       token,
     });
   } catch (error) {
@@ -269,8 +285,7 @@ const updateDriverProfile = async (req, res) => {
       firebaseUid, 
       contactNumber, 
       vehicleType, 
-      vehicleNumber, 
-      address 
+      vehicleNumber
     } = req.body;
 
     if (!firebaseUid) {
@@ -293,7 +308,6 @@ const updateDriverProfile = async (req, res) => {
     if (contactNumber !== undefined) updateData.contactNumber = contactNumber;
     if (vehicleType !== undefined) updateData.vehicleType = vehicleType;
     if (vehicleNumber !== undefined) updateData.vehicleNumber = vehicleNumber;
-    if (address !== undefined) updateData.address = address;
 
     const updatedDriver = await Driver.findOneAndUpdate(
       { firebaseUid },
