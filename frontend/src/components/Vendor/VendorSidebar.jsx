@@ -7,7 +7,7 @@ import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import ThemeToggle from '../ui/ThemeToggle';
 
-const VendorSidebar = ({ isOpen, setIsOpen }) => {
+const VendorSidebar = ({ isOpen, setIsOpen, profileImage }) => {
   const { user, logout } = useUserContext();
   const navigate = useNavigate();
   const location = useLocation();
@@ -115,7 +115,7 @@ const VendorSidebar = ({ isOpen, setIsOpen }) => {
             <div className="p-4 border-b border-sidebar-border">
               <div className="flex items-center gap-3">
                 <Avatar className="w-10 h-10 flex-shrink-0">
-                  <AvatarImage src={user.photoURL} alt={user.name} />
+                  <AvatarImage src={profileImage || user?.photoURL} alt={user?.name} />
                   <AvatarFallback>
                     <FaUser className="w-5 h-5" />
                   </AvatarFallback>
