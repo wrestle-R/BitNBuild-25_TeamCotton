@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useUserContext } from '../../../context/UserContextSimplified';
-import Navbar from '../ui/Navbar';
+import Navbar from './Navbar';
 import HeroSection from './HeroSection';
-import AboutSection from './AboutSection';
+import FeaturesSection from './FeaturesSection';
 import TestimonialsSection from './TestimonialsSection';
 import ContactSection from './ContactSection';
 import FooterSection from './FooterSection';
@@ -23,7 +23,7 @@ const LandingPage = () => {
         <HeroSection user={user} />
       </main>
 
-      <AboutSection />
+      <FeaturesSection />
       <TestimonialsSection />
       <ContactSection user={user} />
       <FooterSection />
