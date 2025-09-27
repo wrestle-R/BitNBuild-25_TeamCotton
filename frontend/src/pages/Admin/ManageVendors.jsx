@@ -15,7 +15,7 @@ import { Badge } from '../../components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Input } from '../../components/ui/input';
 import AdminSidebar from '../../components/Admin/AdminSidebar';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const ManageVendors = () => {
   const navigate = useNavigate();

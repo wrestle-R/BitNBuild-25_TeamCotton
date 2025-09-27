@@ -7,9 +7,7 @@ import { Button } from './button';
 import { Avatar, AvatarFallback, AvatarImage } from './avatar';
 import { Badge } from './badge';
 import { Separator } from './separator';
-import { Sheet, SheetContent, SheetTrigger } from './sheet';
 import ThemeToggle from './ThemeToggle';
-import toast from 'react-hot-toast';
 
 // Simple utility function for classNames
 const cn = (...classes) => {

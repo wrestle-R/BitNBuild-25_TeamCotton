@@ -8,7 +8,7 @@ import {
   signOut
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase.config';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const UserContext = createContext();
 
