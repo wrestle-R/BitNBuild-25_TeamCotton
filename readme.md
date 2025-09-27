@@ -1,2 +1,2 @@
 this is the bnb website 
-Team Name :- Team Cotton
+Team Name :- Team CottonBNB - 2025
