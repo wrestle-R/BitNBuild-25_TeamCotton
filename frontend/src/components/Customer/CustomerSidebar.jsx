@@ -72,7 +72,7 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
                 <h1 className="font-montserrat font-bold text-sidebar-foreground text-lg">
                   Customer
                 </h1>
-                <p className="text-sidebar-foreground/70 text-sm">Portal</p>
+               
               </motion.div>
             )}
           </div>
@@ -136,9 +136,6 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
                     <p className="text-sidebar-foreground font-medium truncate">
                       {user.name}
                     </p>
-                    <Badge variant="secondary" className="text-xs mt-1">
-                      {user.customerTier || 'Regular'}
-                    </Badge>
                   </motion.div>
                 )}
               </div>
@@ -194,7 +191,7 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
           onClick={() => setIsOpen(!isOpen)}
           variant="ghost"
           size="sm"
-          className="absolute -right-3 top-6 bg-sidebar border border-sidebar-border rounded-full w-6 h-6 p-0 hover:bg-primary/5"
+          className="absolute -right-3 top-6 bg-sidebar border border-sidebar-border rounded-full w-6 h-6 p-0 text-white"
         >
           <motion.div
             animate={{ rotate: isOpen ? 180 : 0 }}

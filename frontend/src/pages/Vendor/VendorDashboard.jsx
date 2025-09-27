@@ -147,37 +147,11 @@ const VendorDashboard = () => {
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="text-primary hover:text-primary/80 hover:bg-primary/10"
-              >
-                <FaBars className="w-5 h-5" />
-              </Button>
               <div>
                 <h1 className="text-4xl font-bold text-foreground font-montserrat flex items-center gap-3">
                   <FaStore className="w-10 h-10 text-primary" />
-                  Welcome, {user.displayName}!
+                  Welcome, {user.name}!
                 </h1>
-                <div className="mt-2 flex items-center gap-2">
-                  {backendError ? (
-                    <Alert className="max-w-md">
-                      <AlertDescription>
-                        Vendor data unavailable - backend offline
-                      </AlertDescription>
-                    </Alert>
-                  ) : (
-                    <>
-                      <Badge variant="secondary" className="font-inter">
-                        Account Type: Vendor
-                      </Badge>
-                      <Badge variant="outline" className="font-inter text-primary">
-                        🏪 Vendor Dashboard
-                      </Badge>
-                    </>
-                  )}
-                </div>
               </div>
             </div>
           </div>

@@ -67,61 +67,6 @@ const CustomerDashboard = () => {
     );
   }
 
-  const sidebarItems = [
-    {
-      icon: <FaShoppingBasket />,
-      title: 'Browse Tiffins',
-      description: 'Discover delicious tiffin services',
-      href: '/browse',
-      action: () => {
-        console.log('🎮 CustomerDashboard - Browsing tiffins');
-        toast.success('Finding the best tiffin services for you!');
-      }
-    },
-    {
-      icon: <FaHeart />,
-      title: 'My Favorites',
-      description: 'Your saved tiffin vendors',
-      href: '/favorites',
-      action: () => {
-        console.log('🎮 CustomerDashboard - Viewing favorites');
-        toast.info('Your favorite vendors coming soon!');
-      }
-    },
-    {
-      icon: <FaHistory />,
-      title: 'Order History',
-      description: 'Track your past orders',
-      href: '/orders',
-      action: () => {
-        console.log('🎮 CustomerDashboard - Viewing order history');
-        toast.info('Order history feature coming soon!');
-      }
-    },
-    {
-      icon: <FaMapMarkerAlt />,
-      title: 'Delivery Areas',
-      description: 'Manage delivery locations',
-      href: '/locations',
-      action: () => {
-        console.log('🎮 CustomerDashboard - Managing delivery areas');
-        toast.info('Location management coming soon!');
-      }
-    }
-  ];
-
-  const handleLogout = async () => {
-    try {
-      console.log('🚪 CustomerDashboard - Logging out customer');
-      await logout();
-      toast.success('Logged out successfully!');
-      navigate('/customer/auth', { replace: true });
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast.error('Logout failed. Please try again.');
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background flex">
       {/* Customer Sidebar */}
@@ -129,78 +74,19 @@ const CustomerDashboard = () => {
 
       {/* Main Content */}
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
-        {/* Header */}
-        {/* <header className="bg-card border-b border-border px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-              >
-                <FaBars className="w-5 h-5" />
-              </Button>
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">
-                  Customer Dashboard
-                </h1>
-                <p className="text-muted-foreground">
-                  Welcome back, {user?.displayName || 'Customer'}!
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm font-medium text-foreground">
-                  {user?.displayName || 'Anonymous Customer'}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {user?.email}
-                </p>
-              </div>
-              {user?.photoURL && (
-                <img
-                  src={user.photoURL}
-                  alt="Profile"
-                  className="w-10 h-10 rounded-full border-2 border-border"
-                />
-              )}
-            </div>
-          </div>
-        </header> */}
-
-        {/* Header */}
         <motion.div 
-          className="mb-8 p-6"
+          className=" p-6"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="text-primary hover:text-primary/80 hover:bg-primary/10"
-              >
-                <FaBars className="w-5 h-5" />
-              </Button>
               <div>
                 <h1 className="text-4xl font-bold text-foreground font-montserrat flex items-center gap-3">
                   <FaShoppingBasket className="w-10 h-10 text-primary" />
-                  Welcome, {user.displayName}!
+                  Welcome, {user.name}!
                 </h1>
-                <div className="mt-2 flex items-center gap-2">
-                  <Badge variant="secondary" className="font-inter">
-                    Account Type: Customer
-                  </Badge>
-                  <Badge variant="outline" className="font-inter text-primary">
-                    🍽️ Customer Portal
-                  </Badge>
-                </div>
               </div>
             </div>
           </div>
@@ -209,22 +95,6 @@ const CustomerDashboard = () => {
         {/* Dashboard Content */}
         <main className="p-6">
           <div className="max-w-7xl mx-auto space-y-8">
-            {/* Welcome Message */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="text-center py-8"
-            >
-              <h2 className="text-3xl font-bold text-foreground mb-4">
-                🍽️ Welcome to NourishNet!
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Discover delicious, home-cooked tiffin services in your area. 
-                Fresh meals delivered daily by trusted local vendors.
-              </p>
-            </motion.div>
-
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <motion.div

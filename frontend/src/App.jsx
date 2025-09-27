@@ -2,7 +2,6 @@ import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { UserProvider, useUserContext } from '../context/UserContextSimplified'
 import Landing from './pages/Landing'
-import Dashboard from './pages/Dashboard'
 import VendorAuth from './pages/Vendor/VendorAuth'
 import VendorDashboard from './pages/Vendor/VendorDashboard'
 import CustomerAuth from './pages/Customer/CustomerAuth'
@@ -128,7 +127,6 @@ const App = () => {
           <Route path="/" element={<LandingRoute />} />
           <Route path="/vendor/auth" element={<VendorAuth />} />
           <Route path="/customer/auth" element={<CustomerAuth />} />
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/vendor/dashboard" element={<VendorRoute />} />
           <Route path="/customer/dashboard" element={<CustomerRoute />} />
           {/* Hidden Admin Routes */}

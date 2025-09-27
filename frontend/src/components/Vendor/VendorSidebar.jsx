@@ -5,8 +5,6 @@ import { useUserContext } from '../../../context/UserContextSimplified';
 import { FaStore, FaUsers, FaDollarSign, FaChartBar, FaUser, FaTachometerAlt, FaCog, FaSignOutAlt, FaBoxes } from 'react-icons/fa';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Badge } from '../ui/badge';
-import { Separator } from '../ui/separator';
 import ThemeToggle from '../ui/ThemeToggle';
 
 const VendorSidebar = ({ isOpen, setIsOpen }) => {
@@ -73,7 +71,6 @@ const VendorSidebar = ({ isOpen, setIsOpen }) => {
                 <h1 className="font-montserrat font-bold text-sidebar-foreground text-lg">
                   Vendor
                 </h1>
-                <p className="text-sidebar-foreground/70 text-sm">Hub</p>
               </motion.div>
             )}
           </div>
@@ -137,9 +134,6 @@ const VendorSidebar = ({ isOpen, setIsOpen }) => {
                     <p className="text-sidebar-foreground font-medium truncate">
                       {user.name}
                     </p>
-                    <Badge variant="secondary" className="text-xs mt-1">
-                      {user.vendorTier || 'Basic'}
-                    </Badge>
                   </motion.div>
                 )}
               </div>
@@ -195,7 +189,7 @@ const VendorSidebar = ({ isOpen, setIsOpen }) => {
           onClick={() => setIsOpen(!isOpen)}
           variant="ghost"
           size="sm"
-          className="absolute -right-3 top-6 bg-sidebar border border-sidebar-border rounded-full w-6 h-6 p-0 hover:bg-primary/5"
+          className="absolute -right-3 top-6 bg-sidebar border border-sidebar-border rounded-full w-6 h-6 p-0 text-white"
         >
           <motion.div
             animate={{ rotate: isOpen ? 180 : 0 }}
