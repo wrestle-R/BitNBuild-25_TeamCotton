@@ -14,6 +14,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { toast } from 'sonner';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
 
 const VendorPlans = () => {
   const { user } = useUserContext();
@@ -26,26 +28,30 @@ const VendorPlans = () => {
   const [planMenusDialogOpen, setPlanMenusDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [planMenus, setPlanMenus] = useState([]);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [planToDelete, setPlanToDelete] = useState(null);
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
-    name: '',
-    price: '',
-    duration_days: '',
-    meals_per_day: 1
-  });
+const [formData, setFormData] = useState({
+  name: '',
+  price: '',
+  duration_days: '',
+  meals_per_day: 1,
+  selectedMeals: [], // New: array of selected meal types
+  planMenus: {}
+});
 
   const planTypeIcons = {
-    'Daily': FaCalendarDay,
-    'Weekly': FaCalendarWeek,
-    'Monthly': FaCalendar
+    'One day': FaCalendarDay,
+    'All week': FaCalendarWeek,
+    'All month': FaCalendar
   };
 
-  const mealTypes = {
-    1: 'Breakfast',
-    2: 'Lunch', 
-    3: 'Dinner'
-  };
+  const getMealOptions = () => [
+    { value: 'breakfast', label: 'Breakfast' },
+    { value: 'lunch', label: 'Lunch' },
+    { value: 'dinner', label: 'Dinner' }
+  ];
 
   useEffect(() => {
     if (user && auth.currentUser) {
@@ -125,8 +131,8 @@ const VendorPlans = () => {
   };
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.price || !formData.duration_days) {
-      toast.error('Please fill all required fields');
+    if (!formData.name || !formData.price || !formData.duration_days || formData.selectedMeals.length === 0) {
+      toast.error('Please fill all required fields and select at least one meal');
       return;
     }
 
@@ -146,7 +152,8 @@ const VendorPlans = () => {
           ...formData,
           price: parseFloat(formData.price),
           duration_days: parseInt(formData.duration_days),
-          meals_per_day: parseInt(formData.meals_per_day)
+          meals_per_day: formData.selectedMeals.length,
+          selected_meals: formData.selectedMeals // Send selected meals to backend
         })
       });
 
@@ -162,34 +169,34 @@ const VendorPlans = () => {
     }
   };
 
-  const handleDelete = async (planId) => {
-    if (!confirm('Are you sure you want to delete this plan? All associated menus will also be removed.')) return;
-
-    try {
-      const idToken = await auth.currentUser.getIdToken();
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/vendor/plans/${planId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${idToken}`,
-        }
-      });
-
-      if (response.ok) {
-        toast.success('Plan deleted successfully!');
-        fetchPlans();
+const handleDelete = async (planId) => {
+  try {
+    const idToken = await auth.currentUser.getIdToken();
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/vendor/plans/${planId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${idToken}`,
       }
-    } catch (error) {
-      console.error('Error deleting plan:', error);
-      toast.error('Failed to delete plan');
+    });
+
+    if (response.ok) {
+      toast.success('Plan deleted successfully!');
+      fetchPlans();
     }
-  };
+  } catch (error) {
+    console.error('Error deleting plan:', error);
+    toast.error('Failed to delete plan');
+  }
+};
 
   const resetForm = () => {
     setFormData({
       name: '',
       price: '',
       duration_days: '',
-      meals_per_day: 1
+      meals_per_day: 1,
+      selectedMeals: [],
+      planMenus: {}
     });
     setEditingPlan(null);
   };
@@ -200,7 +207,9 @@ const VendorPlans = () => {
       name: plan.name,
       price: plan.price.toString(),
       duration_days: plan.duration_days.toString(),
-      meals_per_day: plan.meals_per_day
+      meals_per_day: plan.meals_per_day,
+      selectedMeals: plan.selected_meals || [], // Load selected meals from plan
+      planMenus: {}
     });
     setDialogOpen(true);
   };
@@ -213,18 +222,18 @@ const VendorPlans = () => {
 
   const getPlanTypeColor = (planType) => {
     switch (planType) {
-      case 'Daily': return 'bg-blue-500';
-      case 'Weekly': return 'bg-green-500';
-      case 'Monthly': return 'bg-purple-500';
+      case 'One day': return 'bg-blue-500';
+      case 'All week': return 'bg-green-500';
+      case 'All month': return 'bg-purple-500';
       default: return 'bg-gray-500';
     }
   };
 
-  const getDurationText = (days) => {
-    switch (days) {
-      case 1: return '1 Day';
-      case 7: return '1 Week';
-      case 30: return '1 Month';
+  const getDurationText = (days, planName) => {
+    switch (planName) {
+      case 'One day': return '1 Day';
+      case 'All week': return '1 Week';
+      case 'All month': return '1 Month';
       default: return `${days} Days`;
     }
   };
@@ -236,6 +245,20 @@ const safePrice = (plan) => {
   }
   return typeof plan.price === 'string' ? parseFloat(plan.price) : plan.price;
 };
+
+  const handleMealSelection = (mealType, isSelected) => {
+    setFormData(prev => {
+      const newSelectedMeals = isSelected 
+        ? [...prev.selectedMeals, mealType]
+        : prev.selectedMeals.filter(m => m !== mealType);
+    
+      return {
+        ...prev,
+        selectedMeals: newSelectedMeals,
+        meals_per_day: newSelectedMeals.length
+      };
+    });
+  };
 
   if (loading) {
     return (
@@ -287,7 +310,7 @@ const safePrice = (plan) => {
                     Add Plan
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-md">
+                <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>{editingPlan ? 'Edit Plan' : 'Create New Plan'}</DialogTitle>
                     <DialogDescription>
@@ -295,17 +318,17 @@ const safePrice = (plan) => {
                     </DialogDescription>
                   </DialogHeader>
                   
-                  <div className="space-y-4">
+                  <div className="space-y-6 py-4">
                     {/* Plan Type */}
                     <div className="space-y-2">
-                      <Label>Plan Type</Label>
+                      <Label htmlFor="plan-type">Plan Type</Label>
                       <Select 
                         value={formData.name} 
                         onValueChange={(value) => {
                           setFormData(prev => ({ 
                             ...prev, 
                             name: value,
-                            duration_days: value === 'Daily' ? '1' : value === 'Weekly' ? '7' : '30'
+                            duration_days: value === 'One day' ? '1' : value === 'All week' ? '7' : '30'
                           }));
                         }}
                       >
@@ -313,17 +336,18 @@ const safePrice = (plan) => {
                           <SelectValue placeholder="Select plan type" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Daily">Daily Plan</SelectItem>
-                          <SelectItem value="Weekly">Weekly Plan</SelectItem>
-                          <SelectItem value="Monthly">Monthly Plan</SelectItem>
+                          <SelectItem value="One day">One Day Plan</SelectItem>
+                          <SelectItem value="All week">All Week Plan</SelectItem>
+                          <SelectItem value="All month">All Month Plan</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     {/* Price */}
                     <div className="space-y-2">
-                      <Label>Price (₹)</Label>
+                      <Label htmlFor="price">Price (₹)</Label>
                       <Input
+                        id="price"
                         type="number"
                         value={formData.price}
                         onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
@@ -333,29 +357,116 @@ const safePrice = (plan) => {
                       />
                     </div>
 
-                    {/* Meals per Day */}
-                    <div className="space-y-2">
-                      <Label>Meals per Day</Label>
-                      <Select 
-                        value={formData.meals_per_day.toString()} 
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, meals_per_day: parseInt(value) }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="1">1 Meal</SelectItem>
-                          <SelectItem value="2">2 Meals</SelectItem>
-                          <SelectItem value="3">3 Meals</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    {/* Meal Selection */}
+                    <div className="space-y-3">
+                      <Label className="text-base font-semibold">Select Meals</Label>
+                      <div className="space-y-2">
+                        {getMealOptions().map((meal) => (
+                          <div key={meal.value} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={meal.value}
+                              checked={formData.selectedMeals.includes(meal.value)}
+                              onChange={(e) => handleMealSelection(meal.value, e.target.checked)}
+                              className="rounded"
+                            />
+                            <Label htmlFor={meal.value} className="text-sm font-normal cursor-pointer">
+                              {meal.label}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                      {formData.selectedMeals.length === 0 && (
+                        <p className="text-xs text-muted-foreground">Select at least one meal type</p>
+                      )}
                     </div>
 
-                    <div className="flex gap-2 pt-4">
+                    {/* Menu Assignment Section - Updated */}
+                    {formData.duration_days && formData.selectedMeals.length > 0 && (
+                      <div className="space-y-4 border-t pt-4">
+                        <div className="flex items-center gap-2">
+                          <FaUtensils className="w-4 h-4 text-primary" />
+                          <h4 className="font-semibold text-base">Assign Menus</h4>
+                        </div>
+                        <div className="max-h-60 overflow-y-auto space-y-4">
+                          {Array.from({ length: parseInt(formData.duration_days) }, (_, dayIndex) => (
+                            <div key={dayIndex} className="p-3 bg-muted/50 rounded-lg">
+                              <p className="font-medium mb-3 text-sm">Day {dayIndex + 1}</p>
+                              <div className="grid grid-cols-1 gap-3">
+                                {formData.selectedMeals.map((mealType, mealIndex) => (
+                                  <div key={mealType} className="space-y-1">
+                                    <Label className="text-xs font-medium capitalize">{mealType}</Label>
+                                    <Select
+                                      value={formData.planMenus?.[`${dayIndex + 1}-${mealType}`] || ''}
+                                      onValueChange={menuId =>
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          planMenus: {
+                                            ...prev.planMenus,
+                                            [`${dayIndex + 1}-${mealType}`]: menuId
+                                          }
+                                        }))
+                                      }
+                                    >
+                                      <SelectTrigger className="h-8">
+                                        <SelectValue placeholder="Select menu" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {menus.filter(menu => menu.meal_type === mealType).map(menu => (
+                                          <TooltipProvider key={menu._id}>
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <SelectItem value={menu._id} className="cursor-pointer">
+                                                  <div className="flex items-center justify-between w-full">
+                                                    <span className="font-medium capitalize">{menu.meal_type}</span>
+                                                    <span className="text-xs text-muted-foreground ml-2">
+                                                      ({menu.items?.length || 0} items)
+                                                    </span>
+                                                  </div>
+                                                </SelectItem>
+                                              </TooltipTrigger>
+                                              <TooltipContent side="right" className="max-w-xs">
+                                                <div className="space-y-2">
+                                                  <p className="font-semibold text-xs mb-2">Menu Items:</p>
+                                                  <div className="space-y-1 max-h-40 overflow-y-auto">
+                                                    {menu.items?.map((item, idx) => (
+                                                      <div key={idx} className="flex items-center gap-2">
+                                                        {item.image_url && (
+                                                          <img 
+                                                            src={item.image_url} 
+                                                            alt={item.name} 
+                                                            className="w-6 h-6 object-cover rounded" 
+                                                          />
+                                                        )}
+                                                        <span className="text-xs">{item.name}</span>
+                                                      </div>
+                                                    ))}
+                                                    {(!menu.items || menu.items.length === 0) && (
+                                                      <p className="text-xs text-muted-foreground">No items added yet</p>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          </TooltipProvider>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 pt-4 border-t">
                       <Button onClick={handleSubmit} className="flex-1">
                         {editingPlan ? 'Update Plan' : 'Create Plan'}
                       </Button>
-                      <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                      <Button variant="outline" onClick={() => setDialogOpen(false)} className="flex-1">
                         Cancel
                       </Button>
                     </div>
@@ -411,7 +522,10 @@ const safePrice = (plan) => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDelete(plan._id)}
+                              onClick={() => {
+                                setPlanToDelete(plan._id);
+                                setDeleteDialogOpen(true);
+                              }}
                               className="text-destructive"
                             >
                               <FaTrash className="w-4 h-4" />
@@ -425,10 +539,10 @@ const safePrice = (plan) => {
                           </Badge>
                           <Badge variant="outline" className="flex items-center gap-1">
                             <FaClock className="w-3 h-3" />
-                            {getDurationText(plan.duration_days)}
+                            {getDurationText(plan.duration_days, plan.name)}
                           </Badge>
                           <Badge variant="outline">
-                            {plan.meals_per_day} meal{plan.meals_per_day > 1 ? 's' : ''}/day
+                            {plan.selected_meals?.join(', ') || `${plan.meals_per_day} meal${plan.meals_per_day > 1 ? 's' : ''}/day`}
                           </Badge>
                         </div>
                       </CardHeader>
@@ -484,7 +598,7 @@ const safePrice = (plan) => {
 
           {/* Plan Menus Dialog */}
           <Dialog open={planMenusDialogOpen} onOpenChange={setPlanMenusDialogOpen}>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto flex flex-col justify-center items-center">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <FaUtensils className="w-5 h-5" />
@@ -562,6 +676,32 @@ const safePrice = (plan) => {
               )}
             </DialogContent>
           </Dialog>
+
+          {/* Delete Plan Confirmation Dialog */}
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Plan?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Are you sure you want to delete this plan? All associated menus will also be removed. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    handleDelete(planToDelete);
+                    setDeleteDialogOpen(false);
+                  }}
+                  className="bg-destructive text-white"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
     </div>
