@@ -93,9 +93,10 @@ const AdminSidebar = ({ isOpen, setIsOpen }) => {
                     className={`w-full justify-start gap-3 transition-all duration-200 ${
                       isOpen ? 'px-3' : 'px-0 justify-center'
                     } ${
-                      isActive 
-                        ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm ml-2' 
-                        : 'text-sidebar-foreground hover:text-primary hover:bg-primary/5'
+isActive
+  ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm ml-2 hover:bg-primary/20 hover:text-primary'
+  : 'text-sidebar-foreground hover:text-primary hover:bg-primary/5'
+
                     }`}
                   >
                     <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary' : ''}`} />
