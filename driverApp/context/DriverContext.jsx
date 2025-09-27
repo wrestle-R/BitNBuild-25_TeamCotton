@@ -440,6 +440,62 @@ export const DriverProvider = ({ children }) => {
     };
   }, []);
 
+  // Update driver profile with additional details
+  const updateDriverProfile = async (profileData) => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      console.log('🔧 Updating driver profile with:', profileData);
+      
+      if (!driver || !driver.firebaseUid) {
+        throw new Error('No authenticated driver found');
+      }
+      
+      const token = await AsyncStorage.getItem('driver_token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch(`${API_BASE}/api/auth/update-driver`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          firebaseUid: driver.firebaseUid,
+          ...profileData
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update profile');
+      }
+
+      // Update local driver state
+      const updatedDriver = {
+        ...driver,
+        ...profileData,
+        ...data.user
+      };
+      
+      setDriver(updatedDriver);
+      console.log('✅ Driver profile updated successfully');
+      
+      return { success: true, user: updatedDriver };
+      
+    } catch (error) {
+      console.error('💥 Error updating driver profile:', error);
+      setError(error.message);
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const contextValue = {
     driver,
     loading,
@@ -449,6 +505,7 @@ export const DriverProvider = ({ children }) => {
     loginWithGoogle,
     logout,
     testConnection,
+    updateDriverProfile,
   };
 
   return (

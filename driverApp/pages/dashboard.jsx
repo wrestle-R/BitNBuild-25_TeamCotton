@@ -3,11 +3,22 @@ import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDriverContext } from '../context/DriverContext';
 import { Ionicons } from '@expo/vector-icons';
+import DriverDetailsForm from '../components/DriverDetailsForm';
 import '../global.css';
 
 export default function Dashboard() {
   const { driver, loading } = useDriverContext();
   const router = useRouter();
+
+  // Check if driver profile is complete
+  const isProfileComplete = (driver) => {
+    if (!driver) return false;
+    
+    const requiredFields = ['contactNumber', 'vehicleType', 'vehicleNumber'];
+    return requiredFields.every(field => 
+      driver[field] && driver[field].toString().trim() !== ''
+    );
+  };
 
   // Redirect to auth if not authenticated
   useEffect(() => {
@@ -15,6 +26,7 @@ export default function Dashboard() {
       loading, 
       hasDriver: !!driver, 
       driverEmail: driver?.email,
+      profileComplete: driver ? isProfileComplete(driver) : false,
       timestamp: new Date().toISOString()
     });
     
@@ -41,6 +53,12 @@ export default function Dashboard() {
   }
 
   if (!driver) return null;
+
+  // Show profile completion form if profile is incomplete
+  if (!isProfileComplete(driver)) {
+    console.log('📝 Driver profile incomplete - showing details form');
+    return <DriverDetailsForm />;
+  }
 
   return (
     <View className="flex-1 bg-gray-50">

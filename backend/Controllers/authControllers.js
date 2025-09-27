@@ -261,8 +261,78 @@ const getUserByFirebaseUid = async (req, res) => {
   }
 };
 
+const updateDriverProfile = async (req, res) => {
+  try {
+    console.log('Received update driver profile request:', req.body);
+
+    const { 
+      firebaseUid, 
+      contactNumber, 
+      vehicleType, 
+      vehicleNumber, 
+      address 
+    } = req.body;
+
+    if (!firebaseUid) {
+      return res.status(400).json({
+        message: 'Firebase UID is required',
+      });
+    }
+
+    // Find the driver
+    const driver = await Driver.findOne({ firebaseUid });
+    
+    if (!driver) {
+      return res.status(404).json({
+        message: 'Driver not found',
+      });
+    }
+
+    // Update only provided fields
+    const updateData = {};
+    if (contactNumber !== undefined) updateData.contactNumber = contactNumber;
+    if (vehicleType !== undefined) updateData.vehicleType = vehicleType;
+    if (vehicleNumber !== undefined) updateData.vehicleNumber = vehicleNumber;
+    if (address !== undefined) updateData.address = address;
+
+    const updatedDriver = await Driver.findOneAndUpdate(
+      { firebaseUid },
+      updateData,
+      { new: true }
+    );
+
+    console.log('Driver profile updated successfully:', updatedDriver._id);
+
+    // Generate new token with updated info
+    const token = generateToken(updatedDriver._id, firebaseUid, 'driver');
+
+    res.status(200).json({
+      message: 'Driver profile updated successfully',
+      user: {
+        id: updatedDriver._id,
+        name: updatedDriver.name,
+        email: updatedDriver.email,
+        contactNumber: updatedDriver.contactNumber,
+        address: updatedDriver.address,
+        vehicleType: updatedDriver.vehicleType,
+        vehicleNumber: updatedDriver.vehicleNumber,
+        role: 'driver',
+        firebaseUid: updatedDriver.firebaseUid,
+        verified: updatedDriver.verified,
+        available: updatedDriver.available,
+        rating: updatedDriver.rating
+      },
+      token,
+    });
+  } catch (error) {
+    console.error('Error updating driver profile:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   createUser,
   validateRole,
   getUserByFirebaseUid,
+  updateDriverProfile,
 };

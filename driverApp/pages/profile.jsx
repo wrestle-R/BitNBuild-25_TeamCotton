@@ -102,7 +102,7 @@ export default function Profile() {
                 <View className="ml-3 flex-1">
                   <Text className="text-sm text-gray-600">Phone</Text>
                   <Text className="text-base font-medium text-gray-900">
-                    {driver.phone || 'Not provided'}
+                    {driver.contactNumber || 'Not provided'}
                   </Text>
                 </View>
               </View>
@@ -110,22 +110,34 @@ export default function Profile() {
               <View className="flex-row items-center p-3 bg-gray-50 rounded-lg">
                 <Ionicons name="car-outline" size={20} color="#666" />
                 <View className="ml-3 flex-1">
-                  <Text className="text-sm text-gray-600">Vehicle</Text>
-                  <Text className="text-base font-medium text-gray-900">
-                    {driver.vehicleModel || 'Not provided'}
+                  <Text className="text-sm text-gray-600">Vehicle Type</Text>
+                  <Text className="text-base font-medium text-gray-900 capitalize">
+                    {driver.vehicleType || 'Not provided'}
                   </Text>
                 </View>
               </View>
 
               <View className="flex-row items-center p-3 bg-gray-50 rounded-lg">
-                <Ionicons name="id-card-outline" size={20} color="#666" />
+                <Ionicons name="car-sport-outline" size={20} color="#666" />
                 <View className="ml-3 flex-1">
-                  <Text className="text-sm text-gray-600">License Number</Text>
+                  <Text className="text-sm text-gray-600">Vehicle Number</Text>
                   <Text className="text-base font-medium text-gray-900">
-                    {driver.licenseNumber || 'Not provided'}
+                    {driver.vehicleNumber || 'Not provided'}
                   </Text>
                 </View>
               </View>
+
+              {driver.address && (
+                <View className="flex-row items-center p-3 bg-gray-50 rounded-lg">
+                  <Ionicons name="location-outline" size={20} color="#666" />
+                  <View className="ml-3 flex-1">
+                    <Text className="text-sm text-gray-600">Address</Text>
+                    <Text className="text-base font-medium text-gray-900">
+                      {driver.address}
+                    </Text>
+                  </View>
+                </View>
+              )}
             </View>
           </View>
 
