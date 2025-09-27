@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-
 import { useUserContext } from '../../../context/UserContextSimplified';
-import { FaGoogle, FaCheck, FaEye, FaEyeSlash, FaHome, FaShoppingBasket } from 'react-icons/fa';
+import { FaGoogle, FaCheck, FaEye, FaEyeSlash, FaArrowLeft, FaLeaf } from 'react-icons/fa';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Separator } from '../../components/ui/separator';
 import { Label } from '../../components/ui/label';
 import { Alert, AlertDescription } from '../../components/ui/alert';
+import { Badge } from '../../components/ui/badge';
 import { toast } from 'sonner';
 
 const CustomerAuth = () => {
@@ -20,8 +20,7 @@ const CustomerAuth = () => {
     loginWithEmail, 
     registerWithEmail, 
     loginWithGoogle,
-    switchUserType,
-    testConnection: contextTestConnection
+    switchUserType
   } = useUserContext();
   const navigate = useNavigate();
   const [isSignUp, setIsSignUp] = useState(false);
@@ -34,15 +33,12 @@ const CustomerAuth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Set user type to customer when component loads
   useEffect(() => {
     switchUserType('customer');
   }, [switchUserType]);
 
   useEffect(() => {
-    // Redirect if already authenticated to customer dashboard
     if (user && !contextLoading) {
-      console.log('🔄 CustomerAuth - User authenticated, redirecting to customer dashboard');
       navigate('/user2/dashboard', { replace: true });
     }
   }, [user, contextLoading, navigate]);
@@ -56,10 +52,8 @@ const CustomerAuth = () => {
 
   const handleEmailAuth = async (e) => {
     e.preventDefault();
-    
     try {
       if (isSignUp) {
-        // Sign up validation
         if (!formData.displayName.trim()) {
           toast.error('Please enter your full name');
           return;
@@ -72,30 +66,23 @@ const CustomerAuth = () => {
           toast.error('Password must be at least 6 characters');
           return;
         }
-
         await registerWithEmail(formData.email, formData.password, formData.displayName);
-        // Navigate to customer dashboard after successful registration
         navigate('/user2/dashboard', { replace: true });
-        
       } else {
         await loginWithEmail(formData.email, formData.password);
-        // Navigate to customer dashboard after successful login
         navigate('/user2/dashboard', { replace: true });
       }
     } catch (error) {
-      console.error('Customer auth error:', error);
-      // Error handling is done by the context
+      // Error handled by context
     }
   };
 
   const handleGoogleAuth = async () => {
     try {
       await loginWithGoogle();
-      // Navigate to customer dashboard after successful Google auth
       navigate('/user2/dashboard', { replace: true });
     } catch (error) {
-      console.error('Customer Google auth error:', error);
-      // Error handling is done by the context
+      // Error handled by context
     }
   };
 
@@ -122,47 +109,32 @@ const CustomerAuth = () => {
       >
         {/* Header */}
         <motion.div 
-          className="text-center mb-8"
+          className="mb-8"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
         >
-          {/* Back to Home Button */}
-          <div className="flex justify-between items-center mb-4 -ml-4">
+          <div className="flex items-center gap-2 mb-4">
             <Button
               onClick={() => navigate('/')}
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="text-muted-foreground hover:text-foreground font-inter"
+              className="text-muted-foreground hover:text-foreground"
             >
-              <FaHome className="w-4 h-4 mr-2" />
-              Back to Home
-            </Button>
-            
-            <Button
-              onClick={async () => {
-                const result = await contextTestConnection();
-                if (result.success) {
-                  toast.success('✅ Backend connected: ' + result.message);
-                } else {
-                  toast.error('❌ Backend connection failed: ' + result.message);
-                }
-              }}
-              variant="outline"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground font-inter"
-            >
-              Test Backend
+              <FaArrowLeft className="w-4 h-4 mr-2" />
+              Home
             </Button>
           </div>
-          
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground font-montserrat mb-2 flex items-center justify-center gap-3">
-            <FaShoppingBasket className="w-12 h-12 text-primary" />
-            NourishNet
-          </h1>
-          <p className="text-muted-foreground font-inter text-lg">
-            Fresh meals, delivered daily!
-          </p>
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-2">
+              <FaLeaf className="w-10 h-10 text-primary" />
+              <span className="text-3xl md:text-4xl font-bold text-foreground font-montserrat">NourishNet</span>
+              <Badge variant="secondary" className="ml-2 text-xs">Customer</Badge>
+            </div>
+            <p className="text-muted-foreground font-inter text-lg">
+              Fresh meals, delivered daily!
+            </p>
+          </div>
         </motion.div>
 
         {/* Auth Card */}
@@ -315,7 +287,7 @@ const CustomerAuth = () => {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <FaShoppingBasket className="w-5 h-5" />
+                      <FaLeaf className="w-5 h-5" />
                       <span>{isSignUp ? 'Create Account' : 'Sign In'}</span>
                     </div>
                   )}
@@ -357,35 +329,8 @@ const CustomerAuth = () => {
                 <FaGoogle className="w-5 h-5 mr-3" />
                 Continue with Google
               </Button>
-
-              {/* Features */}
-              <div className="mt-6 space-y-3 text-sm text-muted-foreground font-inter">
-                <div className="flex items-center gap-2">
-                  <FaCheck className="text-primary w-4 h-4" />
-                  <span>Subscribe to local tiffin services</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <FaCheck className="text-primary w-4 h-4" />
-                  <span>Real-time delivery tracking</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <FaCheck className="text-primary w-4 h-4" />
-                  <span>Flexible meal preferences</span>
-                </div>
-              </div>
             </CardContent>
           </Card>
-        </motion.div>
-
-        {/* Footer */}
-        <motion.div 
-          className="text-center mt-8 text-muted-foreground font-inter text-sm"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.45 }}
-        >
-          <p>Secure authentication powered by Firebase</p>
-          <p className="mt-1">Your data is protected and encrypted</p>
         </motion.div>
       </motion.div>
     </div>
