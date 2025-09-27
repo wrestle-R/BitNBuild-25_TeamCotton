@@ -3,6 +3,8 @@ const Menu = require('../Models/Menu');
 const Plan = require('../Models/Plan');
 const PlanMenu = require('../Models/PlanMenu');
 const axios = require('axios');
+const ConsumerSubscription = require('../Models/ConsumerSubscription');
+const Payment = require('../Models/Payment');
 
 const vendorController = {
   // Get vendor profile
@@ -319,6 +321,49 @@ const vendorController = {
       res.json(formattedPlanMenus);
     } catch (error) {
       console.error('Error fetching plan menus:', error);
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Get subscription stats
+  async getSubscriptionStats(req, res) {
+    try {
+      const vendor = await Vendor.findOne({ firebaseUid: req.user.firebaseUid });
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      const totalSubscribers = await ConsumerSubscription.countDocuments({ 
+        vendor_id: vendor._id,
+        active: true 
+      });
+
+      // Get earnings from vendor document
+      let totalRevenue = 0;
+      if (vendor.earnings) {
+        if (typeof vendor.earnings === 'object' && vendor.earnings.$numberDecimal) {
+          totalRevenue = parseFloat(vendor.earnings.$numberDecimal);
+        } else {
+          totalRevenue = parseFloat(vendor.earnings) || 0;
+        }
+      }
+
+      const recentPayments = await Payment.find({ 
+        vendor_id: vendor._id,
+        payment_status: 'success' 
+      })
+      .populate('consumer_id', 'name')
+      .populate('plan_id', 'name')
+      .sort({ payment_date: -1 })
+      .limit(10);
+
+      res.json({
+        totalSubscribers,
+        totalRevenue,
+        recentPayments
+      });
+    } catch (error) {
+      console.error('Error fetching subscription stats:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
