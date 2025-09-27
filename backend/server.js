@@ -3,7 +3,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const admin = require('firebase-admin');
-const authRoutesUnified = require('./routes/authRoutesUnified');
+const authRoutesUnified = require('./Routes/authRoutesUnified');
+const adminRoutes = require('./Routes/adminRoutes');
 require('dotenv').config();
 
 const app = express();
@@ -32,6 +33,7 @@ try {
 
 // Use routes
 app.use('/api/auth', authRoutesUnified); // Unified routes for dual user system
+app.use('/api/admin', adminRoutes); // Admin routes
 
 // Health check
 app.get('/', (req, res) => {

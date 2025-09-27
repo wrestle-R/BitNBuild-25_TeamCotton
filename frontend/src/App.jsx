@@ -9,6 +9,7 @@ import { VendorDashboard, VendorAuth } from './pages/Vendor'
 import { CustomerDashboard, CustomerAuth } from './pages/Customer'
 import AdminAuth from './pages/Admin/AdminAuth'
 import AdminDashboard from './pages/Admin/AdminDashboard'
+import ManageVendors from './pages/Admin/ManageVendors'
 
 // Route wrapper for authentication page
 const AuthRoute = () => {
@@ -155,6 +156,7 @@ const App = () => {
           {/* Hidden Admin Routes */}
           <Route path="/admin/auth" element={<AdminAuth />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/manage-vendors" element={<ManageVendors />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

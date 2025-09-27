@@ -2,184 +2,132 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
-  FaHatCowboy, 
-  FaShieldAlt, 
+  FaTachometerAlt,
   FaUsers, 
-  FaChartBar, 
-  FaCog, 
-  FaBullseye,
-  FaHorse,
+  FaStore, 
+  FaShoppingCart,
+  FaDollarSign,
   FaEye,
-  FaEdit,
-  FaTrash,
-  FaSearch
+  FaArrowUp,
+  FaArrowDown
 } from 'react-icons/fa';
-import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
-import { Input } from '../../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { Alert, AlertDescription } from '../../components/ui/alert';
-import AdminBackground from '../../components/ui/AdminBackground';
 import AdminSidebar from '../../components/Admin/AdminSidebar';
-import { useUserContext } from '../../../context/UserContextSimplified';
 import toast from 'react-hot-toast';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { user } = useUserContext();
-  const backendError = false; // Simplified context doesn't have this
-  
-  // Placeholder admin functions
-  const getAllUsers = async () => {
-    throw new Error('Admin functionality not implemented in simplified context');
-  };
-  
-  const deleteUserById = async () => {
-    throw new Error('Admin functionality not implemented in simplified context');
-  };
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [users, setUsers] = useState([]);
-  const [statistics, setStatistics] = useState({});
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterLevel, setFilterLevel] = useState('all');
+  const [stats, setStats] = useState({});
 
   // Check admin authentication
   useEffect(() => {
-    const adminAuth = localStorage.getItem('wildwest_admin_auth');
+    const adminAuth = localStorage.getItem('admin_auth');
     if (adminAuth !== 'authenticated') {
       navigate('/admin/auth');
       return;
     }
     
-    fetchUsersData();
+    fetchDashboardData();
   }, [navigate]);
 
-  const fetchUsersData = async () => {
+  const fetchDashboardData = async () => {
     try {
       setLoading(true);
       
-      if (backendError) {
-        // Use mock data when backend is unavailable
-        const mockUsers = [
+      // Mock dashboard stats
+      const mockStats = {
+        totalUsers: 1247,
+        totalVendors: 89,
+        totalOrders: 3456,
+        totalRevenue: 125690,
+        monthlyGrowth: {
+          users: 12.5,
+          vendors: 8.3,
+          orders: 23.7,
+          revenue: 18.2
+        },
+        recentActivity: [
           {
-            _id: '1',
-            displayName: 'John Cowboy',
-            email: 'john@wildwest.com',
-            cowboyLevel: 'Expert',
-            lassoCount: 25,
-            horses: ['Thunder', 'Lightning'],
-            hats: ['Stetson', 'Fedora'],
-            joinedAt: new Date('2024-01-15'),
-            lastActive: new Date('2024-09-26'),
-            photoURL: null
+            id: 1,
+            type: 'vendor',
+            name: 'Fresh Market Co.',
+            action: 'New vendor registration',
+            time: '2 hours ago',
+            status: 'pending'
           },
           {
-            _id: '2',
-            displayName: 'Sarah Ranger',
-            email: 'sarah@wildwest.com',
-            cowboyLevel: 'Professional',
-            lassoCount: 18,
-            horses: ['Spirit'],
-            hats: ['Classic Brown'],
-            joinedAt: new Date('2024-02-20'),
-            lastActive: new Date('2024-09-25'),
-            photoURL: null
+            id: 2,
+            type: 'order',
+            name: 'Order #12345',
+            action: 'Large order placed',
+            time: '4 hours ago',
+            status: 'completed'
           },
           {
-            _id: '3',
-            displayName: 'Mike Sheriff',
-            email: 'mike@wildwest.com',
-            cowboyLevel: 'Rookie',
-            lassoCount: 5,
-            horses: ['Dusty'],
-            hats: ['Basic Stetson'],
-            joinedAt: new Date('2024-09-01'),
-            lastActive: new Date('2024-09-27'),
-            photoURL: null
+            id: 3,
+            type: 'user',
+            name: 'John Doe',
+            action: 'New user registration',
+            time: '6 hours ago',
+            status: 'active'
+          },
+          {
+            id: 4,
+            type: 'vendor',
+            name: 'Tech Solutions Inc.',
+            action: 'Product catalog updated',
+            time: '8 hours ago',
+            status: 'completed'
           }
-        ];
+        ]
+      };
 
-        const mockStats = {
-          totalUsers: 3,
-          activeUsers: 2,
-          totalLassos: 48,
-          averageLassos: '16.00'
-        };
-
-        setUsers(mockUsers);
-        setStatistics(mockStats);
-        toast.error('Backend unavailable - showing demo data');
-      } else {
-        // Fetch real data from backend
-        const data = await getAllUsers();
-        setUsers(data.users || []);
-        setStatistics(data.statistics || {});
-      }
+      setStats(mockStats);
     } catch (error) {
-      console.error('Failed to fetch users data:', error);
-      toast.error('Failed to fetch cowboys data');
-      
-      // Fallback to empty state
-      setUsers([]);
-      setStatistics({});
+      console.error('Failed to fetch dashboard data:', error);
+      toast.error('Failed to fetch dashboard data');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteUser = async (userId, userName) => {
-    if (backendError) {
-      toast.error('Backend unavailable - cannot delete users');
-      return;
-    }
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
 
-    if (!confirm(`Are you sure you want to remove ${userName} from the saloon?`)) {
-      return;
-    }
-
-    try {
-      await deleteUserById(userId);
-      // Refresh the users list
-      await fetchUsersData();
-    } catch (error) {
-      console.error('Failed to delete user:', error);
+  const getActivityIcon = (type) => {
+    switch (type) {
+      case 'vendor': return FaStore;
+      case 'user': return FaUsers;
+      case 'order': return FaShoppingCart;
+      default: return FaEye;
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('wildwest_admin_auth');
-    localStorage.removeItem('wildwest_admin_login');
-    toast.success('Logged out successfully');
-    navigate('/');
+  const getActivityColor = (type) => {
+    switch (type) {
+      case 'vendor': return 'text-blue-500';
+      case 'user': return 'text-green-500';
+      case 'order': return 'text-purple-500';
+      default: return 'text-gray-500';
+    }
   };
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesLevel = filterLevel === 'all' || user.cowboyLevel === filterLevel;
-    return matchesSearch && matchesLevel;
-  });
-
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const getLevelColor = (level) => {
-    switch (level) {
-      case 'Expert': return 'bg-destructive/10 text-destructive border-destructive/20';
-      case 'Professional': return 'bg-primary/10 text-primary border-primary/20';
-      case 'Intermediate': return 'bg-accent/10 text-accent-foreground border-accent/20';
-      case 'Rookie': return 'bg-secondary/10 text-secondary-foreground border-secondary/20';
-      default: return 'bg-muted/10 text-muted-foreground border-muted/20';
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'active': return 'bg-green-100 text-green-800 border-green-200';
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'completed': return 'bg-blue-100 text-blue-800 border-blue-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -188,21 +136,18 @@ const AdminDashboard = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary mx-auto mb-4"></div>
-          <p className="text-foreground font-inter text-lg">Loading Sheriff's Office...</p>
+          <p className="text-foreground font-inter text-lg">Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background  overflow-x-hidden flex relative">
-      <AdminBackground />
+    <div className="min-h-screen bg-background overflow-x-hidden flex relative">
       {/* Sidebar */}
       <AdminSidebar 
         isOpen={sidebarOpen} 
         setIsOpen={setSidebarOpen}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
       />
 
       {/* Main Content */}
@@ -215,338 +160,172 @@ const AdminDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl font-bold text-foreground font-montserrat flex items-center gap-3 mb-2">
-              <FaShieldAlt className="w-10 h-10 text-primary" />
-              Admin Dashboard
+            <h1 className="text-3xl font-bold text-foreground font-montserrat flex items-center gap-3 mb-2">
+              <FaTachometerAlt className="w-8 h-8 text-primary" />
+              Dashboard
             </h1>
-            <div className="flex items-center gap-4">
-              <p className="text-muted-foreground font-inter">
-                Manage the Wild West Arena from the Sheriff's Office
-              </p>
-              {backendError && (
-                <Alert className="max-w-md">
-                  <AlertDescription>
-                    Backend offline - limited functionality
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
+            <p className="text-muted-foreground font-inter">
+              Overview of your platform performance
+            </p>
           </motion.div>
 
-          {/* Tab Content */}
-          <Tabs value={activeTab} className="w-full">
-            {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-6">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-              >
-                {/* Stats Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                  <motion.div
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Card className="bg-card/80 backdrop-blur-sm border shadow-lg relative overflow-hidden group">
-                      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <CardContent className="p-6 relative">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-muted-foreground font-inter text-sm font-medium">Total Cowboys</p>
-                            <p className="text-3xl font-bold text-foreground font-montserrat">
-                              {statistics.totalUsers || 0}
-                            </p>
-                          </div>
-                          <div className="relative">
-                            <FaUsers className="w-10 h-10 text-primary" />
-                            <div className="absolute inset-0 bg-primary/20 rounded-full blur-md opacity-50" />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-
-                  <motion.div
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Card className="bg-card/80 backdrop-blur-sm border shadow-lg relative overflow-hidden group">
-                      <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <CardContent className="p-6 relative">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-muted-foreground font-inter text-sm font-medium">Active This Week</p>
-                            <p className="text-3xl font-bold text-foreground font-montserrat">
-                              {statistics.activeUsers || 0}
-                            </p>
-                          </div>
-                          <div className="relative">
-                            <FaHatCowboy className="w-10 h-10 text-green-500" />
-                            <div className="absolute inset-0 bg-green-500/20 rounded-full blur-md opacity-50" />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-
-                  <motion.div
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Card className="bg-card/80 backdrop-blur-sm border shadow-lg relative overflow-hidden group">
-                      <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <CardContent className="p-6 relative">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-muted-foreground font-inter text-sm font-medium">Total Lassos</p>
-                            <p className="text-3xl font-bold text-foreground font-montserrat">
-                              {statistics.totalLassos || 0}
-                            </p>
-                          </div>
-                          <div className="relative">
-                            <FaBullseye className="w-10 h-10 text-blue-500" />
-                            <div className="absolute inset-0 bg-blue-500/20 rounded-full blur-md opacity-50" />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-
-                  <motion.div
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Card className="bg-card/80 backdrop-blur-sm border shadow-lg relative overflow-hidden group">
-                      <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <CardContent className="p-6 relative">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-muted-foreground font-inter text-sm font-medium">Avg Lassos</p>
-                            <p className="text-3xl font-bold text-foreground font-montserrat">
-                              {statistics.averageLassos || '0.00'}
-                            </p>
-                          </div>
-                          <div className="relative">
-                            <FaBullseye className="w-10 h-10 text-yellow-500" />
-                            <div className="absolute inset-0 bg-yellow-500/20 rounded-full blur-md opacity-50" />
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </div>
-
-                {/* Recent Activity */}
-                <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="font-montserrat flex items-center gap-2">
-                      <FaChartBar className="w-5 h-5 text-primary" />
-                      Recent Activity
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {users.slice(0, 3).map((user) => (
-                        <div key={user._id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="w-8 h-8">
-                              <AvatarImage src={user.photoURL} />
-                              <AvatarFallback>
-                                <FaHatCowboy className="w-4 h-4" />
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="font-medium text-foreground">{user.displayName}</p>
-                              <p className="text-sm text-muted-foreground">Last active: {formatDate(user.lastActive)}</p>
-                            </div>
-                          </div>
-                          <Badge className={getLevelColor(user.cowboyLevel)}>
-                            {user.cowboyLevel}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </TabsContent>
-
-            {/* Users Tab */}
-            <TabsContent value="users" className="space-y-6">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-              >
-                {/* Filters */}
-                <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col md:flex-row gap-4">
-                      <div className="flex-1">
-                        <div className="relative">
-                          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                          <Input
-                            placeholder="Search cowboys..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10"
-                          />
-                        </div>
-                      </div>
-                      <div className="w-full md:w-48">
-                        <Select value={filterLevel} onValueChange={setFilterLevel}>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Filter by level" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">All Levels</SelectItem>
-                            <SelectItem value="Expert">Expert</SelectItem>
-                            <SelectItem value="Professional">Professional</SelectItem>
-                            <SelectItem value="Intermediate">Intermediate</SelectItem>
-                            <SelectItem value="Rookie">Rookie</SelectItem>
-                          </SelectContent>
-                        </Select>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <motion.div
+              whileHover={{ scale: 1.02, y: -2 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Card className="bg-card backdrop-blur-sm border shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-muted-foreground font-inter text-sm font-medium">Total Users</p>
+                      <p className="text-2xl font-bold text-foreground font-montserrat">
+                        {stats.totalUsers?.toLocaleString() || 0}
+                      </p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <FaArrowUp className="w-3 h-3 text-green-500" />
+                        <span className="text-xs text-green-500 font-medium">
+                          +{stats.monthlyGrowth?.users || 0}%
+                        </span>
+                        <span className="text-xs text-muted-foreground">vs last month</span>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-
-                {/* Users List */}
-                <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
-                  <CardHeader>
-                    <CardTitle className="font-montserrat flex items-center gap-2">
-                      <FaUsers className="w-5 h-5 text-primary" />
-                      Cowboys Management ({filteredUsers.length})
-                    </CardTitle>
-                    <CardDescription>
-                      Manage all cowboys in the Wild West Arena
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {filteredUsers.map((user, index) => (
-                        <motion.div 
-                          key={user._id} 
-                          className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50 hover:bg-muted/50 transition-all duration-200 hover:shadow-lg group"
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.3, delay: index * 0.1 }}
-                          whileHover={{ scale: 1.01, x: 4 }}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className="relative">
-                              <Avatar className="w-12 h-12 ring-2 ring-transparent group-hover:ring-primary/20 transition-all">
-                                <AvatarImage src={user.photoURL} />
-                                <AvatarFallback className="bg-primary/10">
-                                  <FaHatCowboy className="w-6 h-6 text-primary" />
-                                </AvatarFallback>
-                              </Avatar>
-                              {/* Online indicator for recently active users */}
-                              {new Date(user.lastActive) > new Date(Date.now() - 24 * 60 * 60 * 1000) && (
-                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background">
-                                  <div className="w-full h-full bg-green-500 rounded-full animate-ping opacity-75" />
-                                </div>
-                              )}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                                  {user.displayName}
-                                </h3>
-                                <Badge className={`${getLevelColor(user.cowboyLevel)} border transition-all`}>
-                                  {user.cowboyLevel}
-                                </Badge>
-                              </div>
-                              <p className="text-sm text-muted-foreground">{user.email}</p>
-                              <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                                <motion.span 
-                                  className="flex items-center gap-1 hover:text-blue-500 transition-colors"
-                                  whileHover={{ scale: 1.05 }}
-                                >
-                                  <FaBullseye className="w-3 h-3" />
-                                  {user.lassoCount} Lassos
-                                </motion.span>
-                                <motion.span 
-                                  className="flex items-center gap-1 hover:text-green-500 transition-colors"
-                                  whileHover={{ scale: 1.05 }}
-                                >
-                                  <FaHorse className="w-3 h-3" />
-                                  {user.horses?.length || 0} Horses
-                                </motion.span>
-                                <motion.span 
-                                  className="flex items-center gap-1 hover:text-yellow-500 transition-colors"
-                                  whileHover={{ scale: 1.05 }}
-                                >
-                                  <FaHatCowboy className="w-3 h-3" />
-                                  {user.hats?.length || 0} Hats
-                                </motion.span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                              <Button variant="outline" size="sm" className="hover:bg-blue-500/10 hover:text-blue-500 hover:border-blue-500/20">
-                                <FaEye className="w-4 h-4" />
-                              </Button>
-                            </motion.div>
-                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                              <Button variant="outline" size="sm" className="hover:bg-yellow-500/10 hover:text-yellow-500 hover:border-yellow-500/20">
-                                <FaEdit className="w-4 h-4" />
-                              </Button>
-                            </motion.div>
-                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                              <Button 
-                                variant="destructive" 
-                                size="sm"
-                                onClick={() => handleDeleteUser(user._id, user.displayName)}
-                                disabled={backendError}
-                                className="hover:bg-red-500 hover:shadow-lg hover:shadow-red-500/25"
-                              >
-                                <FaTrash className="w-4 h-4" />
-                              </Button>
-                            </motion.div>
-                          </div>
-                        </motion.div>
-                      ))}
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <FaUsers className="w-6 h-6 text-blue-500" />
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </TabsContent>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-            {/* Analytics Tab */}
-            <TabsContent value="analytics" className="space-y-6">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-              >
-                <Alert>
-                  <FaChartBar className="h-4 w-4" />
-                  <AlertDescription>
-                    Analytics dashboard coming soon! This will show detailed statistics about user engagement, growth trends, and more.
-                  </AlertDescription>
-                </Alert>
-              </motion.div>
-            </TabsContent>
+            <motion.div
+              whileHover={{ scale: 1.02, y: -2 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Card className="bg-card backdrop-blur-sm border shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-muted-foreground font-inter text-sm font-medium">Total Vendors</p>
+                      <p className="text-2xl font-bold text-foreground font-montserrat">
+                        {stats.totalVendors?.toLocaleString() || 0}
+                      </p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <FaArrowUp className="w-3 h-3 text-green-500" />
+                        <span className="text-xs text-green-500 font-medium">
+                          +{stats.monthlyGrowth?.vendors || 0}%
+                        </span>
+                        <span className="text-xs text-muted-foreground">vs last month</span>
+                      </div>
+                    </div>
+                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                      <FaStore className="w-6 h-6 text-green-500" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
 
-            {/* Settings Tab */}
-            <TabsContent value="settings" className="space-y-6">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-              >
-                <Alert>
-                  <FaCog className="h-4 w-4" />
-                  <AlertDescription>
-                    Settings panel coming soon! This will allow you to configure various aspects of the Wild West Arena.
-                  </AlertDescription>
-                </Alert>
-              </motion.div>
-            </TabsContent>
-          </Tabs>
+            <motion.div
+              whileHover={{ scale: 1.02, y: -2 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Card className="bg-card backdrop-blur-sm border shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-muted-foreground font-inter text-sm font-medium">Total Orders</p>
+                      <p className="text-2xl font-bold text-foreground font-montserrat">
+                        {stats.totalOrders?.toLocaleString() || 0}
+                      </p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <FaArrowUp className="w-3 h-3 text-green-500" />
+                        <span className="text-xs text-green-500 font-medium">
+                          +{stats.monthlyGrowth?.orders || 0}%
+                        </span>
+                        <span className="text-xs text-muted-foreground">vs last month</span>
+                      </div>
+                    </div>
+                    <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                      <FaShoppingCart className="w-6 h-6 text-purple-500" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              whileHover={{ scale: 1.02, y: -2 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Card className="bg-card backdrop-blur-sm border shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-muted-foreground font-inter text-sm font-medium">Total Revenue</p>
+                      <p className="text-2xl font-bold text-foreground font-montserrat">
+                        {formatCurrency(stats.totalRevenue || 0)}
+                      </p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <FaArrowUp className="w-3 h-3 text-green-500" />
+                        <span className="text-xs text-green-500 font-medium">
+                          +{stats.monthlyGrowth?.revenue || 0}%
+                        </span>
+                        <span className="text-xs text-muted-foreground">vs last month</span>
+                      </div>
+                    </div>
+                    <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                      <FaDollarSign className="w-6 h-6 text-yellow-500" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          {/* Recent Activity */}
+          <Card className="bg-card backdrop-blur-sm border shadow-lg">
+            <CardHeader>
+              <CardTitle className="font-montserrat flex items-center gap-2">
+                <FaEye className="w-5 h-5 text-primary" />
+                Recent Activity
+              </CardTitle>
+              <CardDescription>
+                Latest platform activities and updates
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {stats.recentActivity?.map((activity, index) => {
+                  const IconComponent = getActivityIcon(activity.type);
+                  return (
+                    <motion.div 
+                      key={activity.id} 
+                      className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50 hover:bg-muted/50 transition-all duration-200"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1 }}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`w-10 h-10 rounded-full bg-muted/50 flex items-center justify-center`}>
+                          <IconComponent className={`w-5 h-5 ${getActivityColor(activity.type)}`} />
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">{activity.name}</p>
+                          <p className="text-sm text-muted-foreground">{activity.action}</p>
+                          <p className="text-xs text-muted-foreground">{activity.time}</p>
+                        </div>
+                      </div>
+                      <Badge className={getStatusColor(activity.status)}>
+                        {activity.status}
+                      </Badge>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
