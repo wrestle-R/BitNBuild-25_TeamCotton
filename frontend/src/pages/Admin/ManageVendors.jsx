@@ -343,10 +343,7 @@ const ManageVendors = () => {
                   }
                 </p>
               </div>
-              <Button className="flex items-center gap-2">
-                <FaPlus className="w-4 h-4" />
-                Add Vendor
-              </Button>
+
             </div>
           </motion.div>
 

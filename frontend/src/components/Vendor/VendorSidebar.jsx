@@ -86,7 +86,7 @@ const VendorSidebar = ({ isOpen, setIsOpen }) => {
                       isOpen ? 'px-3' : 'px-0 justify-center'
                     } ${
                       isActive 
-                        ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm ml-2' 
+                        ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm ml-2 hover:bg-primary/20 hover:text-primary' 
                         : 'text-sidebar-foreground hover:text-primary hover:bg-primary/5'
                     }`}
                   >

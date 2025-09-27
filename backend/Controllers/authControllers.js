@@ -72,7 +72,7 @@ const createUser = async (req, res) => {
         name: name.trim(),
         email: email.toLowerCase(),
         firebaseUid,
-        contact_number: '',
+        contactNumber: '',
         address: ''
       });
     } else if (role === 'customer') {
@@ -80,7 +80,7 @@ const createUser = async (req, res) => {
         name: name.trim(),
         email: email.toLowerCase(),
         firebaseUid,
-        contact_number: '',
+        contactNumber: '',
         address: ''
       });
     } else if (role === 'driver') {
@@ -119,7 +119,7 @@ const createUser = async (req, res) => {
         firebaseUid: user.firebaseUid,
         name: user.name,
         email: user.email,
-        contactNumber: user.contact_number,
+        contactNumber: user.contactNumber,
         address: user.address,
         role: role
       },
@@ -202,7 +202,7 @@ const validateRole = async (req, res) => {
         firebaseUid: user.firebaseUid,
         name: user.name,
         email: user.email,
-        contactNumber: user.contact_number,
+        contactNumber: user.contactNumber,
         address: user.address,
         role: role
       },
@@ -249,7 +249,7 @@ const getUserByFirebaseUid = async (req, res) => {
         firebaseUid: user.firebaseUid,
         name: user.name,
         email: user.email,
-        contactNumber: user.contact_number,
+        contactNumber: user.contactNumber,
         address: user.address,
         role: role
       },
