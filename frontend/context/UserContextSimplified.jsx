@@ -26,7 +26,7 @@ export const UserProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
   // Enhanced logging for debugging
   console.log('🔧 UserContext State:', {
