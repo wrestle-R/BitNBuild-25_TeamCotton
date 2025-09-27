@@ -4,6 +4,8 @@ import { UserProvider, useUserContext } from '../context/UserContextSimplified'
 import Landing from './pages/Landing'
 import VendorAuth from './pages/Vendor/VendorAuth'
 import VendorDashboard from './pages/Vendor/VendorDashboard'
+import VendorProfile from './pages/Vendor/VendorProfile'
+import VendorMenus from './pages/Vendor/VendorMenus'
 import CustomerAuth from './pages/Customer/CustomerAuth'
 import CustomerDashboard from './pages/Customer/CustomerDashboard'
 import AdminAuth from './pages/Admin/AdminAuth'
@@ -128,8 +130,9 @@ const App = () => {
           <Route path="/vendor/auth" element={<VendorAuth />} />
           <Route path="/customer/auth" element={<CustomerAuth />} />
           <Route path="/vendor/dashboard" element={<VendorRoute />} />
+          <Route path="/vendor/profile" element={<VendorProfile />} />
+          <Route path="/vendor/menus" element={<VendorMenus />} />
           <Route path="/customer/dashboard" element={<CustomerRoute />} />
-          {/* Hidden Admin Routes */}
           <Route path="/admin/auth" element={<AdminAuth />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/manage-vendors" element={<ManageVendors />} />

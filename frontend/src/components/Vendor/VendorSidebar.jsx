@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
-import { FaStore, FaUsers, FaDollarSign, FaChartBar, FaUser, FaTachometerAlt, FaCog, FaSignOutAlt, FaBoxes } from 'react-icons/fa';
+import { FaStore, FaUser, FaTachometerAlt, FaUtensils, FaClipboardList, FaSignOutAlt } from 'react-icons/fa';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import ThemeToggle from '../ui/ThemeToggle';
@@ -11,29 +11,20 @@ const VendorSidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useUserContext();
   const navigate = useNavigate();
 
-  // Debug logging
-  console.log('🎯 VendorSidebar Props:', { isOpen, setIsOpen: !!setIsOpen });
-  console.log('🎯 VendorSidebar User:', user);
-
   const handleLogout = async () => {
     try {
-      console.log('🚪 VendorSidebar - Initiating logout');
       await logout();
       navigate('/');
     } catch (error) {
-      console.error('💥 VendorSidebar - Logout error:', error);
-      // Error handled in context
+      console.error('Logout error:', error);
     }
   };
 
   const menuItems = [
-    { icon: FaTachometerAlt, label: 'Dashboard', active: true },
-    { icon: FaStore, label: 'My Store' },
-    { icon: FaBoxes, label: 'Inventory' },
-    { icon: FaUsers, label: 'Customers' },
-    { icon: FaDollarSign, label: 'Sales' },
-    { icon: FaChartBar, label: 'Analytics' },
-    { icon: FaCog, label: 'Settings' },
+    { icon: FaTachometerAlt, label: 'Dashboard', path: '/vendor/dashboard', active: true },
+    { icon: FaUser, label: 'Profile', path: '/vendor/profile' },
+    { icon: FaUtensils, label: 'Menus', path: '/vendor/menus' },
+    { icon: FaClipboardList, label: 'Plans', path: '/vendor/plans' }
   ];
 
   return (
@@ -87,6 +78,7 @@ const VendorSidebar = ({ isOpen, setIsOpen }) => {
                 )}
                 <Button
                   variant={item.active ? "default" : "ghost"}
+                  onClick={() => navigate(item.path)}
                   className={`w-full justify-start gap-3 transition-all duration-200 ${
                     isOpen ? 'px-3' : 'px-0 justify-center'
                   } ${
