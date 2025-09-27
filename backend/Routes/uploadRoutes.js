@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const uploadController = require('../controllers/uploadController');
+const uploadController = require('../Controllers/uploadController');
 const authMiddleware = require('../middleware/authMiddleware'); // If you want to protect the route
 
 // Configure multer for memory storage

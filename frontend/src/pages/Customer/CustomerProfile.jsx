@@ -1,316 +1,427 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
-import { FaUser, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
+import { auth } from '../../../firebase.config';
+import { FaUser, FaPhone, FaMapMarkerAlt, FaCamera, FaSave, FaArrowLeft, FaEdit, FaTimes } from 'react-icons/fa';
 import CustomerSidebar from '../../components/Customer/CustomerSidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { toast } from 'sonner';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for default markers in React-Leaflet
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
 
 const CustomerProfile = () => {
-  const { user, token } = useUserContext();
+  const { user } = useUserContext();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [profileData, setProfileData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     name: '',
     contactNumber: '',
-    address: '',
+    photoUrl: '',
     preference: '',
-    photoUrl: ''
+    address: {
+      street: '',
+      city: '',
+      state: '',
+      pincode: '',
+      coordinates: null
+    }
   });
 
-  // Fetch profile data on component mount
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    if (user && auth.currentUser) {
+      fetchProfile();
+    }
+  }, [user]);
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/customer/profile', {
+      const idToken = await auth.currentUser.getIdToken();
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer/profile`, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${idToken}`,
           'Content-Type': 'application/json'
         }
       });
 
+      const text = await response.text();
+      console.log('Raw response:', text);
       if (response.ok) {
-        const data = await response.json();
-        setProfileData(data);
+        const data = JSON.parse(text);
         setFormData({
           name: data.name || '',
           contactNumber: data.contactNumber || '',
-          address: data.address || '',
+          photoUrl: data.photoUrl || '',
           preference: data.preference || '',
-          photoUrl: data.photoUrl || ''
+          address: {
+            street: data.address?.street || '',
+            city: data.address?.city || '',
+            state: data.address?.state || '',
+            pincode: data.address?.pincode || '',
+            coordinates: (
+              data.address?.coordinates &&
+              typeof data.address.coordinates.lat === 'number' &&
+              typeof data.address.coordinates.lng === 'number'
+            )
+              ? data.address.coordinates
+              : null
+          }
         });
       } else {
-        throw new Error('Failed to fetch profile');
+        throw new Error('Profile fetch failed');
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      toast.error('Failed to load profile data');
+      toast.error('Failed to load profile');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      const uploadFormData = new FormData();
+      uploadFormData.append('image', file);
+
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer/upload/image`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: uploadFormData,
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setFormData(prev => ({
+          ...prev,
+          photoUrl: data.data.url
+        }));
+        toast.success('Profile image uploaded successfully!');
+      }
+    } catch (error) {
+      console.error('Image upload error:', error);
+      toast.error('Failed to upload image');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleSave = async () => {
-    setLoading(true);
+    if (!formData.name.trim()) {
+      toast.error('Name is required');
+      return;
+    }
+
+    setSaving(true);
     try {
-      const response = await fetch('http://localhost:8000/api/customer/profile', {
+      const idToken = await auth.currentUser.getIdToken();
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer/profile`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${idToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData)
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setProfileData(data.customer);
-        setIsEditing(false);
         toast.success('Profile updated successfully!');
+        fetchProfile(); // Refresh to get updated coordinates
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update profile');
+        toast.error('Failed to update profile');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error(error.message || 'Failed to update profile');
+      toast.error('Failed to update profile');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const handleCancel = () => {
-    // Reset form to original data
-    setFormData({
-      name: profileData?.name || '',
-      contactNumber: profileData?.contactNumber || '',
-      address: profileData?.address || '',
-      preference: profileData?.preference || '',
-      photoUrl: profileData?.photoUrl || ''
-    });
-    setIsEditing(false);
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex">
       <CustomerSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
-      
+
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
-        <motion.div 
-          className="p-6"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <div className="flex justify-between items-center">
+        <div className="p-6">
+          {/* Header */}
+          <motion.div 
+            className="mb-8"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="flex items-center gap-4 mb-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/customer/dashboard')}
+                className="flex items-center gap-2"
+              >
+                <FaArrowLeft className="w-4 h-4" />
+                Back to Dashboard
+              </Button>
+            </div>
             <h1 className="text-4xl font-bold text-foreground font-montserrat flex items-center gap-3">
               <FaUser className="w-10 h-10 text-primary" />
-              Profile
+              Customer Profile
             </h1>
-            {!isEditing ? (
-              <Button onClick={() => setIsEditing(true)} className="flex items-center gap-2">
-                <FaEdit className="w-4 h-4" />
-                Edit Profile
-              </Button>
-            ) : (
-              <div className="flex gap-2">
-                <Button 
-                  onClick={handleSave} 
-                  disabled={loading}
-                  className="flex items-center gap-2"
-                >
-                  <FaSave className="w-4 h-4" />
-                  {loading ? 'Saving...' : 'Save'}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleCancel}
-                  className="flex items-center gap-2"
-                >
-                  <FaTimes className="w-4 h-4" />
-                  Cancel
-                </Button>
-              </div>
-            )}
-          </div>
-        </motion.div>
+            <p className="text-muted-foreground font-inter mt-2">
+              Manage your profile information and location details
+            </p>
+          </motion.div>
 
-        <main className="p-6">
-          <div className="max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Profile Information */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
             >
-              <Card>
+              <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
                 <CardHeader>
-                  <CardTitle>Your Profile Information</CardTitle>
+                  <CardTitle className="text-xl font-bold text-foreground font-montserrat">
+                    Profile Information
+                  </CardTitle>
                   <CardDescription>
-                    {isEditing ? 'Update your account details' : 'View and manage your account details'}
+                    Update your personal details and preferences
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Profile Image */}
+                  <div className="flex flex-col items-center space-y-4">
+                    <Avatar className="w-24 h-24">
+                      <AvatarImage src={formData.photoUrl} alt={formData.name} />
+                      <AvatarFallback className="text-2xl">
+                        <FaUser />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        disabled={uploadingImage}
+                      />
+                      <Button variant="outline" disabled={uploadingImage}>
+                        <FaCamera className="w-4 h-4 mr-2" />
+                        {uploadingImage ? 'Uploading...' : 'Change Photo'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Enter your full name"
+                    />
+                  </div>
+
+                  {/* Email Field (Read-only) */}
+                  <div className="space-y-2">
+                    <Label>Email Address</Label>
+                    <Input
+                      value={user?.email || ''}
+                      disabled
+                      className="bg-muted/50 opacity-60"
+                    />
+                    <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+                  </div>
+
+                  {/* Contact Number */}
+                  <div className="space-y-2">
+                    <Label htmlFor="contact">Contact Number</Label>
+                    <Input
+                      id="contact"
+                      value={formData.contactNumber}
+                      onChange={(e) => setFormData(prev => ({ ...prev, contactNumber: e.target.value }))}
+                      placeholder="Enter your contact number"
+                    />
+                  </div>
+
+                  {/* Food Preference */}
+                  <div className="space-y-2">
+                    <Label>Food Preference</Label>
+                    <Select
+                      value={formData.preference}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, preference: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your food preference" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="veg">Vegetarian</SelectItem>
+                        <SelectItem value="nonveg">Non-Vegetarian</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Address */}
+                  <div className="space-y-4">
+                    <Label className="text-base font-semibold">Address Details</Label>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="street">Street Address</Label>
+                      <Input
+                        id="street"
+                        value={formData.address.street}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          address: { ...prev.address, street: e.target.value }
+                        }))}
+                        placeholder="Enter street address"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="city">City</Label>
+                        <Input
+                          id="city"
+                          value={formData.address.city}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            address: { ...prev.address, city: e.target.value }
+                          }))}
+                          placeholder="City"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="state">State</Label>
+                        <Input
+                          id="state"
+                          value={formData.address.state}
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            address: { ...prev.address, state: e.target.value }
+                          }))}
+                          placeholder="State"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="pincode">PIN Code</Label>
+                      <Input
+                        id="pincode"
+                        value={formData.address.pincode}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          address: { ...prev.address, pincode: e.target.value }
+                        }))}
+                        placeholder="PIN Code"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Save Button */}
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="w-full"
+                  >
+                    <FaSave className="w-4 h-4 mr-2" />
+                    {saving ? 'Saving...' : 'Save Profile'}
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Map */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+            >
+              <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold text-foreground font-montserrat flex items-center gap-2">
+                    <FaMapMarkerAlt className="w-5 h-5 text-primary" />
+                    Location
+                  </CardTitle>
+                  <CardDescription>
+                    Your location on the map
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid gap-6 md:grid-cols-2">
-                    {/* Name Field */}
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Display Name</Label>
-                      {isEditing ? (
-                        <Input
-                          id="name"
-                          value={formData.name}
-                          onChange={(e) => handleInputChange('name', e.target.value)}
-                          placeholder="Enter your name"
+                  <div className="h-96 rounded-lg overflow-hidden border border-border">
+                    {formData.address.coordinates ? (
+                      <MapContainer
+                        center={[formData.address.coordinates.lat, formData.address.coordinates.lng]}
+                        zoom={15}
+                        style={{ height: '100%', width: '100%' }}
+                      >
+                        <TileLayer
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         />
-                      ) : (
-                        <p className="text-lg text-foreground px-3 py-2 border rounded-md bg-muted/50">
-                          {profileData?.name || 'Not set'}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Email Field (Read-only) */}
-                    <div className="space-y-2">
-                      <Label>Email Address</Label>
-                      <p className="text-lg text-foreground px-3 py-2 border rounded-md bg-muted/50 opacity-60">
-                        {profileData?.email || user?.email}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Email cannot be changed</p>
-                    </div>
-
-                    {/* Phone Number Field */}
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
-                      {isEditing ? (
-                        <Input
-                          id="phone"
-                          value={formData.contactNumber}
-                          onChange={(e) => handleInputChange('contactNumber', e.target.value)}
-                          placeholder="Enter your phone number"
-                          type="tel"
-                        />
-                      ) : (
-                        <p className="text-lg text-foreground px-3 py-2 border rounded-md bg-muted/50">
-                          {profileData?.contactNumber || 'Not provided'}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Photo URL Field */}
-                    <div className="space-y-2">
-                      <Label htmlFor="photoUrl">Profile Photo URL</Label>
-                      {isEditing ? (
-                        <Input
-                          id="photoUrl"
-                          value={formData.photoUrl}
-                          onChange={(e) => handleInputChange('photoUrl', e.target.value)}
-                          placeholder="Enter photo URL (https://...)"
-                          type="url"
-                        />
-                      ) : (
-                        <div className="px-3 py-2 border rounded-md bg-muted/50">
-                          {profileData?.photoUrl ? (
-                            <div className="flex items-center gap-3">
-                              <img 
-                                src={profileData.photoUrl} 
-                                alt="Profile" 
-                                className="w-8 h-8 rounded-full object-cover"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                }}
-                              />
-                              <span className="text-sm text-muted-foreground truncate">
-                                {profileData.photoUrl}
-                              </span>
+                        <Marker position={[formData.address.coordinates.lat, formData.address.coordinates.lng]}>
+                          <Popup>
+                            <div className="text-center">
+                              <strong>{formData.name}</strong><br />
+                              {formData.address.street}<br />
+                              {formData.address.city}, {formData.address.state}
                             </div>
-                          ) : (
-                            <span className="text-muted-foreground">No photo uploaded</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Preference Field */}
-                    <div className="space-y-2">
-                      <Label>Food Preference</Label>
-                      {isEditing ? (
-                        <Select
-                          value={formData.preference}
-                          onValueChange={(value) => handleInputChange('preference', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select your preference" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="veg">Vegetarian</SelectItem>
-                            <SelectItem value="nonveg">Non-Vegetarian</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        <div className="px-3 py-2 border rounded-md bg-muted/50">
-                          {profileData?.preference ? (
-                            <Badge variant={profileData.preference === 'veg' ? 'default' : 'destructive'}>
-                              {profileData.preference === 'veg' ? 'Vegetarian' : 'Non-Vegetarian'}
-                            </Badge>
-                          ) : (
-                            <span className="text-muted-foreground">Not set</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Address Field - Full Width */}
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="address">Address</Label>
-                      {isEditing ? (
-                        <Input
-                          id="address"
-                          value={formData.address}
-                          onChange={(e) => handleInputChange('address', e.target.value)}
-                          placeholder="Enter your address"
-                        />
-                      ) : (
-                        <p className="text-lg text-foreground px-3 py-2 border rounded-md bg-muted/50">
-                          {profileData?.address || 'Not provided'}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Account Info - Full Width */}
-                    {profileData && (
-                      <div className="space-y-2 md:col-span-2 pt-4 border-t">
-                        <div className="grid gap-2 text-sm text-muted-foreground">
-                          <div>
-                            <span className="font-medium">Account created:</span>{' '}
-                            {new Date(profileData.createdAt).toLocaleDateString()}
-                          </div>
-                          <div>
-                            <span className="font-medium">Last updated:</span>{' '}
-                            {new Date(profileData.updatedAt).toLocaleDateString()}
-                          </div>
+                          </Popup>
+                        </Marker>
+                      </MapContainer>
+                    ) : (
+                      <div className="flex items-center justify-center h-full bg-muted">
+                        <div className="text-center text-muted-foreground">
+                          <FaMapMarkerAlt className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                          <p>Save your address to see location on map</p>
                         </div>
                       </div>
                     )}
                   </div>
+                  
+                  {formData.address.coordinates && (
+                    <div className="mt-4 p-3 bg-muted rounded-lg">
+                      <p className="text-sm text-muted-foreground">
+                        <strong>Coordinates:</strong> {formData.address.coordinates.lat.toFixed(6)}, {formData.address.coordinates.lng.toFixed(6)}
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );
