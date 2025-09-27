@@ -55,6 +55,28 @@ const uploadController = {
       });
     }
   }
+  ,
+  // Debug upload: return multer file info for development
+  debugUpload(req, res) {
+    try {
+      // multer will place file info on req.file when using upload.single('image')
+      if (!req.file) {
+        return res.status(400).json({ success: false, error: 'No file received' });
+      }
+
+      return res.status(200).json({
+        success: true,
+        file: {
+          originalname: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size,
+          bufferPresent: !!req.file.buffer,
+        },
+      });
+    } catch (err) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+  }
 };
 
 module.exports = uploadController;

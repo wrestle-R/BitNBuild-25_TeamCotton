@@ -4,13 +4,148 @@ import { Platform } from 'react-native';
 
 const API_URL = VITE_BACKEND_URL || 'http://192.168.1.40:5000';
 
-const getAuthHeaders = async () => {
+export const getAuthHeaders = async () => {
   // The backend middleware expects a Firebase ID token verified by firebase-admin
   const idToken = await AsyncStorage.getItem('idToken');
-  return {
+  const headers = {
     'Content-Type': 'application/json',
-    Authorization: idToken ? `Bearer ${idToken}` : undefined,
   };
+
+  // Only add Authorization header when we actually have a token
+  if (idToken) {
+    headers.Authorization = `Bearer ${idToken}`;
+  }
+
+  return headers;
+};
+
+export const getVendors = async () => {
+  // Try fetching with auth headers if available. If the request fails with 401,
+  // retry without the Authorization header so that public endpoints still work.
+  const tryUrl = `${API_URL}/api/customer/vendors`;
+  const headers = await getAuthHeaders();
+
+  const fetchWithAuthFallback = async (url, init) => {
+    // First attempt with provided headers
+    let res;
+    try {
+      res = await fetch(url, init);
+    } catch (err) {
+      console.error('Network error while fetching:', err);
+      throw err;
+    }
+
+    // If unauthorized and we had Authorization header, retry without it
+    if (res.status === 401 && init && init.headers && init.headers.Authorization) {
+      try {
+        const initNoAuth = { ...init };
+        const headersCopy = { ...init.headers };
+        delete headersCopy.Authorization;
+        initNoAuth.headers = headersCopy;
+        const retryRes = await fetch(url, initNoAuth);
+        return retryRes;
+      } catch (retryErr) {
+        console.error('Retry without auth failed:', retryErr);
+        throw retryErr;
+      }
+    }
+
+    return res;
+  };
+
+  try {
+    const res = await fetchWithAuthFallback(tryUrl, { method: 'GET', headers });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `Failed to fetch vendors (status ${res.status})`);
+    }
+    return res.json();
+  } catch (error) {
+    console.error('Error fetching vendors:', error);
+    throw error;
+  }
+};
+
+export const getVendorById = async (vendorId) => {
+  const tryUrl = `${API_URL}/api/customer/vendors/${vendorId}`;
+  const headers = await getAuthHeaders();
+
+  const fetchWithAuthFallback = async (url, init) => {
+    let res;
+    try {
+      res = await fetch(url, init);
+    } catch (err) {
+      console.error('Network error while fetching:', err);
+      throw err;
+    }
+    if (res.status === 401 && init && init.headers && init.headers.Authorization) {
+      try {
+        const initNoAuth = { ...init };
+        const headersCopy = { ...init.headers };
+        delete headersCopy.Authorization;
+        initNoAuth.headers = headersCopy;
+        const retryRes = await fetch(url, initNoAuth);
+        return retryRes;
+      } catch (retryErr) {
+        console.error('Retry without auth failed:', retryErr);
+        throw retryErr;
+      }
+    }
+    return res;
+  };
+
+  try {
+    const res = await fetchWithAuthFallback(tryUrl, { method: 'GET', headers });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `Failed to fetch vendor ${vendorId} (status ${res.status})`);
+    }
+    return res.json();
+  } catch (error) {
+    console.error('Error fetching vendor by id:', error);
+    throw error;
+  }
+};
+
+export const getVendorPlans = async (vendorId) => {
+  const tryUrl = `${API_URL}/api/customer/vendors/${vendorId}/plans`;
+  const headers = await getAuthHeaders();
+
+  const fetchWithAuthFallback = async (url, init) => {
+    let res;
+    try {
+      res = await fetch(url, init);
+    } catch (err) {
+      console.error('Network error while fetching plans:', err);
+      throw err;
+    }
+    if (res.status === 401 && init && init.headers && init.headers.Authorization) {
+      try {
+        const initNoAuth = { ...init };
+        const headersCopy = { ...init.headers };
+        delete headersCopy.Authorization;
+        initNoAuth.headers = headersCopy;
+        const retryRes = await fetch(url, initNoAuth);
+        return retryRes;
+      } catch (retryErr) {
+        console.error('Retry without auth failed:', retryErr);
+        throw retryErr;
+      }
+    }
+    return res;
+  };
+
+  try {
+    const res = await fetchWithAuthFallback(tryUrl, { method: 'GET', headers });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `Failed to fetch plans for vendor ${vendorId} (status ${res.status})`);
+    }
+    return res.json();
+  } catch (error) {
+    console.error('Error fetching vendor plans:', error);
+    throw error;
+  }
 };
 
 export const getProfile = async () => {

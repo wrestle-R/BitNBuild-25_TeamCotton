@@ -1,8 +1,9 @@
 const express = require('express');
 const multer = require('multer');
 const customerController = require('../Controllers/customerController');
-const uploadController = require('../Controllers/uploadController');
+
 const authMiddleware = require('../middleware/authMiddleware');
+const uploadController = require('../controllers/uploadController');
 
 const router = express.Router();
 
@@ -26,6 +27,9 @@ router.get('/profile', authMiddleware, customerController.getProfile);
 
 // Update customer profile
 router.put('/profile', authMiddleware, customerController.updateProfile);
+
+// Update only location (address + coordinates)
+router.patch('/location', authMiddleware, customerController.updateLocation);
 
 // Get customer preferences
 router.get('/preferences', authMiddleware, customerController.getPreferences);
