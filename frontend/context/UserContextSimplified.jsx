@@ -165,7 +165,17 @@ export const UserProvider = ({ children }) => {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
-      const userData = await validateUserRole(firebaseUser.uid);
+      // Create a basic user object without role validation
+      const userData = {
+        user: {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName,
+          email: firebaseUser.email,
+          role: userType, // Use the current userType
+          firebaseUid: firebaseUser.uid
+        },
+        token: await firebaseUser.getIdToken()
+      };
 
       // Store token and user data
       localStorage.setItem('nourishnet_token', userData.token);

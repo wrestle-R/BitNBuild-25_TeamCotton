@@ -131,12 +131,12 @@ const VendorDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex">
       {/* Vendor Sidebar */}
       <VendorSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
       {/* Main Content */}
-      <div className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
         <div className="p-6">
         {/* Header */}
         <motion.div 
@@ -151,7 +151,7 @@ const VendorDashboard = () => {
                 variant="ghost"
                 size="icon"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                className="text-primary hover:text-primary/80 hover:bg-primary/10"
               >
                 <FaBars className="w-5 h-5" />
               </Button>

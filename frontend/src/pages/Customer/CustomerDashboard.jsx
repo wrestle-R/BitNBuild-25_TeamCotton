@@ -123,12 +123,12 @@ const CustomerDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex">
       {/* Customer Sidebar */}
       <CustomerSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
       {/* Main Content */}
-      <div className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+      <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
         {/* Header */}
         {/* <header className="bg-card border-b border-border px-6 py-4">
           <div className="flex items-center justify-between">
@@ -170,6 +170,41 @@ const CustomerDashboard = () => {
             </div>
           </div>
         </header> */}
+
+        {/* Header */}
+        <motion.div 
+          className="mb-8 p-6"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="text-primary hover:text-primary/80 hover:bg-primary/10"
+              >
+                <FaBars className="w-5 h-5" />
+              </Button>
+              <div>
+                <h1 className="text-4xl font-bold text-foreground font-montserrat flex items-center gap-3">
+                  <FaShoppingBasket className="w-10 h-10 text-primary" />
+                  Welcome, {user.displayName}!
+                </h1>
+                <div className="mt-2 flex items-center gap-2">
+                  <Badge variant="secondary" className="font-inter">
+                    Account Type: Customer
+                  </Badge>
+                  <Badge variant="outline" className="font-inter text-primary">
+                    🍽️ Customer Portal
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Dashboard Content */}
         <main className="p-6">
