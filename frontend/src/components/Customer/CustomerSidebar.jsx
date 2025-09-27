@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
-import { FaShoppingCart, FaHeart, FaUser, FaTachometerAlt, FaCog, FaSignOutAlt, FaMapMarkerAlt, FaBell } from 'react-icons/fa';
+import { FaShoppingCart, FaHeart, FaUser, FaTachometerAlt, FaCog, FaSignOutAlt, FaMapMarkerAlt, FaBell, FaStore } from 'react-icons/fa';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '../ui/badge';
@@ -31,6 +31,7 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
 
   const menuItems = [
     { icon: FaTachometerAlt, label: 'Dashboard', path: '/customer/dashboard' },
+    { icon: FaStore, label: 'Market', path: '/customer/market' },
     { icon: FaUser, label: 'Profile', path: '/customer/profile' },
   ];
 
