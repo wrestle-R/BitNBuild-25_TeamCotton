@@ -20,8 +20,14 @@ const customerUserSchema = new mongoose.Schema({
     required: false
   },
   address: {
-    type: String,
-    required: false
+    street: String,
+    city: String,
+    state: String,
+    pincode: String,
+    coordinates: {
+      lat: Number,
+      lng: Number
+    }
   },
   photoUrl: {
     required: false,

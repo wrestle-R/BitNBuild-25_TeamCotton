@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const vendorController = require('../controllers/vendorController');
-const uploadController = require('../controllers/uploadController');
+const vendorController = require('../Controllers/vendorController');
+const uploadController = require('../Controllers/uploadController');
 const multer = require('multer');
 const authMiddleware = require('../middleware/authMiddleware'); // <-- Add this
 
@@ -31,6 +31,7 @@ router.get('/plans', authMiddleware, vendorController.getPlans);
 router.post('/plans', authMiddleware, vendorController.createPlan);
 router.put('/plans/:id', authMiddleware, vendorController.updatePlan);
 router.delete('/plans/:id', authMiddleware, vendorController.deletePlan);
+router.get('/plans/:planId/menus', authMiddleware, vendorController.getPlanMenus);
 
 // Upload route
 router.post('/upload/image', authMiddleware, upload.single('image'), uploadController.uploadImage);
