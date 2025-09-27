@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useUserContext } from '../../../context/UserContextSimplified';
-import { FaStore, FaSearch, FaFilter, FaHeart, FaShoppingCart, FaStar } from 'react-icons/fa';
+import { FaStore, FaSearch, FaFilter, FaHeart, FaShoppingCart, FaStar, FaMapMarkerAlt, FaExclamationCircle, FaSync } from 'react-icons/fa';
 import CustomerSidebar from '../../components/Customer/CustomerSidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -10,58 +10,115 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
+import { Alert, AlertDescription } from '../../components/ui/alert';
 import { toast } from 'sonner';
+import { auth } from '../../../firebase.config';
 
 const CustomerMarket = () => {
-  const { user } = useUserContext();
+  const { user, token } = useUserContext();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(true);
   const [vendors, setVendors] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPreference, setFilterPreference] = useState('all');
+  const [error, setError] = useState(null);
+
+  const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+
+  // API call function
+  const apiCall = async (endpoint, options = {}) => {
+    try {
+      // Get fresh token from Firebase
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
+      const token = await user.getIdToken(true); // Force refresh
+      console.log('🔑 Using fresh token for API call:', token.substring(0, 20) + '...');
+      
+      const defaultOptions = {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const config = {
+        ...defaultOptions,
+        ...options,
+        headers: {
+          ...defaultOptions.headers,
+          ...options.headers,
+        },
+      };
+
+      const response = await fetch(`${API_BASE}${endpoint}`, config);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('API call error:', error);
+      throw error;
+    }
+  };
+
+  // Get verified vendors
+  const getVerifiedVendors = () => apiCall('/api/customer/vendors');
 
   useEffect(() => {
-    // Simulate loading vendors - replace with actual API call
-    setTimeout(() => {
-      setVendors([
-        {
-          id: 1,
-          name: "Green Garden Kitchen",
-          profileImage: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=150",
-          rating: 4.8,
-          specialty: "veg",
-          address: { city: "Mumbai", state: "Maharashtra" },
-          plans: 12,
-          description: "Fresh organic vegetarian meals"
-        },
-        {
-          id: 2,
-          name: "Spice Route Delights",
-          profileImage: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=150",
-          rating: 4.6,
-          specialty: "nonveg",
-          address: { city: "Delhi", state: "Delhi" },
-          plans: 8,
-          description: "Authentic Indian cuisine with meat options"
-        },
-        {
-          id: 3,
-          name: "Healthy Bites Co.",
-          profileImage: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=150",
-          rating: 4.7,
-          specialty: "veg",
-          address: { city: "Bangalore", state: "Karnataka" },
-          plans: 15,
-          description: "Nutritious and balanced vegetarian meals"
+    const fetchVendors = async () => {
+      if (!user || !token) {
+        setLoading(false);
+        setError('Please log in to view vendors');
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const vendorsData = await getVerifiedVendors();
+        setVendors(vendorsData);
+      } catch (error) {
+        console.error('Error fetching vendors:', error);
+        setError(error.message || 'Failed to load vendors');
+        toast.error('Failed to load vendors. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVendors();
+  }, [user, token]);
+
+  const handleRefresh = () => {
+    if (user && token) {
+      const fetchVendors = async () => {
+        try {
+          setLoading(true);
+          setError(null);
+          const vendorsData = await getVerifiedVendors();
+          setVendors(vendorsData);
+          toast.success('Vendors refreshed successfully!');
+        } catch (error) {
+          console.error('Error fetching vendors:', error);
+          setError(error.message || 'Failed to load vendors');
+          toast.error('Failed to refresh vendors. Please try again.');
+        } finally {
+          setLoading(false);
         }
-      ]);
-      setLoading(false);
-    }, 1000);
-  }, []);
+      };
+      fetchVendors();
+    }
+  };
 
   const filteredVendors = vendors.filter(vendor => {
     const matchesSearch = vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         vendor.description.toLowerCase().includes(searchTerm.toLowerCase());
+                         (vendor.description && vendor.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesPreference = filterPreference === 'all' || vendor.specialty === filterPreference;
     return matchesSearch && matchesPreference;
   });
@@ -70,8 +127,46 @@ const CustomerMarket = () => {
     return (
       <div className="min-h-screen bg-background flex">
         <CustomerSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
-        <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'} flex items-center justify-center`}>
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary"></div>
+        <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
+          <div className="p-6">
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold text-foreground font-montserrat flex items-center gap-3">
+                <FaStore className="w-10 h-10 text-primary" />
+                Market
+              </h1>
+              <p className="text-muted-foreground font-inter mt-2">
+                Loading vendors and meal plans...
+              </p>
+            </div>
+
+            {/* Loading Skeletons */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, index) => (
+                <Card key={`skeleton-${index}`} className="bg-card/80 backdrop-blur-sm border-border">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-muted animate-pulse"></div>
+                        <div>
+                          <div className="h-5 w-32 bg-muted animate-pulse rounded mb-2"></div>
+                          <div className="h-4 w-24 bg-muted animate-pulse rounded"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-4 w-full bg-muted animate-pulse rounded mb-3"></div>
+                    <div className="h-4 w-3/4 bg-muted animate-pulse rounded mb-4"></div>
+                    <div className="flex gap-2">
+                      <div className="flex-1 h-8 bg-muted animate-pulse rounded"></div>
+                      <div className="w-20 h-8 bg-muted animate-pulse rounded"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -89,14 +184,41 @@ const CustomerMarket = () => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <h1 className="text-4xl font-bold text-foreground font-montserrat flex items-center gap-3">
-              <FaStore className="w-10 h-10 text-primary" />
-              Market
-            </h1>
-            <p className="text-muted-foreground font-inter mt-2">
-              Discover vendors and explore meal plans
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-4xl font-bold text-foreground font-montserrat flex items-center gap-3">
+                  <FaStore className="w-10 h-10 text-primary" />
+                  Market
+                </h1>
+                <p className="text-muted-foreground font-inter mt-2">
+                  Discover vendors and explore meal plans
+                </p>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={handleRefresh}
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                <FaSync className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
           </motion.div>
+
+          {/* Error Alert */}
+          {error && (
+            <motion.div
+              className="mb-6"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <Alert variant="destructive">
+                <FaExclamationCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            </motion.div>
+          )}
 
           {/* Search and Filters */}
           <motion.div
@@ -117,13 +239,14 @@ const CustomerMarket = () => {
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-10"
+                        disabled={loading}
                       />
                     </div>
                   </div>
 
                   {/* Filter */}
                   <div className="w-full md:w-48">
-                    <Select value={filterPreference} onValueChange={setFilterPreference}>
+                    <Select value={filterPreference} onValueChange={setFilterPreference} disabled={loading}>
                       <SelectTrigger>
                         <FaFilter className="w-4 h-4 mr-2" />
                         <SelectValue placeholder="Filter by preference" />
@@ -149,7 +272,7 @@ const CustomerMarket = () => {
           >
             {filteredVendors.map((vendor, index) => (
               <motion.div
-                key={vendor.id}
+                key={vendor._id || vendor.id || `vendor-${index}`}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + index * 0.1 }}
@@ -158,43 +281,72 @@ const CustomerMarket = () => {
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <Avatar className="w-12 h-12">
-                          <AvatarImage src={vendor.profileImage} alt={vendor.name} />
-                          <AvatarFallback>
-                            <FaStore />
+                        <Avatar className="w-14 h-14 ring-2 ring-primary/20">
+                          <AvatarImage 
+                            src={vendor.profileImage} 
+                            alt={vendor.name}
+                            className="object-cover"
+                          />
+                          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10">
+                            <FaStore className="w-6 h-6 text-primary" />
                           </AvatarFallback>
                         </Avatar>
-                        <div>
-                          <CardTitle className="text-lg font-montserrat">{vendor.name}</CardTitle>
-                          <div className="flex items-center gap-2 mt-1">
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-lg font-montserrat truncate">{vendor.name}</CardTitle>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
                             <div className="flex items-center gap-1">
                               <FaStar className="w-3 h-3 text-yellow-400 fill-current" />
-                              <span className="text-sm font-medium">{vendor.rating}</span>
+                              <span className="text-sm font-medium">{vendor.rating || 'New'}</span>
                             </div>
-                            <Badge variant={vendor.specialty === 'veg' ? 'default' : 'destructive'} className="text-xs">
-                              {vendor.specialty === 'veg' ? 'Vegetarian' : 'Non-Vegetarian'}
+                            <Badge 
+                              variant={vendor.specialty === 'veg' ? 'default' : 'destructive'} 
+                              className="text-xs font-medium"
+                            >
+                              {vendor.specialty === 'veg' ? '🌱 Vegetarian' : '🍖 Non-Vegetarian'}
                             </Badge>
+                            {vendor.verified && (
+                              <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-200">
+                                ✓ Verified
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" className="flex-shrink-0">
                         <FaHeart className="w-4 h-4" />
                       </Button>
                     </div>
                   </CardHeader>
                   
                   <CardContent>
-                    <p className="text-muted-foreground text-sm mb-3">{vendor.description}</p>
+                    {vendor.address && vendor.address.city && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                        <FaMapMarkerAlt className="w-3 h-3" />
+                        <span>
+                          {vendor.address.city}
+                          {vendor.address.state && `, ${vendor.address.state}`}
+                        </span>
+                      </div>
+                    )}
                     
                     <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
-                      <span>{vendor.address.city}, {vendor.address.state}</span>
-                      <span>{vendor.plans} meal plans</span>
+                      <span className="flex items-center gap-1">
+                        <FaShoppingCart className="w-3 h-3" />
+                        {vendor.plans || 0} meal plans
+                      </span>
+                      {vendor.contactNumber && (
+                        <span className="text-xs">Contact available</span>
+                      )}
                     </div>
 
                     <div className="flex gap-2">
-                      <Button className="flex-1" size="sm">
+                      <Button 
+                        className="flex-1" 
+                        size="sm"
+                        disabled={!vendor.plans || vendor.plans === 0}
+                      >
                         <FaShoppingCart className="w-4 h-4 mr-2" />
-                        View Plans
+                        {vendor.plans > 0 ? 'View Plans' : 'No Plans'}
                       </Button>
                       <Button variant="outline" size="sm">
                         View Details
@@ -207,7 +359,23 @@ const CustomerMarket = () => {
           </motion.div>
 
           {/* No Results */}
-          {filteredVendors.length === 0 && (
+          {!loading && !error && filteredVendors.length === 0 && vendors.length > 0 && (
+            <motion.div
+              className="text-center py-12"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <FaSearch className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <h3 className="text-xl font-semibold text-foreground mb-2">No vendors match your search</h3>
+              <p className="text-muted-foreground">
+                Try adjusting your search terms or filters to find vendors.
+              </p>
+            </motion.div>
+          )}
+
+          {/* No Vendors Available */}
+          {!loading && !error && vendors.length === 0 && (
             <motion.div
               className="text-center py-12"
               initial={{ opacity: 0 }}
@@ -215,9 +383,9 @@ const CustomerMarket = () => {
               transition={{ delay: 0.3 }}
             >
               <FaStore className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-              <h3 className="text-xl font-semibold text-foreground mb-2">No vendors found</h3>
+              <h3 className="text-xl font-semibold text-foreground mb-2">No verified vendors available</h3>
               <p className="text-muted-foreground">
-                Try adjusting your search terms or filters to find vendors.
+                Vendors are being verified. Please check back later for available meal plans.
               </p>
             </motion.div>
           )}
