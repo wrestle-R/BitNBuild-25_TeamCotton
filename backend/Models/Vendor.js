@@ -1,37 +1,32 @@
 const mongoose = require('mongoose');
 
 const vendorUserSchema = new mongoose.Schema({
-  firebaseUid: {
+  name: {
     type: String,
-    required: true,
-    unique: true
+    required: true
   },
   email: {
     type: String,
     required: true,
     unique: true
   },
-  displayName: {
+  contactNumber: {
     type: String,
-    required: true
+    required: false
   },
-  photoURL: {
+  address: {
     type: String,
-    default: null
+    required: false
   },
-  phoneNumber: {
-    type: String,
-    default: null
+  earnings: {
+    type: mongoose.Schema.Types.Decimal128,
+    default: 0,
+    required: false
   },
-
-  joinedAt: {
-    type: Date,
-    default: Date.now
+  verified: {
+    type: Boolean,
+    default: false
   },
-  lastActive: {
-    type: Date,
-    default: Date.now
-  }
 }, {
   timestamps: true
 });
@@ -42,4 +37,4 @@ vendorUserSchema.pre('save', function(next) {
   next();
 });
 
-module.exports = mongoose.model('VendorUser', vendorUserSchema, 'vendor_users');
+module.exports = mongoose.model('Vendor', vendorUserSchema, 'vendors');

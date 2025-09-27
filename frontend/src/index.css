@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import "./styles/sidebar-fix.css";
 
 :root {
   --background: oklch(0.9940 0 0);
@@ -164,4 +163,9 @@ body {
 
 button {
   cursor: pointer;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }

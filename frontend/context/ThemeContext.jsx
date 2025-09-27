@@ -7,7 +7,7 @@ export const useTheme = () => {
   if (!context) {
     throw new Error('useTheme must be used within a ThemeProvider')
   }
-  console.log('Theme context accessed:', context)
+  // console.log('Theme context accessed:', context)
   return context
 }
 
@@ -15,7 +15,7 @@ export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     // Check localStorage first, then system preference
     const savedTheme = localStorage.getItem('theme')
-    console.log('Saved theme from localStorage:', savedTheme)
+    // console.log('Saved theme from localStorage:', savedTheme)
     
     if (savedTheme) {
       return savedTheme
@@ -23,11 +23,11 @@ export const ThemeProvider = ({ children }) => {
     
     // Check system preference
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      console.log('System prefers dark mode')
+      // console.log('System prefers dark mode')
       return 'dark'
     }
     
-    console.log('Defaulting to light mode')
+    // console.log('Defaulting to light mode')
     return 'light'
   })
 

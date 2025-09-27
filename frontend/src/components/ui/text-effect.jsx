@@ -66,7 +66,11 @@ export function TextEffect({
   };
 
   return (
-    <Tag className={className} {...props}>
+    <Tag
+      className={className}
+      style={{ lineHeight: 1.4 }} 
+      {...props}
+    >
       <motion.span
         initial="hidden"
         animate="visible"
@@ -77,10 +81,12 @@ export function TextEffect({
           <motion.span
             key={index}
             variants={getVariants()}
-            style={{ display: 'inline-block' }}
+            style={{
+              display: 'inline-block',
+              marginRight: per === 'word' && index < segments.length - 1 ? '0.25em' : 0
+            }}
           >
             {segment.content}
-            {per === 'word' && index < segments.length - 1 && ' '}
             {per === 'line' && index < segments.length - 1 && <br />}
           </motion.span>
         ))}

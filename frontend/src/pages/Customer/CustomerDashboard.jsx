@@ -7,9 +7,7 @@ import CustomerSidebar from '../../components/Customer/CustomerSidebar';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
-import { Alert, AlertDescription } from '../../components/ui/alert';
-import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 const CustomerDashboard = () => {
   const { user, userType, loading, logout } = useUserContext();
