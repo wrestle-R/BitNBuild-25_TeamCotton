@@ -1,5 +1,5 @@
-const VendorUser = require('../Models/user1');
-const CustomerUser = require('../Models/user2');
+const VendorUser = require('../models/user1');
+const CustomerUser = require('../models/user2');
 const jwt = require('jsonwebtoken');
 
 const generateToken = (userId, firebaseUid, role) => {

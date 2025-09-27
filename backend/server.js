@@ -3,10 +3,11 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const admin = require('firebase-admin');
+const authRoutesUnified = require('./routes/authRoutesUnified');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 
 // Middleware
 app.use(cors({
@@ -29,13 +30,10 @@ try {
   // admin.initializeApp({
   //   credential: admin.credential.cert(require('./firebase-service-account.json'))
   // });
-  console.log('🔥 Firebase Admin initialized');
+  console.log('Firebase Admin initialized');
 } catch (error) {
-  console.log('⚠️ Firebase Admin not configured:', error.message);
+  console.log('Firebase Admin not configured:', error.message);
 }
-
-// Import routes
-const authRoutesUnified = require('./Routes/authRoutesUnified');
 
 // Use routes
 app.use('/api/auth', authRoutesUnified); // Unified routes for dual user system
@@ -46,5 +44,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🍽️ NourishNet server running on port ${PORT}`);
+  console.log(`NourishNet server running on port ${PORT}`);
 });
