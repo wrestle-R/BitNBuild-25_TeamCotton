@@ -23,6 +23,15 @@ const customerUserSchema = new mongoose.Schema({
     type: String,
     required: false
   },
+  photoUrl: {
+    required: false,
+    type: String
+  },
+preference: {
+  type: String,
+  enum: ['veg', 'nonveg'],
+  required: false
+}
 }, {
   timestamps: true
 });

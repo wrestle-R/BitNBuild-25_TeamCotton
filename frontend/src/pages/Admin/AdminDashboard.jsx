@@ -38,58 +38,58 @@ const AdminDashboard = () => {
     try {
       setLoading(true);
       
-      // Mock dashboard stats
-      const mockStats = {
-        totalUsers: 1247,
-        totalVendors: 89,
-        totalOrders: 3456,
-        totalRevenue: 125690,
-        monthlyGrowth: {
-          users: 12.5,
-          vendors: 8.3,
-          orders: 23.7,
-          revenue: 18.2
-        },
-        recentActivity: [
-          {
-            id: 1,
-            type: 'vendor',
-            name: 'Fresh Market Co.',
-            action: 'New vendor registration',
-            time: '2 hours ago',
-            status: 'pending'
-          },
-          {
-            id: 2,
-            type: 'order',
-            name: 'Order #12345',
-            action: 'Large order placed',
-            time: '4 hours ago',
-            status: 'completed'
-          },
-          {
-            id: 3,
-            type: 'user',
-            name: 'John Doe',
-            action: 'New user registration',
-            time: '6 hours ago',
-            status: 'active'
-          },
-          {
-            id: 4,
-            type: 'vendor',
-            name: 'Tech Solutions Inc.',
-            action: 'Product catalog updated',
-            time: '8 hours ago',
-            status: 'completed'
-          }
-        ]
-      };
+      // Fetch users and vendors data
+      const [usersResponse, vendorsResponse] = await Promise.all([
+        fetch('http://localhost:8000/api/admin/users'),
+        fetch('http://localhost:8000/api/admin/vendors')
+      ]);
 
-      setStats(mockStats);
+      const usersData = await usersResponse.json();
+      const vendorsData = await vendorsResponse.json();
+
+      if (usersData.success && vendorsData.success) {
+        const stats = {
+          totalUsers: usersData.statistics?.totalUsers || usersData.users?.length || 0,
+          totalVendors: vendorsData.vendors?.length || 0,
+          totalOrders: 0, // Mock for now
+          totalRevenue: vendorsData.vendors?.reduce((sum, v) => sum + (v.earnings || 0), 0) || 0,
+          verifiedVendors: vendorsData.vendors?.filter(v => v.verified).length || 0,
+          monthlyGrowth: {
+            users: 12.5,
+            vendors: 8.3,
+            orders: 23.7,
+            revenue: 18.2
+          },
+          recentActivity: vendorsData.vendors?.slice(0, 4).map((vendor, index) => ({
+            id: index + 1,
+            type: 'vendor',
+            name: vendor.name,
+            action: vendor.verified ? 'Verified vendor' : 'Pending verification',
+            time: new Date(vendor.joinedAt).toLocaleDateString(),
+            status: vendor.verified ? 'completed' : 'pending'
+          })) || []
+        };
+
+        setStats(stats);
+        console.log('Dashboard stats loaded:', stats);
+      } else {
+        throw new Error('Failed to fetch data');
+      }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
       toast.error('Failed to fetch dashboard data');
+      
+      // Fallback to mock data
+      const fallbackStats = {
+        totalUsers: 0,
+        totalVendors: 0,
+        totalOrders: 0,
+        totalRevenue: 0,
+        verifiedVendors: 0,
+        monthlyGrowth: { users: 0, vendors: 0, orders: 0, revenue: 0 },
+        recentActivity: []
+      };
+      setStats(fallbackStats);
     } finally {
       setLoading(false);
     }
