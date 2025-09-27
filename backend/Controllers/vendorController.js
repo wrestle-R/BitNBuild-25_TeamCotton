@@ -170,14 +170,24 @@ const vendorController = {
         return res.status(404).json({ message: 'Vendor not found' });
       }
 
-      const plans = await Plan.find({ vendor_id: vendor._id }).sort({ created_at: -1 });
+      const plans = await Plan.find({ vendor_id: vendor._id }).lean();
+      
+      // Convert Decimal128 to number
+      plans.forEach(plan => {
+        if (plan.price && plan.price.$numberDecimal) {
+          plan.price = parseFloat(plan.price.$numberDecimal);
+        }
+      });
+      
       res.json(plans);
     } catch (error) {
+      console.error('Error fetching plans:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   },
 
   // Create plan
+  // Update createPlan to handle selected_meals and new planMenus structure
   async createPlan(req, res) {
     try {
       const vendor = await Vendor.findOne({ firebaseUid: req.user.firebaseUid });
@@ -185,14 +195,41 @@ const vendorController = {
         return res.status(404).json({ message: 'Vendor not found' });
       }
 
+      const { name, price, duration_days, meals_per_day, selected_meals, planMenus } = req.body;
+
       const plan = new Plan({
         vendor_id: vendor._id,
-        ...req.body
+        name,
+        price,
+        duration_days,
+        meals_per_day,
+        selected_meals
       });
-
       await plan.save();
-      res.status(201).json(plan);
+
+      // Create PlanMenu entries with new structure
+      if (planMenus) {
+        for (const key in planMenus) {
+          const [day_number, meal_type] = key.split('-');
+          const mealIndex = selected_meals.indexOf(meal_type) + 1;
+          await PlanMenu.create({
+            plan_id: plan._id,
+            menu_id: planMenus[key],
+            day_number: parseInt(day_number),
+            meal_number: mealIndex
+          });
+        }
+      }
+
+      // Convert price for response
+      const responseData = plan.toObject();
+      if (responseData.price && responseData.price.$numberDecimal) {
+        responseData.price = parseFloat(responseData.price.$numberDecimal);
+      }
+
+      res.status(201).json(responseData);
     } catch (error) {
+      console.error('Error creating plan:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   },
@@ -207,7 +244,12 @@ const vendorController = {
 
       const plan = await Plan.findOneAndUpdate(
         { _id: req.params.id, vendor_id: vendor._id },
-        req.body,
+        {
+          name: req.body.name,
+          price: req.body.price,
+          duration_days: req.body.duration_days,
+          meals_per_day: req.body.meals_per_day
+        },
         { new: true }
       );
 
@@ -215,8 +257,15 @@ const vendorController = {
         return res.status(404).json({ message: 'Plan not found' });
       }
 
-      res.json(plan);
+      // Convert price for response
+      const responseData = plan.toObject();
+      if (responseData.price && responseData.price.$numberDecimal) {
+        responseData.price = parseFloat(responseData.price.$numberDecimal);
+      }
+
+      res.json(responseData);
     } catch (error) {
+      console.error('Error updating plan:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   },
@@ -229,19 +278,47 @@ const vendorController = {
         return res.status(404).json({ message: 'Vendor not found' });
       }
 
-      const plan = await Plan.findOneAndDelete({
-        _id: req.params.id,
-        vendor_id: vendor._id
-      });
-
+      const plan = await Plan.findOneAndDelete({ _id: req.params.id, vendor_id: vendor._id });
       if (!plan) {
         return res.status(404).json({ message: 'Plan not found' });
       }
 
+      // Also delete associated plan menus
       await PlanMenu.deleteMany({ plan_id: req.params.id });
 
       res.json({ message: 'Plan deleted successfully' });
     } catch (error) {
+      console.error('Error deleting plan:', error);
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Get plan menus
+  async getPlanMenus(req, res) {
+    try {
+      const vendor = await Vendor.findOne({ firebaseUid: req.user.firebaseUid });
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      const plan = await Plan.findOne({ _id: req.params.planId, vendor_id: vendor._id });
+      if (!plan) {
+        return res.status(404).json({ message: 'Plan not found' });
+      }
+
+      const planMenus = await PlanMenu.find({ plan_id: req.params.planId })
+        .populate('menu_id')
+        .lean();
+
+      // Convert populated menu_id to menu for frontend compatibility
+      const formattedPlanMenus = planMenus.map(pm => ({
+        ...pm,
+        menu: pm.menu_id
+      }));
+
+      res.json(formattedPlanMenus);
+    } catch (error) {
+      console.error('Error fetching plan menus:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }

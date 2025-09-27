@@ -292,27 +292,30 @@ export const DriverProvider = ({ children }) => {
     }
   };
 
-  // Logout
-  const logout = async (message = 'Thank you for driving with us! 🚗') => {
+  // Logout - direct and simple
+  const logout = async () => {
     try {
-      setLoading(true);
+      console.log('🚪 Starting direct logout...');
       
-      // Clear async storage
+      // Clear AsyncStorage
       await AsyncStorage.removeItem('driver_token');
+      console.log('✅ AsyncStorage cleared');
       
       // Sign out from Firebase
       await signOut(auth);
+      console.log('✅ Firebase signed out');
       
-      // Clear driver state
+      // Clear driver state immediately
       setDriver(null);
       setError('');
+      console.log('✅ Driver context cleared');
       
-      Alert.alert('Success', message);
     } catch (err) {
-      console.error('Logout error:', err);
-      Alert.alert('Error', 'Error during logout');
-    } finally {
-      setLoading(false);
+      console.error('💥 Logout error (continuing anyway):', err);
+      // Even if there's an error, clear the local state for security
+      setDriver(null);
+      setError('');
+      await AsyncStorage.removeItem('driver_token').catch(() => {});
     }
   };
 

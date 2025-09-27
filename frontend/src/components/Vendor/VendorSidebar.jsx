@@ -185,7 +185,7 @@ const VendorSidebar = ({ isOpen, setIsOpen }) => {
           onClick={() => setIsOpen(!isOpen)}
           variant="ghost"
           size="sm"
-          className="absolute -right-3 top-6 bg-sidebar border border-sidebar-border rounded-full w-6 h-6 p-0 text-white"
+          className="absolute -right-3 top-6 bg-sidebar border border-sidebar-border rounded-full w-6 h-6 p-0 text-white dark:text-primary"
         >
           <motion.div
             animate={{ rotate: isOpen ? 180 : 0 }}
