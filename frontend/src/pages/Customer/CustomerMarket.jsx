@@ -409,45 +409,12 @@ const CustomerMarket = () => {
                               ✓ Verified
                             </Badge>
                           )}
-                          <Badge variant="outline" className="text-xs">
-                            {vendor.plans || 0} Plans
-                          </Badge>
                         </div>
                       </div>
                     </div>
                   </CardHeader>
                   
                   <CardContent className="relative space-y-4">
-                    {/* Food Types */}
-                    {vendor.foodTypes && vendor.foodTypes.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {vendor.foodTypes.map((foodType, idx) => (
-                          <Badge 
-                            key={`food-${idx}`}
-                            variant={foodType === 'Vegetarian' ? 'secondary' : 'outline'}
-                            className={`text-xs ${
-                              foodType === 'Vegetarian' 
-                                ? 'bg-green-100 text-green-700 border-green-200 hover:bg-green-200' 
-                                : 'bg-red-100 text-red-700 border-red-200 hover:bg-red-200'
-                            }`}
-                          >
-                            {foodType === 'Vegetarian' ? '🥬 Veg' : '🍖 Non-Veg'}
-                          </Badge>
-                        ))}
-                        {vendor.mealTypes && vendor.mealTypes.length > 0 && (
-                          vendor.mealTypes.map((mealType, idx) => (
-                            <Badge 
-                              key={`meal-${idx}`}
-                              variant="outline" 
-                              className="text-xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-                            >
-                              {mealType.charAt(0).toUpperCase() + mealType.slice(1)}
-                            </Badge>
-                          ))
-                        )}
-                      </div>
-                    )}
-
                     {/* Location Info */}
                     {vendor.address && vendor.address.city && (
                       <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
@@ -460,17 +427,18 @@ const CustomerMarket = () => {
                       </div>
                     )}
 
-                    {/* Distance Badge */}
+                    {/* Distance Info */}
                     {vendor.address && vendor.address.coordinates && user && user.address && user.address.coordinates && (
-                      <div className="flex justify-center">
-                        <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
-                          📍 {calculateDistance(
+                      <div className="flex items-center justify-center gap-2 p-2 bg-muted/20 rounded-md text-sm">
+                        <FaMapMarkerAlt className="w-3 h-3 text-primary" />
+                        <span className="font-medium">
+                          {calculateDistance(
                             user.address.coordinates.lat,
                             user.address.coordinates.lng,
                             vendor.address.coordinates.lat,
                             vendor.address.coordinates.lng
                           ).toFixed(1)} km away
-                        </Badge>
+                        </span>
                       </div>
                     )}
                     

@@ -595,19 +595,8 @@ const VendorDetails = () => {
   {vendor.address.pincode && ``}
 </p>
 
-                      {vendor.address.coordinates && user && user.address && user.address.coordinates && (
-                        <div className="flex items-center gap-2 text-sm bg-primary/10 text-primary p-3 rounded-lg">
-                          <FaMapMarkerAlt className="w-4 h-4" />
-                          <span className="font-medium">
-                            Distance: {calculateDistance(
-                              user.address.coordinates.lat,
-                              user.address.coordinates.lng,
-                              vendor.address.coordinates.lat,
-                              vendor.address.coordinates.lng
-                            ).toFixed(1)} km from your location
-                          </span>
-                        </div>
-                      )}
+                     
+                      
                     </>
                   ) : (
                     <p className="text-muted-foreground text-sm">No address information available</p>
