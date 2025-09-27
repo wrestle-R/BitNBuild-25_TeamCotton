@@ -7,19 +7,14 @@ import { FaStore, FaShoppingBasket } from 'react-icons/fa';
 const ContactSection = () => {
   const navigate = useNavigate();
 
-  const handleVendorAuth = () => {
-    navigate('/vendor/auth');
-  };
-
-  const handleCustomerAuth = () => {
-    navigate('/customer/auth');
-  };
+  const handleVendorAuth = () => navigate('/vendor/auth');
+  const handleCustomerAuth = () => navigate('/customer/auth');
 
   return (
     <div className="flex flex-col items-center justify-center space-y-8 pb-20">
       <AnimatedText
         text="Join NourishNet Today!"
-        textClassName="text-5xl font-bold mb-2"
+        textClassName="text-5xl font-bold mb-2 text-foreground"
         underlinePath="M 0,10 Q 75,0 150,10 Q 225,20 300,10"
         underlineHoverPath="M 0,10 Q 75,20 150,10 Q 225,0 300,10"
         underlineDuration={1.5}
@@ -35,7 +30,7 @@ const ContactSection = () => {
           <Button 
             onClick={handleVendorAuth}
             size="lg"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-200 hover:scale-105 flex items-center gap-2"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-200 hover:scale-105 flex items-center gap-2"
           >
             <FaStore className="w-5 h-5" />
             Join as Vendor
@@ -45,7 +40,7 @@ const ContactSection = () => {
             onClick={handleCustomerAuth}
             size="lg"
             variant="outline"
-            className="border-orange-600 text-orange-600 hover:bg-orange-50 px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-200 hover:scale-105 flex items-center gap-2"
+            className="border-accent text-accent hover:bg-accent hover:text-accent-foreground px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-200 hover:scale-105 flex items-center gap-2"
           >
             <FaShoppingBasket className="w-5 h-5" />
             Order Now
@@ -56,4 +51,4 @@ const ContactSection = () => {
   )
 }
 
-export default ContactSection
+export default ContactSection;

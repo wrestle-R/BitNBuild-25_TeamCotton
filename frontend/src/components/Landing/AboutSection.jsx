@@ -1,5 +1,5 @@
 import React from 'react'
-import { Features } from '../features-8'
+import { Features } from '../ui/features-8'
 const AboutSection = () => {
   return (
     <Features

@@ -110,7 +110,7 @@ const NavbarComponent = () => {
             onClick={() => scrollToSection('#home')}
           >
             <FaHatCowboy className="w-6 h-6" />
-            {visible ? "Wild West" : "Wild West Arena"}
+            {visible ? "Nourish Me" : "Nourish Me"}
           </motion.h1>
 
           <motion.nav

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Component } from "@/components/footer-taped-design";
+import { Component } from "@/components/ui/footer-taped-design";
 const FooterSection = () => {
   return (
     <main className="mx-auto">
