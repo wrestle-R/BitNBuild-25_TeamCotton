@@ -10,7 +10,7 @@ const vendorUserSchema = new mongoose.Schema({
     required: true,
     unique: true
   },
-  firebaseUid: {
+    firebaseUid: {
     type: String,
     required: true,
     unique: true
@@ -20,8 +20,14 @@ const vendorUserSchema = new mongoose.Schema({
     required: false
   },
   address: {
-    type: String,
-    required: false
+    street: String,
+    city: String,
+    state: String,
+    pincode: String,
+    coordinates: {
+      lat: Number,
+      lng: Number
+    }
   },
   earnings: {
     type: mongoose.Schema.Types.Decimal128,
@@ -32,6 +38,10 @@ const vendorUserSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  profileImage: {
+    type: String,
+    required: false
+  }
 }, {
   timestamps: true
 });

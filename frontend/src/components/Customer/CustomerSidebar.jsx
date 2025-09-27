@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
 import { FaShoppingCart, FaHeart, FaUser, FaTachometerAlt, FaCog, FaSignOutAlt, FaMapMarkerAlt, FaBell } from 'react-icons/fa';
 import { Button } from '../ui/button';
@@ -12,6 +12,7 @@ import ThemeToggle from '../ui/ThemeToggle';
 const CustomerSidebar = ({ isOpen, setIsOpen }) => {
   const { user, logout } = useUserContext();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Debug logging
   console.log('🎯 CustomerSidebar Props:', { isOpen, setIsOpen: !!setIsOpen });
@@ -29,12 +30,8 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
   };
 
   const menuItems = [
-    { icon: FaTachometerAlt, label: 'Dashboard', active: true },
-    { icon: FaShoppingCart, label: 'My Orders' },
-    { icon: FaHeart, label: 'Wishlist' },
-    { icon: FaMapMarkerAlt, label: 'Locations' },
-    { icon: FaBell, label: 'Notifications' },
-    { icon: FaCog, label: 'Settings' },
+    { icon: FaTachometerAlt, label: 'Dashboard', path: '/customer/dashboard' },
+    { icon: FaUser, label: 'Profile', path: '/customer/profile' },
   ];
 
   return (
@@ -81,36 +78,40 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
         {/* Navigation */}
         <nav className="flex-1 p-4">
           <ul className="space-y-2">
-            {menuItems.map((item, index) => (
-              <li key={index} className="relative">
-                {/* Active indicator */}
-                {item.active && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
-                )}
-                <Button
-                  variant={item.active ? "default" : "ghost"}
-                  className={`w-full justify-start gap-3 transition-all duration-200 ${
-                    isOpen ? 'px-3' : 'px-0 justify-center'
-                  } ${
-                    item.active 
-                      ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm ml-2' 
-                      : 'text-sidebar-foreground hover:text-primary hover:bg-primary/5'
-                  }`}
-                >
-                  <item.icon className={`w-5 h-5 flex-shrink-0 ${item.active ? 'text-primary' : ''}`} />
-                  {isOpen && (
-                    <motion.span
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -10 }}
-                      className={`font-inter ${item.active ? 'font-semibold' : ''}`}
-                    >
-                      {item.label}
-                    </motion.span>
+            {menuItems.map((item, index) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <li key={index} className="relative">
+                  {/* Active indicator */}
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
                   )}
-                </Button>
-              </li>
-            ))}
+                  <Button
+                    variant={isActive ? "default" : "ghost"}
+                    onClick={() => navigate(item.path)}
+                    className={`w-full justify-start gap-3 transition-all duration-200 ${
+                      isOpen ? 'px-3' : 'px-0 justify-center'
+                    } ${
+                      isActive 
+                        ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm ml-2' 
+                        : 'text-sidebar-foreground hover:text-primary hover:bg-primary/5'
+                    }`}
+                  >
+                    <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary' : ''}`} />
+                    {isOpen && (
+                      <motion.span
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                        className={`font-inter ${isActive ? 'font-semibold' : ''}`}
+                      >
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </Button>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 

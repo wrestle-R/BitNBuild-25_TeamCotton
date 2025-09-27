@@ -3,8 +3,13 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const admin = require('firebase-admin');
+const serviceAccount = require('./serviceAccountKey.json');
 const authRoutes = require('./Routes/authRoutes');
 const adminRoutes = require('./Routes/adminRoutes');
+const vendorRoutes = require('./Routes/vendorRoutes');
+const uploadRoutes = require('./Routes/uploadRoutes');
+
+const customerRoutes = require('./Routes/customerRoutes');
 require('dotenv').config();
 
 const app = express();
@@ -20,20 +25,16 @@ mongoose.connect(process.env.MONGO_URL)
 .then(() => console.log('MongoDB connected successfully'))
 .catch(err => console.error('MongoDB connection error:', err));
 
-// Firebase Admin SDK (you'll need to add your service account key)
-try {
-  // Initialize with your Firebase service account
-  // admin.initializeApp({
-  //   credential: admin.credential.cert(require('./firebase-service-account.json'))
-  // });
-  console.log('Firebase Admin initialized');
-} catch (error) {
-  console.log('Firebase Admin not configured:', error.message);
-}
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 // Use routes
 app.use('/api/auth', authRoutes); // Unified routes for dual user system
 app.use('/api/admin', adminRoutes); // Admin routes
+app.use('/api/vendor', vendorRoutes); // Vendor routes
+app.use('/api/vendor/upload', uploadRoutes); // Upload routes
+app.use('/api/customer', customerRoutes); // Customer routes
 
 // Health check
 app.get('/', (req, res) => {

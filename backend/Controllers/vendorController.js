@@ -1,0 +1,272 @@
+const Vendor = require('../Models/Vendor');
+const Menu = require('../Models/Menu');
+const Plan = require('../Models/Plan');
+const PlanMenu = require('../Models/PlanMenu');
+const axios = require('axios');
+
+const vendorController = {
+  // Get vendor profile
+  async getProfile(req, res) {
+    try {
+      const vendor = await Vendor.findOne({ firebaseUid: req.user.firebaseUid });
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+      res.json(vendor);
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Get vendor stats - ADD THIS
+  async getStats(req, res) {
+    try {
+      const vendor = await Vendor.findOne({ firebaseUid: req.user.firebaseUid });
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      const menuCount = await Menu.countDocuments({ vendor_id: vendor._id });
+      const planCount = await Plan.countDocuments({ vendor_id: vendor._id });
+
+      res.json({
+        activeSubscribers: 0,
+        menuItems: menuCount,
+        plans: planCount,
+        earnings: vendor.earnings || 0,
+        accountStatus: vendor.verified ? 'Verified' : 'Pending'
+      });
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Update vendor profile
+  async updateProfile(req, res) {
+    try {
+      const { name, contactNumber, address, profileImage } = req.body;
+      
+      let coordinates = null;
+      if (address && address.street) {
+        const fullAddress = `${address.street}, ${address.city}, ${address.state} ${address.pincode}`;
+        coordinates = await getCoordinates(fullAddress);
+      }
+
+      const updateData = {
+        name,
+        contactNumber,
+        profileImage,
+        address: {
+          ...address,
+          coordinates
+        }
+      };
+
+      const vendor = await Vendor.findOneAndUpdate(
+        { firebaseUid: req.user.firebaseUid },
+        updateData,
+        { new: true }
+      );
+
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      res.json(vendor);
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Get vendor menus
+  async getMenus(req, res) {
+    try {
+      const vendor = await Vendor.findOne({ firebaseUid: req.user.firebaseUid });
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      const menus = await Menu.find({ vendor_id: vendor._id }).sort({ created_at: -1 });
+      res.json(menus);
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Create menu
+  async createMenu(req, res) {
+    try {
+      const vendor = await Vendor.findOne({ firebaseUid: req.user.firebaseUid });
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      const menu = new Menu({
+        vendor_id: vendor._id,
+        ...req.body
+      });
+
+      await menu.save();
+      res.status(201).json(menu);
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Update menu
+  async updateMenu(req, res) {
+    try {
+      const vendor = await Vendor.findOne({ firebaseUid: req.user.firebaseUid });
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      const menu = await Menu.findOneAndUpdate(
+        { _id: req.params.id, vendor_id: vendor._id },
+        req.body,
+        { new: true }
+      );
+
+      if (!menu) {
+        return res.status(404).json({ message: 'Menu not found' });
+      }
+
+      res.json(menu);
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Delete menu
+  async deleteMenu(req, res) {
+    try {
+      const vendor = await Vendor.findOne({ firebaseUid: req.user.firebaseUid });
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      const menu = await Menu.findOneAndDelete({
+        _id: req.params.id,
+        vendor_id: vendor._id
+      });
+
+      if (!menu) {
+        return res.status(404).json({ message: 'Menu not found' });
+      }
+
+      await PlanMenu.deleteMany({ menu_id: req.params.id });
+
+      res.json({ message: 'Menu deleted successfully' });
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Get vendor plans
+  async getPlans(req, res) {
+    try {
+      const vendor = await Vendor.findOne({ firebaseUid: req.user.firebaseUid });
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      const plans = await Plan.find({ vendor_id: vendor._id }).sort({ created_at: -1 });
+      res.json(plans);
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Create plan
+  async createPlan(req, res) {
+    try {
+      const vendor = await Vendor.findOne({ firebaseUid: req.user.firebaseUid });
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      const plan = new Plan({
+        vendor_id: vendor._id,
+        ...req.body
+      });
+
+      await plan.save();
+      res.status(201).json(plan);
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Update plan
+  async updatePlan(req, res) {
+    try {
+      const vendor = await Vendor.findOne({ firebaseUid: req.user.firebaseUid });
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      const plan = await Plan.findOneAndUpdate(
+        { _id: req.params.id, vendor_id: vendor._id },
+        req.body,
+        { new: true }
+      );
+
+      if (!plan) {
+        return res.status(404).json({ message: 'Plan not found' });
+      }
+
+      res.json(plan);
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Delete plan
+  async deletePlan(req, res) {
+    try {
+      const vendor = await Vendor.findOne({ firebaseUid: req.user.firebaseUid });
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      const plan = await Plan.findOneAndDelete({
+        _id: req.params.id,
+        vendor_id: vendor._id
+      });
+
+      if (!plan) {
+        return res.status(404).json({ message: 'Plan not found' });
+      }
+
+      await PlanMenu.deleteMany({ plan_id: req.params.id });
+
+      res.json({ message: 'Plan deleted successfully' });
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
+};
+
+// Helper function to get coordinates from address
+async function getCoordinates(address) {
+  try {
+    const response = await axios.get('https://api.opencagedata.com/geocode/v1/json', {
+      params: {
+        q: address,
+        key: process.env.GEOCODING_API_KEY,
+        limit: 1
+      }
+    });
+
+    if (response.data.results && response.data.results.length > 0) {
+      const { lat, lng } = response.data.results[0].geometry;
+      return { lat, lng };
+    }
+    return null;
+  } catch (error) {
+    console.error('Geocoding error:', error);
+    return null;
+  }
+}
+
+module.exports = vendorController;
