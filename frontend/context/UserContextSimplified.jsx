@@ -31,11 +31,13 @@ export const UserProvider = ({ children }) => {
   // Enhanced logging for debugging
   console.log('🔧 UserContext State:', {
     user: user ? {
-      uid: user.uid,
+      id: user.id,
+      name: user.name,
       email: user.email,
-      displayName: user.displayName,
+      contactNumber: user.contactNumber,
+      address: user.address,
       role: user.role,
-      id: user.id
+      firebaseUid: user.firebaseUid
     } : null,
     userType,
     loading,
@@ -55,8 +57,9 @@ export const UserProvider = ({ children }) => {
           firebaseUid: firebaseUser.uid,
           name: userData.name || firebaseUser.displayName,
           email: firebaseUser.email,
-          profilePicture: firebaseUser.photoURL || '',
           role: userType,
+          contact_number: '',
+          address: '',
         }),
       });
 
@@ -100,17 +103,9 @@ export const UserProvider = ({ children }) => {
 
   // Handle authentication errors
   const handleAuthError = async (error) => {
-    try {
-      await signOut(auth);
-      localStorage.clear();
-      sessionStorage.clear();
-      setError(error.message);
-      toast.error(error.message);
-      console.error('Authentication error:', error);
-    } catch (signOutError) {
-      console.error('Error during signout:', signOutError);
-      toast.error('An unexpected error occurred during cleanup');
-    }
+    console.error('Authentication error:', error);
+    setError(error.message);
+    toast.error(error.message);
   };
 
   // Switch user type
@@ -153,7 +148,7 @@ export const UserProvider = ({ children }) => {
       } else if (error.code === 'auth/invalid-email') {
         toast.error('Invalid email address format.');
       } else {
-        await handleAuthError(error);
+        toast.error(error.message || 'Registration failed. Please try again.');
       }
       throw error;
     } finally {
@@ -189,7 +184,7 @@ export const UserProvider = ({ children }) => {
       } else if (error.code === 'auth/too-many-requests') {
         toast.error('Too many failed attempts. Please try again later.');
       } else {
-        await handleAuthError(error);
+        toast.error(error.message || 'Login failed. Please try again.');
       }
       throw error;
     } finally {
@@ -232,12 +227,11 @@ export const UserProvider = ({ children }) => {
 
       if (error.code === 'auth/popup-closed-by-user') {
         toast.error('Sign in was cancelled');
-        setError('Sign in was cancelled');
+        toast.error('Sign in was cancelled');
       } else if (error.code === 'auth/popup-blocked') {
         toast.error('Popup was blocked. Please allow popups and try again.');
-        setError('Popup was blocked. Please allow popups and try again.');
       } else {
-        await handleAuthError(error);
+        toast.error(error.message || 'Google sign-in failed. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -279,57 +273,10 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  // Firebase auth state listener
+  // Initialize loading state
   useEffect(() => {
-    console.log('🔥 Setting up Firebase Auth Listener');
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log('🔥 Auth State Changed:', {
-        firebaseUser: firebaseUser ? {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName
-        } : null,
-        currentUser: user ? user.id : null,
-        userType
-      });
-
-      try {
-        if (firebaseUser && !user) {
-          console.log('🔑 User signed in, validating with backend...');
-          // User is signed in but we don't have user data yet
-          // This happens on page refresh - try to validate with backend
-          try {
-            const userData = await validateUserRole(firebaseUser.uid);
-            console.log('✅ User validation successful:', {
-              user: userData.user,
-              token: userData.token ? 'Present' : 'Missing'
-            });
-            localStorage.setItem('nourishnet_token', userData.token);
-            setUser(userData.user);
-          } catch (error) {
-            // If validation fails, user needs to re-authenticate
-            console.log('❌ User validation failed on refresh:', error.message);
-            await signOut(auth);
-          }
-        } else if (!firebaseUser) {
-          console.log('🚪 User signed out, clearing state...');
-          // User is signed out
-          localStorage.removeItem('nourishnet_token');
-          setUser(null);
-          setError('');
-        } else if (firebaseUser && user) {
-          console.log('🔄 User already authenticated, skipping validation');
-        }
-      } catch (err) {
-        console.error('💥 Auth state change error:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [user, userType]);
+    setLoading(false);
+  }, []);
 
   const contextValue = {
     user,

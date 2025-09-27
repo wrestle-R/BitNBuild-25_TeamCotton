@@ -3,7 +3,7 @@ const {
   createUser,
   validateRole,
   getUserByFirebaseUid
-} = require('../controllers/authControllersUnified');
+} = require('../Controllers/authControllers');
 
 const router = express.Router();
 
