@@ -1,5 +1,6 @@
 const Vendor = require('../Models/Vendor');
 const Customer = require('../Models/Customer');
+const Driver = require('../Models/Driver');
 const jwt = require('jsonwebtoken');
 
 const generateToken = (userId, firebaseUid, role) => {
@@ -41,22 +42,24 @@ const createUser = async (req, res) => {
       });
     }
 
-    // Check for existing user in both collections
+    // Check for existing user in all collections
     const existingVendor = await Vendor.findOne({ firebaseUid });
     const existingCustomer = await Customer.findOne({ firebaseUid });
+    const existingDriver = await Driver.findOne({ firebaseUid });
 
-    if (existingVendor || existingCustomer) {
+    if (existingVendor || existingCustomer || existingDriver) {
       console.log('User already exists with Firebase ID:', firebaseUid);
       return res.status(409).json({
         message: 'User already exists with this Firebase ID',
       });
     }
 
-    // Check for existing email in both collections
+    // Check for existing email in all collections
     const existingEmailVendor = await Vendor.findOne({ email });
     const existingEmailCustomer = await Customer.findOne({ email });
+    const existingEmailDriver = await Driver.findOne({ email });
 
-    if (existingEmailVendor || existingEmailCustomer) {
+    if (existingEmailVendor || existingEmailCustomer || existingEmailDriver) {
       console.log('User already exists with email:', email);
       return res.status(409).json({
         message: 'User already exists with this email address',
@@ -80,9 +83,20 @@ const createUser = async (req, res) => {
         contact_number: '',
         address: ''
       });
+    } else if (role === 'driver') {
+      user = new Driver({
+        name: name.trim(),
+        email: email.toLowerCase(),
+        firebaseUid,
+        contactNumber: '',
+        address: '',
+        vehicleType: 'bike',
+        vehicleNumber: '',
+        licenseNumber: ''
+      });
     } else {
       return res.status(400).json({
-        message: 'Invalid role. Must be either "vendor" or "customer"',
+        message: 'Invalid role. Must be either "vendor", "customer", or "driver"',
       });
     }
 
@@ -155,19 +169,26 @@ const validateRole = async (req, res) => {
       user = await Vendor.findOne({ firebaseUid });
       if (!user) {
         return res.status(403).json({
-          message: 'You are not registered as a vendor. Please register as a vendor first or login as a customer.',
+          message: 'You are not registered as a vendor. Please register as a vendor first or login with the correct role.',
         });
       }
     } else if (role === 'customer') {
       user = await Customer.findOne({ firebaseUid });
       if (!user) {
         return res.status(403).json({
-          message: 'You are not registered as a customer. Please register as a customer first or login as a vendor.',
+          message: 'You are not registered as a customer. Please register as a customer first or login with the correct role.',
+        });
+      }
+    } else if (role === 'driver') {
+      user = await Driver.findOne({ firebaseUid });
+      if (!user) {
+        return res.status(403).json({
+          message: 'You are not registered as a driver. Please register as a driver first or login with the correct role.',
         });
       }
     } else {
       return res.status(400).json({
-        message: 'Invalid role. Must be either "vendor" or "customer"',
+        message: 'Invalid role. Must be either "vendor", "customer", or "driver"',
       });
     }
 
@@ -201,13 +222,18 @@ const getUserByFirebaseUid = async (req, res) => {
   try {
     const { firebaseUid } = req.params;
 
-    // Search in both collections
+    // Search in all collections
     let user = await Vendor.findOne({ firebaseUid });
     let role = 'vendor';
     
     if (!user) {
       user = await Customer.findOne({ firebaseUid });
       role = 'customer';
+    }
+    
+    if (!user) {
+      user = await Driver.findOne({ firebaseUid });
+      role = 'driver';
     }
 
     if (!user) {
