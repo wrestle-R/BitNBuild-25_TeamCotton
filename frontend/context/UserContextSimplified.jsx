@@ -283,10 +283,69 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  // Initialize loading state
+  // Firebase auth state listener
   useEffect(() => {
-    setLoading(false);
-  }, []);
+    console.log('🔥 Setting up Firebase auth state listener');
+    
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log('🔥 Firebase auth state changed:', {
+        user: firebaseUser ? {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          emailVerified: firebaseUser.emailVerified
+        } : null
+      });
+
+      try {
+        if (firebaseUser) {
+          // User is signed in
+          console.log('✅ User is authenticated, setting up user data');
+          
+          // Get or refresh the token
+          const token = await firebaseUser.getIdToken();
+          
+          // Create user object from Firebase data
+          const userData = {
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName,
+            email: firebaseUser.email,
+            role: userType,
+            firebaseUid: firebaseUser.uid,
+            emailVerified: firebaseUser.emailVerified
+          };
+
+          // Store token and set user
+          localStorage.setItem('nourishnet_token', token);
+          setUser(userData);
+          
+          console.log('✅ User data set from Firebase auth state');
+        } else {
+          // User is signed out
+          console.log('🚫 User is not authenticated, clearing user data');
+          
+          // Clear local storage and user state
+          localStorage.removeItem('nourishnet_token');
+          setUser(null);
+          setError('');
+        }
+      } catch (error) {
+        console.error('💥 Error handling auth state change:', error);
+        setError('Authentication state error');
+        // Clear everything on error
+        localStorage.removeItem('nourishnet_token');
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log('🔥 Cleaning up Firebase auth state listener');
+      unsubscribe();
+    };
+  }, [userType]); // Depend on userType so it updates when user switches types
 
   const contextValue = {
     user,
