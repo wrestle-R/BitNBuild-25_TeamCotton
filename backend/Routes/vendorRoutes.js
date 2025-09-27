@@ -32,6 +32,9 @@ router.post('/plans', authMiddleware, vendorController.createPlan);
 router.put('/plans/:id', authMiddleware, vendorController.updatePlan);
 router.delete('/plans/:id', authMiddleware, vendorController.deletePlan);
 router.get('/plans/:planId/menus', authMiddleware, vendorController.getPlanMenus);
+// Add this line after existing routes:
+router.get('/subscribers', authMiddleware, vendorController.getSubscribers);
+router.get('/subscription-stats', authMiddleware, vendorController.getSubscriptionStats);
 
 // Upload route
 router.post('/upload/image', authMiddleware, upload.single('image'), uploadController.uploadImage);

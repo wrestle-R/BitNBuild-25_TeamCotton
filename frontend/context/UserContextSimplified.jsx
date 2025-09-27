@@ -27,6 +27,7 @@ export const UserProvider = ({ children }) => {
   const [error, setError] = useState('');
   const [token, setToken] = useState(localStorage.getItem('nourishnet_token'));
   const [vendorProfile, setVendorProfile] = useState(null);
+  const [profileImage, setProfileImage] = useState(localStorage.getItem('userProfileImage') || null);
 
   const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
@@ -136,16 +137,20 @@ export const UserProvider = ({ children }) => {
         role: userType,
       });
 
-      // Store token and user data (including mongoid)
-      localStorage.setItem('nourishnet_token', profileData.token);
-      setToken(profileData.token);
-      const userWithMongoId = {
-        ...profileData.user,
-        mongoid: profileData.user.id // MongoDB _id is returned as 'id' from backend
-      };
-      setUser(userWithMongoId);
-
-      toast.success('Account created successfully!');
+          // Store token and user data (including mongoid)
+          localStorage.setItem('nourishnet_token', profileData.token);
+          setToken(profileData.token);
+          const userWithMongoId = {
+            ...profileData.user,
+            mongoid: profileData.user.id // MongoDB _id is returned as 'id' from backend
+          };
+          setUser(userWithMongoId);
+          
+          // Store profile image if available
+          if (profileData.user.profileImage) {
+            setProfileImage(profileData.user.profileImage);
+            localStorage.setItem('userProfileImage', profileData.user.profileImage);
+          }      toast.success('Account created successfully!');
     } catch (error) {
       console.error('Registration error:', error);
       
@@ -187,6 +192,12 @@ export const UserProvider = ({ children }) => {
             mongoid: backendUserData.user.id // MongoDB _id is returned as 'id' from backend
           };
           setUser(userWithMongoId);
+          
+          // Store profile image if available
+          if (backendUserData.user.profileImage) {
+            setProfileImage(backendUserData.user.profileImage);
+            localStorage.setItem('userProfileImage', backendUserData.user.profileImage);
+          }
         } else {
           // Fallback to basic user object if backend call fails
           const userData = {
@@ -276,6 +287,12 @@ export const UserProvider = ({ children }) => {
         mongoid: userData.user.id // MongoDB _id is returned as 'id' from backend
       };
       setUser(userWithMongoId);
+      
+      // Store profile image if available
+      if (userData.user.profileImage) {
+        setProfileImage(userData.user.profileImage);
+        localStorage.setItem('userProfileImage', userData.user.profileImage);
+      }
 
     } catch (error) {
       console.error('Google authentication error:', error);
@@ -300,6 +317,7 @@ export const UserProvider = ({ children }) => {
       
       // Clear local storage
       localStorage.removeItem('nourishnet_token');
+      localStorage.removeItem('userProfileImage');
       
       // Sign out from Firebase
       await signOut(auth);
@@ -307,6 +325,7 @@ export const UserProvider = ({ children }) => {
       // Clear user state
       setUser(null);
       setToken(null);
+      setProfileImage(null);
       setError('');
       
       toast.success(message);
@@ -383,6 +402,12 @@ export const UserProvider = ({ children }) => {
           setToken(token);
           setUser(userData);
           
+          // Set Firebase profile image if available and no stored image
+          if (firebaseUser.photoURL && !localStorage.getItem('userProfileImage')) {
+            setProfileImage(firebaseUser.photoURL);
+            localStorage.setItem('userProfileImage', firebaseUser.photoURL);
+          }
+          
           console.log('✅ User data set from Firebase auth state');
 
           // Fetch vendor profile if user is vendor (but don't make it dependent on userType changes)
@@ -395,8 +420,10 @@ export const UserProvider = ({ children }) => {
           
           // Clear local storage and user state
           localStorage.removeItem('nourishnet_token');
+          localStorage.removeItem('userProfileImage');
           setUser(null);
           setToken(null);
+          setProfileImage(null);
           setError('');
         }
       } catch (error) {
@@ -404,8 +431,10 @@ export const UserProvider = ({ children }) => {
         setError('Authentication state error');
         // Clear everything on error
         localStorage.removeItem('nourishnet_token');
+        localStorage.removeItem('userProfileImage');
         setUser(null);
         setToken(null);
+        setProfileImage(null);
       } finally {
         setLoading(false);
       }
@@ -418,6 +447,12 @@ export const UserProvider = ({ children }) => {
     };
   }, []); // <- CHANGE THIS: Remove userType dependency
 
+  // Function to update profile image
+  const updateProfileImage = (imageUrl) => {
+    setProfileImage(imageUrl);
+    localStorage.setItem('userProfileImage', imageUrl);
+  };
+
   const contextValue = {
     user,
     userType,
@@ -425,6 +460,8 @@ export const UserProvider = ({ children }) => {
     error,
     token,
     vendorProfile,
+    profileImage,
+    updateProfileImage,
     loginWithEmail,
     registerWithEmail,
     loginWithGoogle,

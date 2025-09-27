@@ -30,15 +30,30 @@ const vendorController = {
 
       const menuCount = await Menu.countDocuments({ vendor_id: vendor._id });
       const planCount = await Plan.countDocuments({ vendor_id: vendor._id });
+      const activeSubscribers = await ConsumerSubscription.countDocuments({ 
+        vendor_id: vendor._id,
+        active: true 
+      });
+
+      // Get earnings - handle Decimal128
+      let earnings = 0;
+      if (vendor.earnings) {
+        if (typeof vendor.earnings === 'object' && vendor.earnings.$numberDecimal) {
+          earnings = parseFloat(vendor.earnings.$numberDecimal);
+        } else {
+          earnings = parseFloat(vendor.earnings) || 0;
+        }
+      }
 
       res.json({
-        activeSubscribers: 0,
+        activeSubscribers,
         menuItems: menuCount,
         plans: planCount,
-        earnings: vendor.earnings || 0,
-        accountStatus: vendor.verified ? 'Verified' : 'Pending'
+        earnings,
+        accountStatus: vendor.verified ? 'Verified' : 'Active'
       });
     } catch (error) {
+      console.error('Error fetching stats:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   },
@@ -364,6 +379,28 @@ const vendorController = {
       });
     } catch (error) {
       console.error('Error fetching subscription stats:', error);
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Get subscribers - ADD THIS METHOD
+  async getSubscribers(req, res) {
+    try {
+      const vendor = await Vendor.findOne({ firebaseUid: req.user.firebaseUid });
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      const subscriptions = await ConsumerSubscription.find({ 
+        vendor_id: vendor._id 
+      })
+      .populate('consumer_id', 'name email photoUrl address')
+      .populate('plan_id', 'name price selected_meals')
+      .sort({ start_date: -1 });
+
+      res.json(subscriptions);
+    } catch (error) {
+      console.error('Error fetching subscribers:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
