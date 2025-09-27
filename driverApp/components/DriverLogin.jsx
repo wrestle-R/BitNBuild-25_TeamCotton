@@ -14,7 +14,6 @@ import {
 import { useRouter } from 'expo-router';
 import { useDriverContext } from '../context/DriverContext';
 import { Ionicons } from '@expo/vector-icons';
-import TestAuth from './TestAuth';
 
 const DriverLogin = () => {
   const router = useRouter();
@@ -22,8 +21,7 @@ const DriverLogin = () => {
     driver, 
     loading, 
     error,
-    loginWithEmail, 
-    loginWithGoogle
+    loginWithEmail
   } = useDriverContext();
 
   const [formData, setFormData] = useState({
@@ -32,12 +30,13 @@ const DriverLogin = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
 
-  // Redirect to dashboard if authenticated
+  // Navigate directly to dashboard when authenticated
   useEffect(() => {
     if (driver) {
+      console.log('✅ Driver authenticated, navigating to dashboard');
       router.replace('/(tabs)');
     }
-  }, [driver]);
+  }, [driver, router]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -53,19 +52,11 @@ const DriverLogin = () => {
     }
 
     try {
+      console.log('🚀 Attempting login...');
       await loginWithEmail(formData.email.trim(), formData.password);
-      // Navigation will be handled by auth state change
+      console.log('✅ Login successful - useEffect will handle navigation');
     } catch (error) {
-      console.error('Login error:', error);
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      await loginWithGoogle();
-      // Navigation will be handled by auth state change
-    } catch (error) {
-      console.error('Google login error:', error);
+      console.error('💥 Login error:', error);
     }
   };
 
@@ -137,21 +128,6 @@ const DriverLogin = () => {
             </Text>
           </TouchableOpacity>
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
-            <View style={styles.dividerLine} />
-          </View>
-
-          <TouchableOpacity
-            style={styles.googleButton}
-            onPress={handleGoogleLogin}
-            disabled={loading}
-          >
-            <Ionicons name="logo-google" size={20} color="#fff" />
-            <Text style={styles.googleButtonText}>Continue with Google</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity
             style={styles.signupLink}
             onPress={() => router.push('/auth/signup')}
@@ -167,9 +143,6 @@ const DriverLogin = () => {
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
-        
-        {/* Temporary debugging component */}
-        <TestAuth />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -263,43 +236,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 25,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#e1e5e9',
-  },
-  dividerText: {
-    marginHorizontal: 15,
-    color: '#666',
-    fontSize: 14,
-  },
-  googleButton: {
-    backgroundColor: '#4285f4',
-    borderRadius: 12,
-    paddingVertical: 15,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  googleButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
   },
   signupLink: {
     alignItems: 'center',

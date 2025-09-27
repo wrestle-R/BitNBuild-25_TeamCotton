@@ -26,6 +26,7 @@ export const UserProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [token, setToken] = useState(localStorage.getItem('nourishnet_token'));
+  const [vendorProfile, setVendorProfile] = useState(null);
 
   const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
@@ -328,6 +329,22 @@ export const UserProvider = ({ children }) => {
     }
   };
 
+  // Fetch vendor profile
+  const fetchVendorProfile = async () => {
+    if (!auth.currentUser) return;
+    const idToken = await auth.currentUser.getIdToken();
+    const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/vendor/profile`, {
+      headers: {
+        'Authorization': `Bearer ${idToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (response.ok) {
+      const data = await response.json();
+      setVendorProfile(data);
+    }
+  };
+
   // Firebase auth state listener
   useEffect(() => {
     console.log('🔥 Setting up Firebase auth state listener');
@@ -400,6 +417,11 @@ export const UserProvider = ({ children }) => {
           }
           
           console.log('✅ User data set from Firebase auth state');
+
+          // Fetch vendor profile if user is vendor
+          if (userType === 'vendor') {
+            fetchVendorProfile();
+          }
         } else {
           // User is signed out
           console.log('🚫 User is not authenticated, clearing user data');
@@ -435,6 +457,7 @@ export const UserProvider = ({ children }) => {
     loading,
     error,
     token,
+    vendorProfile,
     loginWithEmail,
     registerWithEmail,
     loginWithGoogle,

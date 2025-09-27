@@ -33,10 +33,6 @@ const driverUserSchema = new mongoose.Schema({
     type: String,
     required: false
   },
-  licenseNumber: {
-    type: String,
-    required: false
-  },
   earnings: {
     type: mongoose.Schema.Types.Decimal128,
     default: 0,

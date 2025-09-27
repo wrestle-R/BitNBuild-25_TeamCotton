@@ -31,6 +31,7 @@ router.get('/plans', authMiddleware, vendorController.getPlans);
 router.post('/plans', authMiddleware, vendorController.createPlan);
 router.put('/plans/:id', authMiddleware, vendorController.updatePlan);
 router.delete('/plans/:id', authMiddleware, vendorController.deletePlan);
+router.get('/plans/:planId/menus', authMiddleware, vendorController.getPlanMenus);
 
 // Upload route
 router.post('/upload/image', authMiddleware, upload.single('image'), uploadController.uploadImage);

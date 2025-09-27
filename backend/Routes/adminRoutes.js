@@ -6,7 +6,8 @@ const {
   deleteUser,
   deleteVendor,
   toggleVendorVerification,
-  getVendorDetails
+  getVendorDetails,
+  createTestVendors
 } = require('../Controllers/adminControllers');
 
 // Admin middleware (simple check for now)
@@ -32,5 +33,8 @@ router.delete('/users/:userId', adminAuth, deleteUser);
 
 // Delete vendor
 router.delete('/vendors/:vendorId', adminAuth, deleteVendor);
+
+// Create test vendors (for development)
+router.post('/create-test-vendors', adminAuth, createTestVendors);
 
 module.exports = router;

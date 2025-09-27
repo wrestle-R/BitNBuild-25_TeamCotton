@@ -209,6 +209,13 @@ export const DriverProvider = ({ children }) => {
           const backendDriverData = await response.json();
           console.log('✅ Backend data received:', backendDriverData);
           
+          console.log('🔍 Login - Backend driver data received:', {
+            user: backendDriverData.user,
+            hasVehicleType: !!backendDriverData.user.vehicleType,
+            hasVehicleNumber: !!backendDriverData.user.vehicleNumber,
+            hasContactNumber: !!backendDriverData.user.contactNumber
+          });
+          
           // Check if user is actually a driver
           if (backendDriverData.user.role !== 'driver') {
             console.log('🚫 User is not a driver, role:', backendDriverData.user.role);
@@ -221,6 +228,15 @@ export const DriverProvider = ({ children }) => {
             ...backendDriverData.user,
             mongoid: backendDriverData.user.id // MongoDB _id is returned as 'id' from backend
           };
+          
+          console.log('🔍 Login - Final driver object being set:', {
+            email: driverWithMongoId.email,
+            contactNumber: driverWithMongoId.contactNumber,
+            vehicleType: driverWithMongoId.vehicleType,
+            vehicleNumber: driverWithMongoId.vehicleNumber,
+            role: driverWithMongoId.role
+          });
+          
           setDriver(driverWithMongoId);
           console.log('✅ Driver data set in context');
         } else {
@@ -292,27 +308,30 @@ export const DriverProvider = ({ children }) => {
     }
   };
 
-  // Logout
-  const logout = async (message = 'Thank you for driving with us! 🚗') => {
+  // Logout - direct and simple
+  const logout = async () => {
     try {
-      setLoading(true);
+      console.log('🚪 Starting direct logout...');
       
-      // Clear async storage
+      // Clear AsyncStorage
       await AsyncStorage.removeItem('driver_token');
+      console.log('✅ AsyncStorage cleared');
       
       // Sign out from Firebase
       await signOut(auth);
+      console.log('✅ Firebase signed out');
       
-      // Clear driver state
+      // Clear driver state immediately
       setDriver(null);
       setError('');
+      console.log('✅ Driver context cleared');
       
-      Alert.alert('Success', message);
     } catch (err) {
-      console.error('Logout error:', err);
-      Alert.alert('Error', 'Error during logout');
-    } finally {
-      setLoading(false);
+      console.error('💥 Logout error (continuing anyway):', err);
+      // Even if there's an error, clear the local state for security
+      setDriver(null);
+      setError('');
+      await AsyncStorage.removeItem('driver_token').catch(() => {});
     }
   };
 
@@ -355,6 +374,13 @@ export const DriverProvider = ({ children }) => {
             if (response.ok) {
               const backendDriverData = await response.json();
               
+              console.log('🔍 Backend driver data received:', {
+                user: backendDriverData.user,
+                hasVehicleType: !!backendDriverData.user.vehicleType,
+                hasVehicleNumber: !!backendDriverData.user.vehicleNumber,
+                hasContactNumber: !!backendDriverData.user.contactNumber
+              });
+              
               // Check if user is actually a driver
               if (backendDriverData.user.role !== 'driver') {
                 console.log('🚫 User is not a driver, logging out');
@@ -370,6 +396,15 @@ export const DriverProvider = ({ children }) => {
                 mongoid: backendDriverData.user.id,
                 emailVerified: firebaseUser.emailVerified
               };
+              
+              console.log('🔍 Final driver object being set:', {
+                email: driverWithMongoId.email,
+                contactNumber: driverWithMongoId.contactNumber,
+                vehicleType: driverWithMongoId.vehicleType,
+                vehicleNumber: driverWithMongoId.vehicleNumber,
+                role: driverWithMongoId.role
+              });
+              
               setDriver(driverWithMongoId);
             } else {
               // Try to validate as driver
@@ -437,6 +472,62 @@ export const DriverProvider = ({ children }) => {
     };
   }, []);
 
+  // Update driver profile with additional details
+  const updateDriverProfile = async (profileData) => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      console.log('🔧 Updating driver profile with:', profileData);
+      
+      if (!driver || !driver.firebaseUid) {
+        throw new Error('No authenticated driver found');
+      }
+      
+      const token = await AsyncStorage.getItem('driver_token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch(`${API_BASE}/api/auth/update-driver`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          firebaseUid: driver.firebaseUid,
+          ...profileData
+        })
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update profile');
+      }
+
+      // Update local driver state
+      const updatedDriver = {
+        ...driver,
+        ...profileData,
+        ...data.user
+      };
+      
+      setDriver(updatedDriver);
+      console.log('✅ Driver profile updated successfully');
+      
+      return { success: true, user: updatedDriver };
+      
+    } catch (error) {
+      console.error('💥 Error updating driver profile:', error);
+      setError(error.message);
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const contextValue = {
     driver,
     loading,
@@ -446,6 +537,7 @@ export const DriverProvider = ({ children }) => {
     loginWithGoogle,
     logout,
     testConnection,
+    updateDriverProfile,
   };
 
   return (

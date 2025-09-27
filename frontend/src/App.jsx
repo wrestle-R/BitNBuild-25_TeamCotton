@@ -6,9 +6,12 @@ import VendorAuth from './pages/Vendor/VendorAuth'
 import VendorDashboard from './pages/Vendor/VendorDashboard'
 import VendorProfile from './pages/Vendor/VendorProfile'
 import VendorMenus from './pages/Vendor/VendorMenus'
+import VendorPlans from './pages/Vendor/VendorPlans'
 import CustomerAuth from './pages/Customer/CustomerAuth'
 import CustomerDashboard from './pages/Customer/CustomerDashboard'
 import CustomerProfile from './pages/Customer/CustomerProfile'
+import CustomerMarket from './pages/Customer/CustomerMarket'
+import VendorDetails from './pages/Customer/VendorDetails'
 import AdminAuth from './pages/Admin/AdminAuth'
 import AdminDashboard from './pages/Admin/AdminDashboard'
 import ManageVendors from './pages/Admin/ManageVendors'
@@ -122,6 +125,35 @@ const CustomerRoute = () => {
   return <CustomerDashboard />;
 };
 
+// Customer market route  
+const CustomerMarketRoute = () => {
+  const { user, loading } = useUserContext();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary mx-auto mb-4"></div>
+          <p className="text-foreground font-inter text-lg">Loading market...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/customer/auth" replace />;
+  }
+  
+  if (user.role !== 'customer') {
+    if (user.role === 'vendor') {
+      return <Navigate to="/vendor/dashboard" replace />;
+    }
+    return <Navigate to="/customer/auth" replace />;
+  }
+  
+  return <CustomerMarket />;
+};
+
 // Customer profile route  
 const CustomerProfileRoute = () => {
   const { user, loading } = useUserContext();
@@ -151,6 +183,35 @@ const CustomerProfileRoute = () => {
   return <CustomerProfile />;
 };
 
+// Vendor details route
+const VendorDetailsRoute = () => {
+  const { user, loading } = useUserContext();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary mx-auto mb-4"></div>
+          <p className="text-foreground font-inter text-lg">Loading vendor details...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/customer/auth" replace />;
+  }
+  
+  if (user.role !== 'customer') {
+    if (user.role === 'vendor') {
+      return <Navigate to="/vendor/dashboard" replace />;
+    }
+    return <Navigate to="/customer/auth" replace />;
+  }
+  
+  return <VendorDetails />;
+};
+
 const App = () => {
   return (
     <UserProvider>
@@ -162,7 +223,10 @@ const App = () => {
           <Route path="/vendor/dashboard" element={<VendorRoute />} />
           <Route path="/vendor/profile" element={<VendorProfile />} />
           <Route path="/vendor/menus" element={<VendorMenus />} />
+          <Route path="/vendor/plans" element={<VendorPlans />} />
           <Route path="/customer/dashboard" element={<CustomerRoute />} />
+          <Route path="/customer/market" element={<CustomerMarketRoute />} />
+          <Route path="/customer/vendor/:vendorId" element={<VendorDetailsRoute />} />
           <Route path="/customer/profile" element={<CustomerProfileRoute />} />
           {/* Hidden Admin Routes */}
           <Route path="/admin/auth" element={<AdminAuth />} />

@@ -1,7 +1,86 @@
 const Customer = require('../Models/Customer');
+const Vendor = require('../Models/Vendor');
+const Plan = require('../Models/Plan');
 const axios = require('axios');
 
 const customerController = {
+  // Get all verified vendors
+  async getVerifiedVendors(req, res) {
+    try {
+      const vendors = await Vendor.find({ verified: true }).select('-firebaseUid -__v');
+      
+      // Get plan count for each vendor and filter vendors with at least one meal plan
+      const vendorsWithPlanCount = await Promise.all(
+        vendors.map(async (vendor) => {
+          const planCount = await Plan.countDocuments({ vendor_id: vendor._id });
+          
+          // Only return vendors with at least one meal plan
+          if (planCount === 0) {
+            return null;
+          }
+          
+          // Generate a random but consistent specialty based on vendor ID
+          const specialty = (vendor._id.toString().charCodeAt(0) % 2 === 0) ? 'veg' : 'nonveg';
+          
+          // Generate a consistent rating between 4.0 and 5.0
+          const ratingSeed = vendor._id.toString().charCodeAt(vendor._id.toString().length - 1);
+          const rating = Number((4.0 + (ratingSeed % 10) / 10).toFixed(1));
+          
+          return {
+            ...vendor.toObject(),
+            plans: planCount,
+            specialty: specialty,
+            rating: rating,
+            description: `Delicious ${specialty === 'veg' ? 'vegetarian' : 'non-vegetarian'} meals prepared with care and quality ingredients.`
+          };
+        })
+      );
+      
+      // Filter out null values (vendors with no meal plans)
+      const filteredVendors = vendorsWithPlanCount.filter(vendor => vendor !== null);
+      
+      res.json(filteredVendors);
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Get single vendor details
+  async getVendorById(req, res) {
+    try {
+      const { vendorId } = req.params;
+      const vendor = await Vendor.findById(vendorId).select('-firebaseUid -__v');
+      
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      if (!vendor.verified) {
+        return res.status(403).json({ message: 'Vendor is not verified' });
+      }
+
+      // Get plan count for the vendor
+      const planCount = await Plan.countDocuments({ vendor_id: vendor._id });
+      
+      // Generate consistent specialty and rating
+      const specialty = (vendor._id.toString().charCodeAt(0) % 2 === 0) ? 'veg' : 'nonveg';
+      const ratingSeed = vendor._id.toString().charCodeAt(vendor._id.toString().length - 1);
+      const rating = Number((4.0 + (ratingSeed % 10) / 10).toFixed(1));
+      
+      const vendorWithDetails = {
+        ...vendor.toObject(),
+        plans: planCount,
+        specialty: specialty,
+        rating: rating,
+        description: `Delicious ${specialty === 'veg' ? 'vegetarian' : 'non-vegetarian'} meals prepared with care and quality ingredients.`
+      };
+      
+      res.json(vendorWithDetails);
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
   // Get customer profile
   async getProfile(req, res) {
     try {
@@ -81,6 +160,30 @@ const customerController = {
         preference: customer.preference,
         name: customer.name
       });
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Get vendor meal plans
+  async getVendorPlans(req, res) {
+    try {
+      const { vendorId } = req.params;
+      
+      // Verify vendor exists and is verified
+      const vendor = await Vendor.findById(vendorId);
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      if (!vendor.verified) {
+        return res.status(403).json({ message: 'Vendor is not verified' });
+      }
+
+      // Get all plans for the vendor
+      const plans = await Plan.find({ vendor_id: vendorId }).select('-__v');
+      
+      res.json(plans);
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
     }

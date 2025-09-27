@@ -190,11 +190,131 @@ const getVendorDetails = async (req, res) => {
   }
 };
 
+// Import Plan model
+const Plan = require('../Models/Plan');
+
+// Create test verified vendors
+const createTestVendors = async (req, res) => {
+  try {
+    const testVendors = [
+      {
+        name: "Green Garden Kitchen",
+        email: "greengarden@test.com",
+        firebaseUid: "test-vendor-1",
+        contactNumber: "+1234567890",
+        address: {
+          street: "123 Garden Street",
+          city: "Mumbai",
+          state: "Maharashtra",
+          pincode: "400001",
+          coordinates: {
+            lat: 19.0760,
+            lng: 72.8777
+          }
+        },
+        verified: true,
+        profileImage: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=150"
+      },
+      {
+        name: "Spice Route Delights", 
+        email: "spiceroute@test.com",
+        firebaseUid: "test-vendor-2",
+        contactNumber: "+1234567891",
+        address: {
+          street: "456 Spice Lane",
+          city: "Delhi",
+          state: "Delhi",
+          pincode: "110001",
+          coordinates: {
+            lat: 28.6139,
+            lng: 77.2090
+          }
+        },
+        verified: true,
+        profileImage: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=150"
+      },
+      {
+        name: "Healthy Bites Co.",
+        email: "healthybites@test.com", 
+        firebaseUid: "test-vendor-3",
+        contactNumber: "+1234567892",
+        address: {
+          street: "789 Health Avenue",
+          city: "Bangalore",
+          state: "Karnataka",
+          pincode: "560001",
+          coordinates: {
+            lat: 12.9716,
+            lng: 77.5946
+          }
+        },
+        verified: true,
+        profileImage: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=150"
+      }
+    ];
+
+    // Check if vendors already exist and create them
+    const createdVendors = [];
+    for (const vendorData of testVendors) {
+      let vendor = await Vendor.findOne({ firebaseUid: vendorData.firebaseUid });
+      if (!vendor) {
+        vendor = new Vendor(vendorData);
+        await vendor.save();
+      }
+      createdVendors.push(vendor);
+    }
+
+    // Create test plans for each vendor
+    const testPlans = [
+      { name: "Daily Fresh", price: 299, duration_days: 1, meals_per_day: 2 },
+      { name: "Weekly Combo", price: 1599, duration_days: 7, meals_per_day: 2 },
+      { name: "Monthly Special", price: 5999, duration_days: 30, meals_per_day: 2 },
+      { name: "Premium Daily", price: 399, duration_days: 1, meals_per_day: 3 },
+      { name: "Weekly Premium", price: 2399, duration_days: 7, meals_per_day: 3 }
+    ];
+
+    for (const vendor of createdVendors) {
+      // Create 3-4 random plans for each vendor
+      const plansForVendor = testPlans.slice(0, Math.floor(Math.random() * 2) + 3);
+      
+      for (const planData of plansForVendor) {
+        const existingPlan = await Plan.findOne({ 
+          vendor_id: vendor._id, 
+          name: planData.name 
+        });
+        
+        if (!existingPlan) {
+          const plan = new Plan({
+            vendor_id: vendor._id,
+            ...planData
+          });
+          await plan.save();
+        }
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Test vendors and meal plans created successfully',
+      vendorsCount: testVendors.length,
+      note: 'You can now view verified vendors in the Customer Market page'
+    });
+  } catch (error) {
+    console.error('Error creating test vendors:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create test vendors',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getAllVendors,
   deleteUser,
   deleteVendor,
   toggleVendorVerification,
-  getVendorDetails
+  getVendorDetails,
+  createTestVendors
 };
