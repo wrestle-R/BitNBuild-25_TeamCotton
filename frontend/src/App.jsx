@@ -10,6 +10,7 @@ import CustomerAuth from './pages/Customer/CustomerAuth'
 import CustomerDashboard from './pages/Customer/CustomerDashboard'
 import CustomerProfile from './pages/Customer/CustomerProfile'
 import CustomerMarketRoute from './pages/Customer/CustomerMarket'
+import VendorDetails from './pages/Customer/VendorDetails'
 import AdminAuth from './pages/Admin/AdminAuth'
 import AdminDashboard from './pages/Admin/AdminDashboard'
 import ManageVendors from './pages/Admin/ManageVendors'
@@ -165,6 +166,7 @@ const App = () => {
           <Route path="/vendor/menus" element={<VendorMenus />} />
           <Route path="/customer/dashboard" element={<CustomerRoute />} />
           <Route path="/customer/market" element={<CustomerMarketRoute />} />
+          <Route path="/customer/vendor/:vendorId" element={<VendorDetails />} />
           <Route path="/customer/profile" element={<CustomerProfileRoute />} />
           {/* Hidden Admin Routes */}
           <Route path="/admin/auth" element={<AdminAuth />} />

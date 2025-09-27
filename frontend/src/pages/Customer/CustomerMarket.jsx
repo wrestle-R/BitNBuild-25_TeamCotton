@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
-import { FaStore, FaSearch, FaFilter, FaHeart, FaShoppingCart, FaStar, FaMapMarkerAlt, FaExclamationCircle, FaSync } from 'react-icons/fa';
+import { FaStore, FaSearch, FaFilter, FaShoppingCart, FaMapMarkerAlt, FaExclamationCircle, FaSync, FaInfoCircle } from 'react-icons/fa';
 import CustomerSidebar from '../../components/Customer/CustomerSidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -16,6 +17,7 @@ import { auth } from '../../../firebase.config';
 
 const CustomerMarket = () => {
   const { user, token } = useUserContext();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(true);
   const [vendors, setVendors] = useState([]);
@@ -116,11 +118,26 @@ const CustomerMarket = () => {
     }
   };
 
+  // Function to calculate distance between two points (in km)
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Radius of the Earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const d = R * c;
+    return d;
+  };
+
+  const handleViewDetails = (vendor) => {
+    navigate(`/customer/vendor/${vendor._id || vendor.id}`);
+  };
+
   const filteredVendors = vendors.filter(vendor => {
-    const matchesSearch = vendor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (vendor.description && vendor.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesPreference = filterPreference === 'all' || vendor.specialty === filterPreference;
-    return matchesSearch && matchesPreference;
+    const matchesSearch = vendor.name.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
 
   if (loading) {
@@ -253,8 +270,8 @@ const CustomerMarket = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">All Vendors</SelectItem>
-                        <SelectItem value="veg">Vegetarian Only</SelectItem>
-                        <SelectItem value="nonveg">Non-Vegetarian</SelectItem>
+                        <SelectItem value="nearest">Nearest First</SelectItem>
+                        <SelectItem value="newest">Newest First</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -293,38 +310,37 @@ const CustomerMarket = () => {
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <CardTitle className="text-lg font-montserrat truncate">{vendor.name}</CardTitle>
-                          <div className="flex items-center gap-2 mt-1 flex-wrap">
-                            <div className="flex items-center gap-1">
-                              <FaStar className="w-3 h-3 text-yellow-400 fill-current" />
-                              <span className="text-sm font-medium">{vendor.rating || 'New'}</span>
-                            </div>
-                            <Badge 
-                              variant={vendor.specialty === 'veg' ? 'default' : 'destructive'} 
-                              className="text-xs font-medium"
-                            >
-                              {vendor.specialty === 'veg' ? '🌱 Vegetarian' : '🍖 Non-Vegetarian'}
+                          {vendor.verified && (
+                            <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-200 mt-1">
+                              ✓ Verified
                             </Badge>
-                            {vendor.verified && (
-                              <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-200">
-                                ✓ Verified
-                              </Badge>
-                            )}
-                          </div>
+                          )}
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" className="flex-shrink-0">
-                        <FaHeart className="w-4 h-4" />
-                      </Button>
                     </div>
                   </CardHeader>
                   
                   <CardContent>
                     {vendor.address && vendor.address.city && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                         <FaMapMarkerAlt className="w-3 h-3" />
                         <span>
+                          {vendor.address.street && `${vendor.address.street}, `}
                           {vendor.address.city}
                           {vendor.address.state && `, ${vendor.address.state}`}
+                        </span>
+                      </div>
+                    )}
+
+                    {vendor.address && vendor.address.coordinates && user && user.address && user.address.coordinates && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                        <span className="text-xs bg-muted px-2 py-1 rounded">
+                          {calculateDistance(
+                            user.address.coordinates.lat,
+                            user.address.coordinates.lng,
+                            vendor.address.coordinates.lat,
+                            vendor.address.coordinates.lng
+                          ).toFixed(1)} km away
                         </span>
                       </div>
                     )}
@@ -348,8 +364,13 @@ const CustomerMarket = () => {
                         <FaShoppingCart className="w-4 h-4 mr-2" />
                         {vendor.plans > 0 ? 'View Plans' : 'No Plans'}
                       </Button>
-                      <Button variant="outline" size="sm">
-                        View Details
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleViewDetails(vendor)}
+                      >
+                        <FaInfoCircle className="w-4 h-4 mr-2" />
+                        Details
                       </Button>
                     </div>
                   </CardContent>
@@ -361,7 +382,7 @@ const CustomerMarket = () => {
           {/* No Results */}
           {!loading && !error && filteredVendors.length === 0 && vendors.length > 0 && (
             <motion.div
-              className="text-center py-12"
+              className="text-center py-    "
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
@@ -389,6 +410,8 @@ const CustomerMarket = () => {
               </p>
             </motion.div>
           )}
+
+
         </div>
       </div>
     </div>

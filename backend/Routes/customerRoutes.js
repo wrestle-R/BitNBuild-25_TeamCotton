@@ -15,6 +15,9 @@ const upload = multer({
 // Get all verified vendors
 router.get('/vendors', authMiddleware, customerController.getVerifiedVendors);
 
+// Get single vendor by ID
+router.get('/vendors/:vendorId', authMiddleware, customerController.getVendorById);
+
 // Get customer profile
 router.get('/profile', authMiddleware, customerController.getProfile);
 
