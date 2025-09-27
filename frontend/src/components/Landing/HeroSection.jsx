@@ -58,7 +58,7 @@ export default function HeroSection() {
                                     speedSegment={0.3}
                                     as="h1"
                                     className="mt-8 max-w-2xl text-balance text-5xl font-medium md:text-6xl lg:mt-16 text-foreground">
-                                    NourishNet - Connecting Hunger with Home-cooked Love
+                                    Connecting Hunger with Home-cooked Love
                                 </TextEffect>
                                 <TextEffect
                                     per="line"
