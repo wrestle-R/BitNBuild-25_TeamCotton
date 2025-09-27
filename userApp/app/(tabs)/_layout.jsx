@@ -3,7 +3,7 @@ import React from 'react';
 import { Platform } from 'react-native';
 
 import { HapticTab } from '../../components/HapticTab';
-import { IconSymbol } from '../../components/ui/IconSymbol';
+import { Ionicons } from '@expo/vector-icons';
 import TabBarBackground from '../../components/ui/TabBarBackground';
 import { Colors } from '../../constants/Colors';
 import { useColorScheme } from '../../hooks/useColorScheme';
@@ -15,23 +15,50 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
+        headerShown: false, // Hide headers across all tab screens
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
-        tabBarStyle: { display: 'none' }, // Hide the tab bar
+        tabBarStyle: {
+          position: 'absolute',
+          height: Platform.OS === 'ios' ? 80 : 64,
+          borderTopWidth: 0,
+          backgroundColor: Colors[colorScheme ?? 'light'].background,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          paddingBottom: Platform.OS === 'ios' ? 12 : 6,
+        }
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size ?? 24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
           title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => <Ionicons name="paper-plane" size={size ?? 24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="track"
+        options={{
+          title: 'Track',
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => <Ionicons name="map" size={size ?? 24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size ?? 24} color={color} />,
         }}
       />
     </Tabs>

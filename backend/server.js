@@ -8,8 +8,9 @@ const authRoutes = require('./Routes/authRoutes');
 const adminRoutes = require('./Routes/adminRoutes');
 const vendorRoutes = require('./Routes/vendorRoutes');
 const uploadRoutes = require('./Routes/uploadRoutes');
-
 const customerRoutes = require('./Routes/customerRoutes');
+const paymentRoutes = require('./Routes/paymentRoutes'); // Added paymentRoutes
+
 require('dotenv').config();
 
 const app = express();
@@ -35,6 +36,7 @@ app.use('/api/admin', adminRoutes); // Admin routes
 app.use('/api/vendor', vendorRoutes); // Vendor routes
 app.use('/api/vendor/upload', uploadRoutes); // Upload routes
 app.use('/api/customer', customerRoutes); // Customer routes
+app.use('/api/payment', paymentRoutes); // Payment routes
 
 // Health check
 app.get('/', (req, res) => {

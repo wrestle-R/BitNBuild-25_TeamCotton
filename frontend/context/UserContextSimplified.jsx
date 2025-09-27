@@ -367,58 +367,25 @@ export const UserProvider = ({ children }) => {
           // Get or refresh the token
           const token = await firebaseUser.getIdToken();
           
-          // Try to get user data from backend to include mongoid
-          try {
-            const response = await fetch(`${API_BASE}/api/auth/user/${firebaseUser.uid}`);
-            if (response.ok) {
-              const backendUserData = await response.json();
-              
-              // Store token and user data with mongoid
-              localStorage.setItem('nourishnet_token', backendUserData.token);
-              setToken(backendUserData.token);
-              const userWithMongoId = {
-                ...backendUserData.user,
-                mongoid: backendUserData.user.id,
-                emailVerified: firebaseUser.emailVerified
-              };
-              setUser(userWithMongoId);
-            } else {
-              // Fallback to Firebase data if backend call fails
-              const userData = {
-                id: firebaseUser.uid,
-                name: firebaseUser.displayName,
-                email: firebaseUser.email,
-                role: userType,
-                firebaseUid: firebaseUser.uid,
-                emailVerified: firebaseUser.emailVerified,
-                mongoid: null
-              };
+          // REMOVE THE BACKEND CALL THAT'S CAUSING EXCESSIVE REQUESTS
+          // Instead, use Firebase data directly for initial state
+          const userData = {
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName,
+            email: firebaseUser.email,
+            role: userType,
+            firebaseUid: firebaseUser.uid,
+            emailVerified: firebaseUser.emailVerified,
+            mongoid: null // Will be set later when needed
+          };
 
-              localStorage.setItem('nourishnet_token', token);
-              setToken(token);
-              setUser(userData);
-            }
-          } catch (backendError) {
-            console.error('Error fetching user data from backend in auth state listener:', backendError);
-            // Fallback to Firebase data
-            const userData = {
-              id: firebaseUser.uid,
-              name: firebaseUser.displayName,
-              email: firebaseUser.email,
-              role: userType,
-              firebaseUid: firebaseUser.uid,
-              emailVerified: firebaseUser.emailVerified,
-              mongoid: null
-            };
-
-            localStorage.setItem('nourishnet_token', token);
-            setToken(token);
-            setUser(userData);
-          }
+          localStorage.setItem('nourishnet_token', token);
+          setToken(token);
+          setUser(userData);
           
           console.log('✅ User data set from Firebase auth state');
 
-          // Fetch vendor profile if user is vendor
+          // Fetch vendor profile if user is vendor (but don't make it dependent on userType changes)
           if (userType === 'vendor') {
             fetchVendorProfile();
           }
@@ -449,7 +416,7 @@ export const UserProvider = ({ children }) => {
       console.log('🔥 Cleaning up Firebase auth state listener');
       unsubscribe();
     };
-  }, [userType]); // Depend on userType so it updates when user switches types
+  }, []); // <- CHANGE THIS: Remove userType dependency
 
   const contextValue = {
     user,

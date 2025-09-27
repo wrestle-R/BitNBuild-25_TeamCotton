@@ -49,34 +49,17 @@ const customerController = {
   async getVendorById(req, res) {
     try {
       const { vendorId } = req.params;
-      const vendor = await Vendor.findById(vendorId).select('-firebaseUid -__v');
+      
+      const vendor = await Vendor.findById(vendorId)
+        .select('name profileImage address contactNumber verified createdAt');
       
       if (!vendor) {
         return res.status(404).json({ message: 'Vendor not found' });
       }
 
-      if (!vendor.verified) {
-        return res.status(403).json({ message: 'Vendor is not verified' });
-      }
-
-      // Get plan count for the vendor
-      const planCount = await Plan.countDocuments({ vendor_id: vendor._id });
-      
-      // Generate consistent specialty and rating
-      const specialty = (vendor._id.toString().charCodeAt(0) % 2 === 0) ? 'veg' : 'nonveg';
-      const ratingSeed = vendor._id.toString().charCodeAt(vendor._id.toString().length - 1);
-      const rating = Number((4.0 + (ratingSeed % 10) / 10).toFixed(1));
-      
-      const vendorWithDetails = {
-        ...vendor.toObject(),
-        plans: planCount,
-        specialty: specialty,
-        rating: rating,
-        description: `Delicious ${specialty === 'veg' ? 'vegetarian' : 'non-vegetarian'} meals prepared with care and quality ingredients.`
-      };
-      
-      res.json(vendorWithDetails);
+      res.json(vendor);
     } catch (error) {
+      console.error('Error fetching vendor:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   },
@@ -177,14 +160,22 @@ const customerController = {
       }
 
       if (!vendor.verified) {
-        return res.status(403).json({ message: 'Vendor is not verified' });
+        return res.status(403).json({ message: 'Vendor not verified' });
       }
 
-      // Get all plans for the vendor
-      const plans = await Plan.find({ vendor_id: vendorId }).select('-__v');
+      // Get plans for this vendor
+      const plans = await Plan.find({ vendor_id: vendorId }).lean();
       
+      // Convert Decimal128 to number for frontend
+      plans.forEach(plan => {
+        if (plan.price && plan.price.$numberDecimal) {
+          plan.price = parseFloat(plan.price.$numberDecimal);
+        }
+      });
+
       res.json(plans);
     } catch (error) {
+      console.error('Error fetching vendor plans:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
   }
