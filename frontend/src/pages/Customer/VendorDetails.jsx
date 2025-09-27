@@ -331,14 +331,14 @@ const VendorDetails = () => {
         <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
           <div className="p-6">
             <div className="mb-6">
-              <Button 
+              {/* <Button 
                 onClick={() => navigate('/customer/market')} 
                 variant="outline"
                 className="flex items-center gap-2 hover:bg-primary text-primary-foreground transition-all duration-200"
               >
                 <FaArrowLeft className="w-4 h-4" />
                 Back to Market
-              </Button>
+              </Button> */}
             </div>
             
             <div className="grid gap-6">
@@ -410,14 +410,14 @@ const VendorDetails = () => {
         <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
           <div className="p-6">
             <div className="mb-6">
-              <Button 
+              {/* <Button 
                 onClick={() => navigate('/customer/market')} 
                 variant="outline"
                 className="flex items-center gap-2 hover:bg-primary hover:text-primary-foreground transition-all duration-200"
               >
                 <FaArrowLeft className="w-4 h-4" />
                 Back to Market
-              </Button>
+              </Button> */}
             </div>
             
             <Alert variant="destructive">
@@ -437,7 +437,7 @@ const VendorDetails = () => {
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
         <div className="p-6">
           {/* Back Button */}
-          <motion.div
+          {/* <motion.div
             className="mb-6"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -451,7 +451,7 @@ const VendorDetails = () => {
               <FaArrowLeft className="w-4 h-4" />
               Back to Market
             </Button>
-          </motion.div>
+          </motion.div> */}
 
           {/* Vendor Header */}
           <motion.div
