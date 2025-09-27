@@ -1,30 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
+  Alert,
   KeyboardAvoidingView,
   Platform,
-  Alert,
-  ActivityIndicator,
   useColorScheme,
   StyleSheet,
   StatusBar,
-  Dimensions
+  Dimensions,
+  ScrollView,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { FontAwesome } from '@expo/vector-icons';
 import { getColors } from '../constants/Colors';
 import { useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-const Login = ({ navigation }) => {
+const SignUp = ({ navigation }) => {
   const router = useRouter();
-  const systemColorScheme = useColorScheme(); // Ensure useColorScheme is properly imported
+  const nav = useNavigation();
+  const systemColorScheme = useColorScheme();
   const isDarkMode = systemColorScheme === 'dark';
-  const colors = getColors(isDarkMode); // Initialize colors using getColors
+  const colors = getColors(isDarkMode);
 
   // Create styles inside component to access colors
   const styles = StyleSheet.create({
@@ -55,123 +57,117 @@ const Login = ({ navigation }) => {
     },
   });
 
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!validateEmail(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
-    }
-  };
-
-  const handleLogin = async () => {
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsLoading(true);
-
+  useEffect(() => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Mock successful login
-      Alert.alert(
-        'Login Successful!',
-        'Welcome to NourishNet',
-        [
-          {
-            text: 'Continue',
-            onPress: () => {
-              // Navigate to home screen
-              // navigation.navigate('Home');
-              console.log('Navigating to home...');
-            }
-          }
-        ]
-      );
-    } catch (error) {
-      Alert.alert('Login Failed', 'Please check your credentials and try again.');
-    } finally {
-      setIsLoading(false);
+      if (navigation && navigation.setOptions) {
+        navigation.setOptions({ headerShown: false });
+      }
+      if (nav && nav.setOptions) {
+        nav.setOptions({ headerShown: false });
+      }
+    } catch (e) {
+      // ignore
     }
+  }, [navigation, nav]);
+
+  const handleChange = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
-  const handleForgotPassword = () => {
-    // navigation.navigate('ForgotPassword');
-    Alert.alert('Forgot Password', 'Password reset functionality coming soon!');
+  const validate = () => {
+    const e = {};
+    if (!form.name) e.name = 'Name is required';
+    if (!form.email) e.email = 'Email required';
+    if (!form.password) e.password = 'Password required';
+    if (form.password !== form.confirm) e.confirm = 'Passwords must match';
+    setErrors(e);
+    return Object.keys(e).length === 0;
   };
 
   const handleSignUp = () => {
-    // Use expo-router to navigate to the signup route
-    router.push('/signup');
+    if (!validate()) return;
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      Alert.alert('Signed up!', 'You can now sign in');
+      // navigate to login route — using expo-router
+      router.push('/');
+    }, 1000);
   };
 
   return (
     <View style={styles.fullScreen}>
-      <StatusBar 
+      <StatusBar
         barStyle={'light-content'}
         backgroundColor={colors.background}
         translucent={true}
       />
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
       >
-        <View style={styles.content}>
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: 40 }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           {/* Header */}
           <View style={{ alignItems: 'center', marginBottom: 48 }}>
             <View style={{ width: 80, height: 80, backgroundColor: colors.primary, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
               <Feather name="home" size={32} color={colors.primaryForeground} />
             </View>
             <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.foreground, marginBottom: 8 }}>
-              NourishNet
+              Create Account
             </Text>
             <Text style={{ fontSize: 16, color: colors.mutedForeground, textAlign: 'center' }}>
-              Your daily tiffin, delivered fresh
+              Fill in your details to get started
             </Text>
           </View>
 
-          {/* Login Form */}
+          {/* Sign Up Form */}
           <View style={{ gap: 24 }}>
+            {/* Full Name Input */}
+            <View>
+              <Text style={{ fontSize: 16, fontWeight: '500', color: colors.foreground, marginBottom: 8 }}>
+                Full Name
+              </Text>
+              <View style={{ position: 'relative' }}>
+                <TextInput
+                  style={{
+                    width: '100%',
+                    padding: 16,
+                    paddingLeft: 48,
+                    backgroundColor: colors.input,
+                    borderColor: errors.name ? colors.destructive : colors.border,
+                    borderWidth: 1,
+                    borderRadius: 12,
+                    fontSize: 16,
+                    color: colors.foreground,
+                  }}
+                  placeholder="Your full name"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={form.name}
+                  onChangeText={(v) => handleChange('name', v)}
+                  autoCapitalize="words"
+                />
+                <Feather
+                  name="user"
+                  size={20}
+                  color={colors.mutedForeground}
+                  style={{ position: 'absolute', left: 16, top: 16 }}
+                />
+              </View>
+              {errors.name && (
+                <Text style={{ color: colors.destructive, fontSize: 14, marginTop: 4 }}>{errors.name}</Text>
+              )}
+            </View>
+
             {/* Email Input */}
             <View>
               <Text style={{ fontSize: 16, fontWeight: '500', color: colors.foreground, marginBottom: 8 }}>
@@ -190,10 +186,10 @@ const Login = ({ navigation }) => {
                     fontSize: 16,
                     color: colors.foreground,
                   }}
-                  placeholder="Enter your email"
+                  placeholder="you@example.com"
                   placeholderTextColor={colors.mutedForeground}
-                  value={formData.email}
-                  onChangeText={(value) => handleInputChange('email', value)}
+                  value={form.email}
+                  onChangeText={(v) => handleChange('email', v)}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
@@ -229,10 +225,10 @@ const Login = ({ navigation }) => {
                     fontSize: 16,
                     color: colors.foreground,
                   }}
-                  placeholder="Enter your password"
+                  placeholder="Create a password"
                   placeholderTextColor={colors.mutedForeground}
-                  value={formData.password}
-                  onChangeText={(value) => handleInputChange('password', value)}
+                  value={form.password}
+                  onChangeText={(v) => handleChange('password', v)}
                   secureTextEntry={!showPassword}
                   autoComplete="password"
                 />
@@ -258,44 +254,68 @@ const Login = ({ navigation }) => {
               )}
             </View>
 
-            {/* Forgot Password */}
-            <TouchableOpacity onPress={handleForgotPassword} style={{ alignSelf: 'flex-end' }}>
-              <Text style={{ color: colors.primary, fontWeight: '500' }}>
-                Forgot Password?
+            {/* Confirm Password Input */}
+            <View>
+              <Text style={{ fontSize: 16, fontWeight: '500', color: colors.foreground, marginBottom: 8 }}>
+                Confirm Password
               </Text>
-            </TouchableOpacity>
+              <View style={{ position: 'relative' }}>
+                <TextInput
+                  style={{
+                    width: '100%',
+                    padding: 16,
+                    paddingLeft: 48,
+                    paddingRight: 48,
+                    backgroundColor: colors.input,
+                    borderColor: errors.confirm ? colors.destructive : colors.border,
+                    borderWidth: 1,
+                    borderRadius: 12,
+                    fontSize: 16,
+                    color: colors.foreground,
+                  }}
+                  placeholder="Confirm password"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={form.confirm}
+                  onChangeText={(v) => handleChange('confirm', v)}
+                  secureTextEntry
+                />
+                <Feather
+                  name="lock"
+                  size={20}
+                  color={colors.mutedForeground}
+                  style={{ position: 'absolute', left: 16, top: 16 }}
+                />
+              </View>
+              {errors.confirm && (
+                <Text style={{ color: colors.destructive, fontSize: 14, marginTop: 4 }}>{errors.confirm}</Text>
+              )}
+            </View>
 
-            {/* Login Button */}
+            {/* Sign Up Button */}
             <TouchableOpacity
-              onPress={handleLogin}
-              disabled={isLoading}
+              onPress={handleSignUp}
+              disabled={loading}
               style={{
                 width: '100%',
                 paddingVertical: 16,
                 borderRadius: 12,
                 alignItems: 'center',
-                backgroundColor: isLoading ? colors.muted : colors.primary,
+                backgroundColor: loading ? colors.muted : colors.primary,
               }}
             >
-              {isLoading ? (
-                <ActivityIndicator color={colors.primaryForeground} size="small" />
-              ) : (
-                <Text style={{ color: colors.primaryForeground, fontSize: 18, fontWeight: '600' }}>
-                  Sign In
-                </Text>
-              )}
+              <Text style={{ color: colors.primaryForeground, fontSize: 18, fontWeight: '600' }}>
+                {loading ? 'Creating...' : 'Sign Up'}
+              </Text>
             </TouchableOpacity>
 
             {/* Social Login Divider */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 24 }}>
               <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
-              <Text style={{ marginHorizontal: 16, color: colors.mutedForeground }}>
-                or continue with
-              </Text>
+              <Text style={{ marginHorizontal: 16, color: colors.mutedForeground }}>or continue with</Text>
               <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
             </View>
 
-            {/* Social Login Buttons */}
+            {/* Google Button only */}
             <View style={{ flexDirection: 'row', gap: 16 }}>
               <TouchableOpacity style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 12 }}>
                 <FontAwesome name="google" size={18} color={colors.foreground} style={{ marginRight: 8 }} />
@@ -304,17 +324,17 @@ const Login = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Sign Up Link */}
+          {/* Sign In Link */}
           <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 32 }}>
-            <Text style={{ color: colors.mutedForeground }}>Don't have an account? </Text>
-            <TouchableOpacity onPress={handleSignUp}>
-              <Text style={{ color: colors.primary, fontWeight: '600' }}>Sign Up</Text>
+            <Text style={{ color: colors.mutedForeground }}>Already have an account? </Text>
+            <TouchableOpacity onPress={() => router.push('/') }>
+              <Text style={{ color: colors.primary, fontWeight: '600' }}>Sign In</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
 };
 
-export default Login;
+export default SignUp;
