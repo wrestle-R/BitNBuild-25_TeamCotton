@@ -78,6 +78,16 @@ export const loginUser = async (email, password) => {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
     console.log('✅ Firebase authentication successful');
+    // Get Firebase ID token (this is what backend expects in Authorization header)
+    let idToken = null;
+    try {
+      idToken = await firebaseUser.getIdToken();
+      console.log('🔑 Obtained Firebase ID token (length):', idToken ? idToken.length : 0);
+      // Store the firebase id token separately for authenticated API calls
+      await AsyncStorage.setItem('idToken', idToken);
+    } catch (err) {
+      console.warn('⚠️ Failed to retrieve Firebase ID token:', err);
+    }
     
     // Step 2: Validate role with backend and get user data
     console.log('🔄 Validating role with backend...');
@@ -108,7 +118,8 @@ export const loginUser = async (email, password) => {
     }
 
     // Step 3: Store user data and token in AsyncStorage
-    await AsyncStorage.setItem('userToken', data.token);
+  // backend token (application JWT)
+  await AsyncStorage.setItem('userToken', data.token);
     await AsyncStorage.setItem('userData', JSON.stringify(data.user));
     
     // Log successful user login with detailed information

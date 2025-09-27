@@ -24,4 +24,7 @@ router.get('/preferences', authMiddleware, customerController.getPreferences);
 // Upload customer profile image
 router.post('/upload/image', authMiddleware, upload.single('image'), uploadController.uploadImage);
 
+// Debug upload route to inspect multer file object during development
+router.post('/debug-upload', authMiddleware, upload.single('image'), uploadController.debugUpload);
+
 module.exports = router;
