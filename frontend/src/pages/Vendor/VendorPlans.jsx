@@ -637,14 +637,14 @@ const safePrice = (plan) => {
                             <Card key={dayIndex} className="p-4">
                               <h4 className="font-semibold mb-3">Day {dayIndex + 1}</h4>
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                {Array.from({ length: selectedPlan.meals_per_day }, (_, mealIndex) => {
+                                {selectedPlan.selected_meals?.map((mealType, mealIndex) => {
                                   const assignedMenu = planMenus.find(
                                     pm => pm.day_number === dayIndex + 1 && pm.meal_number === mealIndex + 1
                                   );
                                   return (
-                                    <div key={mealIndex} className="p-3 border border-border rounded-lg">
-                                      <h5 className="font-medium text-sm mb-2">
-                                        {mealTypes[mealIndex + 1]}
+                                    <div key={mealType} className="p-3 border border-border rounded-lg">
+                                      <h5 className="font-medium text-sm mb-2 capitalize">
+                                        {mealType}
                                       </h5>
                                       {assignedMenu ? (
                                         <div className="text-xs">
