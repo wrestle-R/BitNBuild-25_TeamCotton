@@ -25,7 +25,6 @@ const AuthRoute = () => {
     );
   }
   
-  // If user is already authenticated, redirect to dashboard
   if (user) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -48,12 +47,11 @@ const LandingRoute = () => {
     );
   }
   
-  // If user is authenticated, redirect to appropriate dashboard
   if (user) {
     if (user.role === 'vendor') {
-      return <Navigate to="/user1/dashboard" replace />;
+      return <Navigate to="/vendor/dashboard" replace />;
     } else if (user.role === 'customer') {
-      return <Navigate to="/user2/dashboard" replace />;
+      return <Navigate to="/customer/dashboard" replace />;
     } else if (user.role === 'admin') {
       return <Navigate to="/admin/dashboard" replace />;
     }
@@ -63,7 +61,7 @@ const LandingRoute = () => {
   return <Landing />;
 };
 
-// Route wrapper for protected dashboard (general)
+// General protected route
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useUserContext();
   
@@ -78,7 +76,6 @@ const ProtectedRoute = ({ children }) => {
     );
   }
   
-  // If user is not authenticated, redirect to auth (keep general for backwards compatibility)
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
@@ -86,7 +83,7 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// Route wrapper for vendor-specific dashboard
+// Vendor dashboard route
 const VendorRoute = () => {
   const { user, loading } = useUserContext();
   
@@ -101,15 +98,13 @@ const VendorRoute = () => {
     );
   }
   
-  // If user is not authenticated, redirect to vendor auth
   if (!user) {
     return <Navigate to="/vendor/auth" replace />;
   }
   
-  // If user is not a vendor, redirect to appropriate dashboard or auth
   if (user.role !== 'vendor') {
     if (user.role === 'customer') {
-      return <Navigate to="/user2/dashboard" replace />;
+      return <Navigate to="/customer/dashboard" replace />;
     }
     return <Navigate to="/vendor/auth" replace />;
   }
@@ -117,7 +112,7 @@ const VendorRoute = () => {
   return <VendorDashboard />;
 };
 
-// Route wrapper for customer-specific dashboard  
+// Customer dashboard route  
 const CustomerRoute = () => {
   const { user, loading } = useUserContext();
   
@@ -132,15 +127,13 @@ const CustomerRoute = () => {
     );
   }
   
-  // If user is not authenticated, redirect to customer auth
   if (!user) {
     return <Navigate to="/customer/auth" replace />;
   }
   
-  // If user is not a customer, redirect to appropriate dashboard or auth
   if (user.role !== 'customer') {
     if (user.role === 'vendor') {
-      return <Navigate to="/user1/dashboard" replace />;
+      return <Navigate to="/vendor/dashboard" replace />;
     }
     return <Navigate to="/customer/auth" replace />;
   }
@@ -157,8 +150,8 @@ const App = () => {
           <Route path="/vendor/auth" element={<VendorAuth />} />
           <Route path="/customer/auth" element={<CustomerAuth />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/user1/dashboard" element={<VendorRoute />} />
-          <Route path="/user2/dashboard" element={<CustomerRoute />} />
+          <Route path="/vendor/dashboard" element={<VendorRoute />} />
+          <Route path="/customer/dashboard" element={<CustomerRoute />} />
           {/* Hidden Admin Routes */}
           <Route path="/admin/auth" element={<AdminAuth />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />

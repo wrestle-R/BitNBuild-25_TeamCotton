@@ -56,7 +56,7 @@ const NavbarComponent = () => {
       navigate('/dashboard');
     } else {
       // Navigate to general auth page (which will have user type selection)
-      navigate('/auth');
+      navigate('/customer/auth');
     }
   };
 
