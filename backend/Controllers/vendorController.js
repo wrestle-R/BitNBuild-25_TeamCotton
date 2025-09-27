@@ -187,6 +187,7 @@ const vendorController = {
   },
 
   // Create plan
+  // Update createPlan to handle selected_meals and new planMenus structure
   async createPlan(req, res) {
     try {
       const vendor = await Vendor.findOne({ firebaseUid: req.user.firebaseUid });
@@ -194,23 +195,38 @@ const vendorController = {
         return res.status(404).json({ message: 'Vendor not found' });
       }
 
-      const planData = {
-        vendor_id: vendor._id,
-        name: req.body.name,
-        price: req.body.price,
-        duration_days: req.body.duration_days,
-        meals_per_day: req.body.meals_per_day
-      };
+      const { name, price, duration_days, meals_per_day, selected_meals, planMenus } = req.body;
 
-      const plan = new Plan(planData);
+      const plan = new Plan({
+        vendor_id: vendor._id,
+        name,
+        price,
+        duration_days,
+        meals_per_day,
+        selected_meals
+      });
       await plan.save();
-      
+
+      // Create PlanMenu entries with new structure
+      if (planMenus) {
+        for (const key in planMenus) {
+          const [day_number, meal_type] = key.split('-');
+          const mealIndex = selected_meals.indexOf(meal_type) + 1;
+          await PlanMenu.create({
+            plan_id: plan._id,
+            menu_id: planMenus[key],
+            day_number: parseInt(day_number),
+            meal_number: mealIndex
+          });
+        }
+      }
+
       // Convert price for response
       const responseData = plan.toObject();
       if (responseData.price && responseData.price.$numberDecimal) {
         responseData.price = parseFloat(responseData.price.$numberDecimal);
       }
-      
+
       res.status(201).json(responseData);
     } catch (error) {
       console.error('Error creating plan:', error);
