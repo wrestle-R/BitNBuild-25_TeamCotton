@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const admin = require('firebase-admin');
 const authRoutes = require('./Routes/authRoutes');
 const adminRoutes = require('./Routes/adminRoutes');
+const customerRoutes = require('./Routes/customerRoutes');
 require('dotenv').config();
 
 const app = express();
@@ -34,6 +35,7 @@ try {
 // Use routes
 app.use('/api/auth', authRoutes); // Unified routes for dual user system
 app.use('/api/admin', adminRoutes); // Admin routes
+app.use('/api/customer', customerRoutes); // Customer routes
 
 // Health check
 app.get('/', (req, res) => {
