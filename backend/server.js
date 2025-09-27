@@ -3,12 +3,12 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const admin = require('firebase-admin');
-const authRoutesUnified = require('./Routes/authRoutesUnified');
+const authRoutes = require('./Routes/authRoutes');
 const adminRoutes = require('./Routes/adminRoutes');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT ;
 
 app.use(cors({
   origin: 'http://localhost:5173',
@@ -32,7 +32,7 @@ try {
 }
 
 // Use routes
-app.use('/api/auth', authRoutesUnified); // Unified routes for dual user system
+app.use('/api/auth', authRoutes); // Unified routes for dual user system
 app.use('/api/admin', adminRoutes); // Admin routes
 
 // Health check

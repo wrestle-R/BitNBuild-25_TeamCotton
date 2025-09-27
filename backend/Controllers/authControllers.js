@@ -1,5 +1,5 @@
-const VendorUser = require('../models/user1');
-const CustomerUser = require('../models/user2');
+const Vendor = require('../Models/Vendor');
+const Customer = require('../Models/Customer');
 const jwt = require('jsonwebtoken');
 
 const generateToken = (userId, firebaseUid, role) => {
@@ -42,8 +42,8 @@ const createUser = async (req, res) => {
     }
 
     // Check for existing user in both collections
-    const existingVendor = await VendorUser.findOne({ firebaseUid });
-    const existingCustomer = await CustomerUser.findOne({ firebaseUid });
+    const existingVendor = await Vendor.findOne({ firebaseUid });
+    const existingCustomer = await Customer.findOne({ firebaseUid });
 
     if (existingVendor || existingCustomer) {
       console.log('User already exists with Firebase ID:', firebaseUid);
@@ -53,8 +53,8 @@ const createUser = async (req, res) => {
     }
 
     // Check for existing email in both collections
-    const existingEmailVendor = await VendorUser.findOne({ email });
-    const existingEmailCustomer = await CustomerUser.findOne({ email });
+    const existingEmailVendor = await Vendor.findOne({ email });
+    const existingEmailCustomer = await Customer.findOne({ email });
 
     if (existingEmailVendor || existingEmailCustomer) {
       console.log('User already exists with email:', email);
@@ -65,18 +65,20 @@ const createUser = async (req, res) => {
 
     let user;
     if (role === 'vendor') {
-      user = new VendorUser({
-        firebaseUid,
-        displayName: name.trim(),
+      user = new Vendor({
+        name: name.trim(),
         email: email.toLowerCase(),
-        photoURL: profilePicture || ''
+        firebaseUid,
+        contact_number: '',
+        address: ''
       });
     } else if (role === 'customer') {
-      user = new CustomerUser({
-        firebaseUid,
-        displayName: name.trim(),
+      user = new Customer({
+        name: name.trim(),
         email: email.toLowerCase(),
-        photoURL: profilePicture || ''
+        firebaseUid,
+        contact_number: '',
+        address: ''
       });
     } else {
       return res.status(400).json({
@@ -101,9 +103,10 @@ const createUser = async (req, res) => {
       user: {
         id: user._id,
         firebaseUid: user.firebaseUid,
-        name: user.displayName,
+        name: user.name,
         email: user.email,
-        profilePicture: user.photoURL,
+        contactNumber: user.contact_number,
+        address: user.address,
         role: role
       },
       token,
@@ -149,14 +152,14 @@ const validateRole = async (req, res) => {
 
     let user;
     if (role === 'vendor') {
-      user = await VendorUser.findOne({ firebaseUid });
+      user = await Vendor.findOne({ firebaseUid });
       if (!user) {
         return res.status(403).json({
           message: 'You are not registered as a vendor. Please register as a vendor first or login as a customer.',
         });
       }
     } else if (role === 'customer') {
-      user = await CustomerUser.findOne({ firebaseUid });
+      user = await Customer.findOne({ firebaseUid });
       if (!user) {
         return res.status(403).json({
           message: 'You are not registered as a customer. Please register as a customer first or login as a vendor.',
@@ -176,9 +179,10 @@ const validateRole = async (req, res) => {
       user: {
         id: user._id,
         firebaseUid: user.firebaseUid,
-        name: user.displayName,
+        name: user.name,
         email: user.email,
-        profilePicture: user.photoURL,
+        contactNumber: user.contact_number,
+        address: user.address,
         role: role
       },
       token,
@@ -198,11 +202,11 @@ const getUserByFirebaseUid = async (req, res) => {
     const { firebaseUid } = req.params;
 
     // Search in both collections
-    let user = await VendorUser.findOne({ firebaseUid });
+    let user = await Vendor.findOne({ firebaseUid });
     let role = 'vendor';
     
     if (!user) {
-      user = await CustomerUser.findOne({ firebaseUid });
+      user = await Customer.findOne({ firebaseUid });
       role = 'customer';
     }
 
@@ -217,9 +221,10 @@ const getUserByFirebaseUid = async (req, res) => {
       user: {
         id: user._id,
         firebaseUid: user.firebaseUid,
-        name: user.displayName,
+        name: user.name,
         email: user.email,
-        profilePicture: user.photoURL,
+        contactNumber: user.contact_number,
+        address: user.address,
         role: role
       },
       token,
