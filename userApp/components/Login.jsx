@@ -137,7 +137,7 @@ const Login = ({ navigation }) => {
             onPress: () => {
               console.log('🏠 User navigated to home screen after login');
               // Navigate to home/dashboard
-              router.replace('/(tabs)/explore');
+              router.replace('/(tabs)/market');
             }
           }
         ]

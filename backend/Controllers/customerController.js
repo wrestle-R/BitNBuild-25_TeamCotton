@@ -148,6 +148,58 @@ const customerController = {
     }
   },
 
+  // Update only customer location (address + coordinates)
+  async updateLocation(req, res) {
+    try {
+      const { address, coordinates } = req.body;
+
+      if (!address && !coordinates) {
+        return res.status(400).json({ message: 'Address or coordinates required' });
+      }
+
+      let coords = coordinates || null;
+
+      // If coordinates not provided but address is provided, attempt geocoding
+      if (!coords && address && address.street) {
+        const fullAddress = `${address.street}, ${address.city || ''}, ${address.state || ''} ${address.pincode || ''}`;
+        try {
+          const response = await axios.get(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`
+          );
+          if (response.data && response.data.length > 0) {
+            coords = {
+              lat: parseFloat(response.data[0].lat),
+              lng: parseFloat(response.data[0].lon),
+            };
+          }
+        } catch (geocodeError) {
+          console.log('Geocoding failed:', geocodeError.message);
+        }
+      }
+
+      const updateData = {
+        address: {
+          ...(address || {}),
+          coordinates: coords,
+        },
+      };
+
+      const updatedCustomer = await Customer.findOneAndUpdate(
+        { firebaseUid: req.user.firebaseUid },
+        { $set: updateData },
+        { new: true }
+      );
+
+      if (!updatedCustomer) {
+        return res.status(404).json({ message: 'Customer not found' });
+      }
+
+      res.json(updatedCustomer);
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
   // Get vendor meal plans
   async getVendorPlans(req, res) {
     try {
