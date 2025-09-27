@@ -133,7 +133,7 @@ const VendorDashboard = () => {
               <div className="flex items-center gap-4">
                 <div>
                   <h1 className="text-4xl font-bold text-foreground font-montserrat flex items-center gap-3">
-                    <FaStore className="w-10 h-10 text-primary" />
+                   
                     Welcome, {user.name}!
                   </h1>
                 </div>
