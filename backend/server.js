@@ -11,7 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:8082', 'http://localhost:8081'],
+  origin: true, // Allow all origins for development
   credentials: true
 }));
 app.use(express.json());
@@ -40,6 +40,9 @@ app.get('/', (req, res) => {
   res.json({ message: 'NourishNet Backend is running!' });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`NourishNet server running on port ${PORT}`);
+  console.log(`Available at:`);
+  console.log(`  - Local: http://localhost:${PORT}`);
+  console.log(`  - Network: http://192.168.1.40:${PORT}`);
 });
