@@ -9,10 +9,15 @@ const customerController = {
     try {
       const vendors = await Vendor.find({ verified: true }).select('-firebaseUid -__v');
       
-      // Get plan count for each vendor
+      // Get plan count for each vendor and filter vendors with at least one meal plan
       const vendorsWithPlanCount = await Promise.all(
         vendors.map(async (vendor) => {
           const planCount = await Plan.countDocuments({ vendor_id: vendor._id });
+          
+          // Only return vendors with at least one meal plan
+          if (planCount === 0) {
+            return null;
+          }
           
           // Generate a random but consistent specialty based on vendor ID
           const specialty = (vendor._id.toString().charCodeAt(0) % 2 === 0) ? 'veg' : 'nonveg';
@@ -31,7 +36,10 @@ const customerController = {
         })
       );
       
-      res.json(vendorsWithPlanCount);
+      // Filter out null values (vendors with no meal plans)
+      const filteredVendors = vendorsWithPlanCount.filter(vendor => vendor !== null);
+      
+      res.json(filteredVendors);
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
