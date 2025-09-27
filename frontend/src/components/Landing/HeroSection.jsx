@@ -50,14 +50,14 @@ export default function HeroSection() {
                 </div>
                 <section>
                     <div className="relative pt-24">
-                        <div className="absolute inset-0 -z-10 size-full [background:radial-gradient(125%_125%_at_50%_100%,transparent_0%,var(--color-background)_75%)]"></div>
+                        <div className="absolute inset-0 -z-10 size-full bg-gradient-to-b from-transparent to-background/75"></div>
                         <div className="mx-auto max-w-5xl px-6">
                             <div className="sm:mx-auto lg:mr-auto lg:mt-0">
                                 <TextEffect
                                     preset="fade-in-blur"
                                     speedSegment={0.3}
                                     as="h1"
-                                    className="mt-8 max-w-2xl text-balance text-5xl font-medium md:text-6xl lg:mt-16">
+                                    className="mt-8 max-w-2xl text-balance text-5xl font-medium md:text-6xl lg:mt-16 text-foreground">
                                     NourishNet - Connecting Hunger with Home-cooked Love
                                 </TextEffect>
                                 <TextEffect
@@ -66,7 +66,7 @@ export default function HeroSection() {
                                     speedSegment={0.3}
                                     delay={0.5}
                                     as="p"
-                                    className="mt-8 max-w-2xl text-pretty text-lg">
+                                    className="mt-8 max-w-2xl text-pretty text-lg text-muted-foreground">
                                     A comprehensive SaaS platform that digitizes tiffin services, optimizes delivery routes with AI, and brings the convenience of home-cooked meals to urban India. Empowering vendors with smart analytics while delighting customers with real-time tracking.
                                 </TextEffect>
 
@@ -117,14 +117,14 @@ export default function HeroSection() {
                                 ...transitionVariants,
                             }}>
                             <div className="mask-b-from-55% relative -mr-56 mt-8 overflow-hidden px-2 sm:mr-0 sm:mt-12 md:mt-20">
-                                <div className="inset-shadow-2xs ring-background dark:inset-shadow-white/20 bg-background relative mx-auto max-w-5xl overflow-hidden rounded-2xl border p-4 shadow-lg shadow-zinc-950/15 ring-1">
+                                <div className="relative mx-auto max-w-5xl overflow-hidden rounded-2xl border border-border bg-background p-4 shadow-lg ring-1 ring-border">
 <img
-  className="bg-background aspect-15/8 relative hidden rounded-2xl dark:block"
+  className="aspect-15/8 relative hidden rounded-2xl bg-background dark:block"
   src="/Dashboard.png"
   alt="app screen"
 />
 <img
-  className="z-2 border-border/25 aspect-15/8 relative rounded-2xl border dark:hidden"
+  className="aspect-15/8 relative rounded-2xl border border-border/25 dark:hidden"
   src="/Dashboard.png"
   alt="app screen"
 />

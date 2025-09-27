@@ -62,7 +62,7 @@ const VendorSidebar = ({ isOpen, setIsOpen }) => {
         {/* Header */}
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <FaStore className="w-8 h-8 text-blue-500 flex-shrink-0" />
+            <FaStore className="w-8 h-8 text-primary flex-shrink-0" />
             {isOpen && (
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
@@ -86,7 +86,7 @@ const VendorSidebar = ({ isOpen, setIsOpen }) => {
               <li key={index} className="relative">
                 {/* Active indicator */}
                 {item.active && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-blue-500 rounded-r-full" />
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
                 )}
                 <Button
                   variant={item.active ? "default" : "ghost"}
@@ -94,11 +94,11 @@ const VendorSidebar = ({ isOpen, setIsOpen }) => {
                     isOpen ? 'px-3' : 'px-0 justify-center'
                   } ${
                     item.active 
-                      ? 'bg-blue-100 text-blue-800 border border-blue-200 shadow-sm ml-2' 
-                      : 'text-sidebar-foreground hover:text-blue-700 hover:bg-blue-50'
+                      ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm ml-2' 
+                      : 'text-sidebar-foreground hover:text-primary hover:bg-primary/5'
                   }`}
                 >
-                  <item.icon className={`w-5 h-5 flex-shrink-0 ${item.active ? 'text-blue-500' : ''}`} />
+                  <item.icon className={`w-5 h-5 flex-shrink-0 ${item.active ? 'text-primary' : ''}`} />
                   {isOpen && (
                     <motion.span
                       initial={{ opacity: 0, x: -10 }}
@@ -137,7 +137,7 @@ const VendorSidebar = ({ isOpen, setIsOpen }) => {
                     <p className="text-sidebar-foreground font-medium truncate">
                       {user.name}
                     </p>
-                    <Badge variant="secondary" className="text-xs mt-1 bg-blue-100 text-blue-700">
+                    <Badge variant="secondary" className="text-xs mt-1">
                       {user.vendorTier || 'Basic'}
                     </Badge>
                   </motion.div>
@@ -153,14 +153,14 @@ const VendorSidebar = ({ isOpen, setIsOpen }) => {
                 variant="ghost"
                 size="default"
                 showLabel={true}
-                className="w-full justify-start text-sidebar-foreground hover:text-blue-700 hover:bg-blue-50"
+                className="w-full justify-start text-sidebar-foreground hover:text-primary hover:bg-primary/5"
               />
             ) : (
               <div className="flex justify-center">
                 <ThemeToggle 
                   variant="ghost"
                   size="sm"
-                  className="text-sidebar-foreground hover:text-blue-700 hover:bg-blue-50"
+                  className="text-sidebar-foreground hover:text-primary hover:bg-primary/5"
                 />
               </div>
             )}
@@ -195,7 +195,7 @@ const VendorSidebar = ({ isOpen, setIsOpen }) => {
           onClick={() => setIsOpen(!isOpen)}
           variant="ghost"
           size="sm"
-          className="absolute -right-3 top-6 bg-sidebar border border-sidebar-border rounded-full w-6 h-6 p-0 hover:bg-blue-50"
+          className="absolute -right-3 top-6 bg-sidebar border border-sidebar-border rounded-full w-6 h-6 p-0 hover:bg-primary/5"
         >
           <motion.div
             animate={{ rotate: isOpen ? 180 : 0 }}

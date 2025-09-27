@@ -2,39 +2,41 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
-import { FaShoppingCart, FaHeart, FaUser, FaTachometerAlt, FaCog, FaSignOutAlt, FaMapMarkerAlt, FaBell } from 'react-icons/fa';
+import { 
+  FaShieldAlt, 
+  FaUsers, 
+  FaChartBar, 
+  FaCog, 
+  FaSignOutAlt, 
+  FaTachometerAlt,
+  FaCrown
+} from 'react-icons/fa';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Badge } from '../ui/badge';
-import { Separator } from '../ui/separator';
 import ThemeToggle from '../ui/ThemeToggle';
+import toast from 'react-hot-toast';
 
-const CustomerSidebar = ({ isOpen, setIsOpen }) => {
-  const { user, logout } = useUserContext();
+const AdminSidebar = ({ isOpen, setIsOpen, activeTab, setActiveTab }) => {
+  const { user } = useUserContext();
   const navigate = useNavigate();
 
   // Debug logging
-  console.log('🎯 CustomerSidebar Props:', { isOpen, setIsOpen: !!setIsOpen });
-  console.log('🎯 CustomerSidebar User:', user);
+  console.log('🎯 AdminSidebar Props:', { isOpen, setIsOpen: !!setIsOpen, activeTab });
+  console.log('🎯 AdminSidebar User:', user);
 
-  const handleLogout = async () => {
-    try {
-      console.log('🚪 CustomerSidebar - Initiating logout');
-      await logout();
-      navigate('/');
-    } catch (error) {
-      console.error('💥 CustomerSidebar - Logout error:', error);
-      // Error handled in context
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('wildwest_admin_auth');
+    localStorage.removeItem('wildwest_admin_login');
+    toast.success('Logged out successfully');
+    navigate('/');
   };
 
   const menuItems = [
-    { icon: FaTachometerAlt, label: 'Dashboard', active: true },
-    { icon: FaShoppingCart, label: 'My Orders' },
-    { icon: FaHeart, label: 'Wishlist' },
-    { icon: FaMapMarkerAlt, label: 'Locations' },
-    { icon: FaBell, label: 'Notifications' },
-    { icon: FaCog, label: 'Settings' },
+    { id: 'overview', icon: FaTachometerAlt, label: 'Overview' },
+    { id: 'users', icon: FaUsers, label: 'Manage Cowboys' },
+    { id: 'analytics', icon: FaChartBar, label: 'Analytics' },
+    { id: 'settings', icon: FaCog, label: 'Settings' },
   ];
 
   return (
@@ -61,7 +63,7 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
         {/* Header */}
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <FaShoppingCart className="w-8 h-8 text-primary flex-shrink-0" />
+            <FaShieldAlt className="w-8 h-8 text-primary flex-shrink-0" />
             {isOpen && (
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
@@ -70,9 +72,9 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
                 className="overflow-hidden"
               >
                 <h1 className="font-montserrat font-bold text-sidebar-foreground text-lg">
-                  Customer
+                  Sheriff's Office
                 </h1>
-                <p className="text-sidebar-foreground/70 text-sm">Portal</p>
+                <p className="text-sidebar-foreground/70 text-sm">Admin Panel</p>
               </motion.div>
             )}
           </div>
@@ -84,26 +86,27 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
             {menuItems.map((item, index) => (
               <li key={index} className="relative">
                 {/* Active indicator */}
-                {item.active && (
+                {activeTab === item.id && (
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
                 )}
                 <Button
-                  variant={item.active ? "default" : "ghost"}
+                  variant={activeTab === item.id ? "default" : "ghost"}
+                  onClick={() => setActiveTab(item.id)}
                   className={`w-full justify-start gap-3 transition-all duration-200 ${
                     isOpen ? 'px-3' : 'px-0 justify-center'
                   } ${
-                    item.active 
+                    activeTab === item.id 
                       ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm ml-2' 
                       : 'text-sidebar-foreground hover:text-primary hover:bg-primary/5'
                   }`}
                 >
-                  <item.icon className={`w-5 h-5 flex-shrink-0 ${item.active ? 'text-primary' : ''}`} />
+                  <item.icon className={`w-5 h-5 flex-shrink-0 ${activeTab === item.id ? 'text-primary' : ''}`} />
                   {isOpen && (
                     <motion.span
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -10 }}
-                      className={`font-inter ${item.active ? 'font-semibold' : ''}`}
+                      className={`font-inter ${activeTab === item.id ? 'font-semibold' : ''}`}
                     >
                       {item.label}
                     </motion.span>
@@ -116,34 +119,42 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
 
         {/* Footer */}
         <div className="border-t border-sidebar-border">
-          {/* User Profile */}
-          {user && (
-            <div className="p-4 border-b border-sidebar-border">
-              <div className="flex items-center gap-3">
-                <Avatar className="w-10 h-10 flex-shrink-0">
-                  <AvatarImage src={user.photoURL} alt={user.name} />
-                  <AvatarFallback>
-                    <FaUser className="w-5 h-5" />
-                  </AvatarFallback>
-                </Avatar>
-                {isOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    className="overflow-hidden flex-1 min-w-0"
-                  >
-                    <p className="text-sidebar-foreground font-medium truncate">
-                      {user.name}
-                    </p>
-                    <Badge variant="secondary" className="text-xs mt-1">
-                      {user.customerTier || 'Regular'}
-                    </Badge>
-                  </motion.div>
-                )}
-              </div>
+          {/* Admin Profile */}
+          <div className="p-4 border-b border-sidebar-border">
+            <div className="flex items-center gap-3">
+              <motion.div 
+                className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center relative overflow-hidden flex-shrink-0"
+                whileHover={{ scale: 1.1 }}
+              >
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-accent/20 to-primary/20 rounded-full"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                />
+                <FaCrown className="w-5 h-5 text-accent-foreground relative z-10" />
+                <motion.div
+                  className="absolute inset-0 bg-accent/10 rounded-full"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+              </motion.div>
+              {isOpen && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  className="overflow-hidden flex-1 min-w-0"
+                >
+                  <p className="text-sidebar-foreground font-medium truncate">
+                    Admin
+                  </p>
+                  <Badge variant="secondary" className="text-xs mt-1 bg-accent/10 text-accent-foreground border-accent/20">
+                    Sheriff
+                  </Badge>
+                </motion.div>
+              )}
             </div>
-          )}
+          </div>
           
           {/* Theme Toggle */}
           <div className="p-4 border-b border-sidebar-border">
@@ -210,4 +221,4 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
   );
 };
 
-export default CustomerSidebar;
+export default AdminSidebar;
