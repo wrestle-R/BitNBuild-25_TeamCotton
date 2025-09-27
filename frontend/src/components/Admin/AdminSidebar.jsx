@@ -1,15 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
 import { 
-  FaShieldAlt, 
-  FaUsers, 
-  FaChartBar, 
-  FaCog, 
-  FaSignOutAlt, 
-  FaTachometerAlt,
-  FaCrown
+  FaLock, 
+  FaStore, 
+  FaSignOutAlt,
+  FaUser,
+  FaTachometerAlt
 } from 'react-icons/fa';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -17,26 +15,25 @@ import { Badge } from '../ui/badge';
 import ThemeToggle from '../ui/ThemeToggle';
 import toast from 'react-hot-toast';
 
-const AdminSidebar = ({ isOpen, setIsOpen, activeTab, setActiveTab }) => {
+const AdminSidebar = ({ isOpen, setIsOpen }) => {
   const { user } = useUserContext();
   const navigate = useNavigate();
-
-  // Debug logging
-  console.log('🎯 AdminSidebar Props:', { isOpen, setIsOpen: !!setIsOpen, activeTab });
-  console.log('🎯 AdminSidebar User:', user);
+  const location = useLocation();
 
   const handleLogout = () => {
-    localStorage.removeItem('wildwest_admin_auth');
-    localStorage.removeItem('wildwest_admin_login');
+    localStorage.removeItem('admin_auth');
+    localStorage.removeItem('admin_login');
     toast.success('Logged out successfully');
     navigate('/');
   };
 
+  const handleMenuClick = (route) => {
+    navigate(route);
+  };
+
   const menuItems = [
-    { id: 'overview', icon: FaTachometerAlt, label: 'Overview' },
-    { id: 'users', icon: FaUsers, label: 'Manage Cowboys' },
-    { id: 'analytics', icon: FaChartBar, label: 'Analytics' },
-    { id: 'settings', icon: FaCog, label: 'Settings' },
+    { id: 'dashboard', icon: FaTachometerAlt, label: 'Dashboard', route: '/admin/dashboard' },
+    { id: 'manage-vendors', icon: FaStore, label: 'Manage Vendors', route: '/admin/manage-vendors' },
   ];
 
   return (
@@ -63,7 +60,7 @@ const AdminSidebar = ({ isOpen, setIsOpen, activeTab, setActiveTab }) => {
         {/* Header */}
         <div className="p-4 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <FaShieldAlt className="w-8 h-8 text-primary flex-shrink-0" />
+            <FaLock className="w-6 h-6 text-primary flex-shrink-0" />
             {isOpen && (
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
@@ -72,9 +69,8 @@ const AdminSidebar = ({ isOpen, setIsOpen, activeTab, setActiveTab }) => {
                 className="overflow-hidden"
               >
                 <h1 className="font-montserrat font-bold text-sidebar-foreground text-lg">
-                  Sheriff's Office
+                  Admin Panel
                 </h1>
-                <p className="text-sidebar-foreground/70 text-sm">Admin Panel</p>
               </motion.div>
             )}
           </div>
@@ -83,37 +79,40 @@ const AdminSidebar = ({ isOpen, setIsOpen, activeTab, setActiveTab }) => {
         {/* Navigation */}
         <nav className="flex-1 p-4">
           <ul className="space-y-2">
-            {menuItems.map((item, index) => (
-              <li key={index} className="relative">
-                {/* Active indicator */}
-                {activeTab === item.id && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
-                )}
-                <Button
-                  variant={activeTab === item.id ? "default" : "ghost"}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full justify-start gap-3 transition-all duration-200 ${
-                    isOpen ? 'px-3' : 'px-0 justify-center'
-                  } ${
-                    activeTab === item.id 
-                      ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm ml-2' 
-                      : 'text-sidebar-foreground hover:text-primary hover:bg-primary/5'
-                  }`}
-                >
-                  <item.icon className={`w-5 h-5 flex-shrink-0 ${activeTab === item.id ? 'text-primary' : ''}`} />
-                  {isOpen && (
-                    <motion.span
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -10 }}
-                      className={`font-inter ${activeTab === item.id ? 'font-semibold' : ''}`}
-                    >
-                      {item.label}
-                    </motion.span>
+            {menuItems.map((item, index) => {
+              const isActive = location.pathname === item.route;
+              return (
+                <li key={index} className="relative">
+                  {/* Active indicator */}
+                  {isActive && (
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
                   )}
-                </Button>
-              </li>
-            ))}
+                  <Button
+                    variant={isActive ? "default" : "ghost"}
+                    onClick={() => handleMenuClick(item.route)}
+                    className={`w-full justify-start gap-3 transition-all duration-200 ${
+                      isOpen ? 'px-3' : 'px-0 justify-center'
+                    } ${
+                      isActive 
+                        ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm ml-2' 
+                        : 'text-sidebar-foreground hover:text-primary hover:bg-primary/5'
+                    }`}
+                  >
+                    <item.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-primary' : ''}`} />
+                    {isOpen && (
+                      <motion.span
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                        className={`font-inter ${isActive ? 'font-semibold' : ''}`}
+                      >
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </Button>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
@@ -122,22 +121,9 @@ const AdminSidebar = ({ isOpen, setIsOpen, activeTab, setActiveTab }) => {
           {/* Admin Profile */}
           <div className="p-4 border-b border-sidebar-border">
             <div className="flex items-center gap-3">
-              <motion.div 
-                className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center relative overflow-hidden flex-shrink-0"
-                whileHover={{ scale: 1.1 }}
-              >
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-accent/20 to-primary/20 rounded-full"
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-                />
-                <FaCrown className="w-5 h-5 text-accent-foreground relative z-10" />
-                <motion.div
-                  className="absolute inset-0 bg-accent/10 rounded-full"
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                />
-              </motion.div>
+              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                <FaUser className="w-4 h-4 text-primary" />
+              </div>
               {isOpen && (
                 <motion.div
                   initial={{ opacity: 0, x: -10 }}
@@ -148,9 +134,6 @@ const AdminSidebar = ({ isOpen, setIsOpen, activeTab, setActiveTab }) => {
                   <p className="text-sidebar-foreground font-medium truncate">
                     Admin
                   </p>
-                  <Badge variant="secondary" className="text-xs mt-1 bg-accent/10 text-accent-foreground border-accent/20">
-                    Sheriff
-                  </Badge>
                 </motion.div>
               )}
             </div>

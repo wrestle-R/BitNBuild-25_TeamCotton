@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { FaHatCowboy, FaShieldAlt, FaEye, FaEyeSlash, FaHome, FaCrown } from 'react-icons/fa';
+import { FaLock, FaEye, FaEyeSlash, FaHome } from 'react-icons/fa';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
@@ -19,7 +19,7 @@ const AdminAuth = () => {
 
   // Check if already authenticated as admin
   useEffect(() => {
-    const adminAuth = localStorage.getItem('wildwest_admin_auth');
+    const adminAuth = localStorage.getItem('admin_auth');
     if (adminAuth === 'authenticated') {
       navigate('/admin/dashboard');
     }
@@ -43,23 +43,23 @@ const AdminAuth = () => {
       // Frontend-only validation (as requested)
       const adminCredentials = {
         username: import.meta.env.VITE_ADMIN_USERNAME,
-        password: import.meta.env.VITE_ADMIN_PASSWORD 
+        password: import.meta.env.VITE_ADMIN_PASSWORD
       };
 
       if (credentials.username === adminCredentials.username && 
           credentials.password === adminCredentials.password) {
         
         // Store admin authentication
-        localStorage.setItem('wildwest_admin_auth', 'authenticated');
-        localStorage.setItem('wildwest_admin_login', Date.now().toString());
+        localStorage.setItem('admin_auth', 'authenticated');
+        localStorage.setItem('admin_login', Date.now().toString());
         
-        toast.success('Welcome to the Sheriff\'s Office!');
+        toast.success('Welcome to Admin Panel!');
         navigate('/admin/dashboard');
       } else {
-        toast.error('Invalid sheriff credentials, partner!');
+        toast.error('Invalid admin credentials!');
       }
     } catch (error) {
-      toast.error('Something went wrong at the sheriff\'s office!');
+      toast.error('Something went wrong!');
     } finally {
       setIsLoading(false);
     }
@@ -74,37 +74,7 @@ const AdminAuth = () => {
         transition={{ duration: 0.6 }}
       >
         {/* Header */}
-        <motion.div 
-          className="text-center mb-8"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-        >
-          {/* Back to Home Button */}
-          <div className="flex justify-start mb-4 -ml-4">
-            <Button
-              onClick={() => navigate('/')}
-              variant="outline"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground font-inter"
-            >
-              <FaHome className="w-4 h-4 mr-2" />
-              Back to Home
-            </Button>
-          </div>
-          
-          <h1 className="text-4xl md:text-5xl font-bold text-foreground font-montserrat mb-2 flex items-center justify-center gap-3">
-            <FaShieldAlt className="w-12 h-12 text-primary" />
-            Sheriff's Office
-          </h1>
-          <p className="text-muted-foreground font-inter text-lg">
-            Administrative access to the Wild West Arena
-          </p>
-          <div className="flex items-center justify-center gap-2 mt-2">
-            <FaCrown className="w-5 h-5 text-yellow-500" />
-            <span className="text-sm text-muted-foreground font-inter">Authorized Personnel Only</span>
-          </div>
-        </motion.div>
+
 
         {/* Auth Card */}
         <motion.div
@@ -112,21 +82,21 @@ const AdminAuth = () => {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <Card className="bg-card/80 backdrop-blur-sm shadow-2xl border-2 border-primary/20">
+          <Card className="bg-card backdrop-blur-sm shadow-lg border">
             <CardHeader className="text-center">
-              <CardTitle className="text-2xl font-bold text-foreground font-montserrat flex items-center justify-center gap-2">
-                <FaShieldAlt className="w-6 h-6 text-primary" />
-                Admin Access
+              <CardTitle className="text-xl font-bold text-foreground font-montserrat flex items-center justify-center gap-2">
+                <FaLock className="w-5 h-5 text-primary" />
+                Admin Login
               </CardTitle>
               <CardDescription className="text-muted-foreground font-inter">
-                Enter your sheriff credentials to continue
+                Enter your credentials to continue
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleAdminLogin} className="space-y-6">
+              <form onSubmit={handleAdminLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="username" className="text-foreground font-inter font-medium">
-                    Sheriff Username
+                    Username
                   </Label>
                   <Input
                     id="username"
@@ -134,7 +104,7 @@ const AdminAuth = () => {
                     name="username"
                     value={credentials.username}
                     onChange={handleInputChange}
-                    placeholder="Enter your admin username"
+                    placeholder="Enter username"
                     className="bg-background border-border text-foreground placeholder:text-muted-foreground"
                     required
                   />
@@ -142,7 +112,7 @@ const AdminAuth = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-foreground font-inter font-medium">
-                    Sheriff Password
+                    Password
                   </Label>
                   <div className="relative">
                     <Input
@@ -151,7 +121,7 @@ const AdminAuth = () => {
                       name="password"
                       value={credentials.password}
                       onChange={handleInputChange}
-                      placeholder="Enter your admin password"
+                      placeholder="Enter password"
                       className="bg-background border-border text-foreground placeholder:text-muted-foreground pr-10"
                       required
                     />
@@ -174,52 +144,34 @@ const AdminAuth = () => {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-inter font-semibold shadow-lg"
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-inter font-semibold"
                   size="lg"
                 >
                   {isLoading ? (
                     <div className="flex items-center justify-center gap-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current"></div>
-                      <span>Verifying Badge...</span>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                      <span>Signing in...</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <FaShieldAlt className="w-5 h-5" />
-                      <span>Access Sheriff's Office</span>
+                      <FaLock className="w-4 h-4" />
+                      <span>Sign In</span>
                     </div>
                   )}
                 </Button>
               </form>
-
-              {/* Security Notice */}
-              <div className="mt-6 p-4 bg-muted/50 rounded-lg border border-border">
-                <div className="flex items-start gap-3">
-                  <FaShieldAlt className="w-5 h-5 text-primary mt-0.5" />
-                  <div className="text-sm space-y-1">
-                    <p className="font-medium text-foreground font-inter">Security Notice</p>
-                    <p className="text-muted-foreground font-inter leading-relaxed">
-                      This area is restricted to authorized sheriffs only. 
-                      All access attempts are logged and monitored.
-                    </p>
-                    <div className="text-xs text-muted-foreground font-inter mt-2 opacity-60">
-                      Current: {import.meta.env.VITE_ADMIN_USERNAME} / {import.meta.env.VITE_ADMIN_PASSWORD}
-                    </div>
-                  </div>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </motion.div>
 
         {/* Footer */}
         <motion.div 
-          className="text-center mt-8 text-muted-foreground font-inter text-sm"
+          className="text-center mt-6 text-muted-foreground font-inter text-sm"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <p>Secure administrative access</p>
-          <p className="mt-1">Wild West Arena Admin Panel</p>
+        
         </motion.div>
       </motion.div>
     </div>
