@@ -18,7 +18,7 @@ import ManageVendors from './pages/Admin/ManageVendors'
 import { Toaster } from 'sonner' 
 import VendorSubscribers from './pages/Vendor/VendorSubscribers'
 import CustomerSubscriptions from './pages/Customer/CustomerSubscriptions'
-import CustomerVendorPlans from './pages/Customer/CustomerVendorPlans'
+
 
 const LandingRoute = () => {
   const { user, loading } = useUserContext();
@@ -233,7 +233,7 @@ const App = () => {
           <Route path="/customer/profile" element={<CustomerProfileRoute />} />
           <Route path="/vendor/subscribers" element={<VendorSubscribers />} />
           <Route path="/customer/subscriptions" element={<CustomerSubscriptions />} />
-          <Route path="/customer/vendor/:vendorId/plans" element={<CustomerVendorPlans />} />
+
           {/* Hidden Admin Routes */}
           <Route path="/admin/auth" element={<AdminAuth />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />

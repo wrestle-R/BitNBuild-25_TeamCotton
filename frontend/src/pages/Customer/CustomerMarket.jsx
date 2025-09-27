@@ -372,37 +372,56 @@ const CustomerMarket = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3 + index * 0.1 }}
               >
-                <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-14 h-14 ring-2 ring-primary/20">
+                <Card className="group bg-gradient-to-br from-card to-card/50 backdrop-blur-sm border-border/50 shadow-lg hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 hover:-translate-y-2 overflow-hidden">
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  
+                  <CardHeader className="relative pb-4">
+                    <div className="flex items-start gap-4">
+                      <div className="relative">
+                        <Avatar className="w-16 h-16 ring-2 ring-primary/20 group-hover:ring-primary/40 transition-all duration-300">
                           <AvatarImage 
                             src={vendor.profileImage} 
                             alt={vendor.name}
                             className="object-cover"
                           />
-                          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10">
-                            <FaStore className="w-6 h-6 text-primary" />
+                          <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary">
+                            <FaStore className="w-7 h-7" />
                           </AvatarFallback>
                         </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <CardTitle className="text-lg font-montserrat truncate">{vendor.name}</CardTitle>
+                        {vendor.verified && (
+                          <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1 border-2 border-background">
+                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="text-xl font-montserrat text-foreground mb-2 truncate group-hover:text-primary transition-colors duration-300">
+                          {vendor.name}
+                        </CardTitle>
+                        <div className="flex flex-wrap gap-2">
                           {vendor.verified && (
-                            <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-200 mt-1">
+                            <Badge className="bg-green-100 text-green-700 border-green-200 hover:bg-green-200 transition-colors">
                               ✓ Verified
                             </Badge>
                           )}
+                          <Badge variant="outline" className="text-xs">
+                            {vendor.plans || 0} Plans
+                          </Badge>
                         </div>
                       </div>
                     </div>
                   </CardHeader>
                   
-                  <CardContent>
+                  <CardContent className="relative space-y-4">
+                    {/* Location Info */}
                     {vendor.address && vendor.address.city && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        <FaMapMarkerAlt className="w-3 h-3" />
-                        <span>
+                      <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
+                        <FaMapMarkerAlt className="w-4 h-4 text-primary flex-shrink-0" />
+                        <span className="text-sm text-muted-foreground truncate">
                           {vendor.address.street && `${vendor.address.street}, `}
                           {vendor.address.city}
                           {vendor.address.state && `, ${vendor.address.state}`}
@@ -410,48 +429,46 @@ const CustomerMarket = () => {
                       </div>
                     )}
 
+                    {/* Distance Badge */}
                     {vendor.address && vendor.address.coordinates && user && user.address && user.address.coordinates && (
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                        <span className="text-xs bg-muted px-2 py-1 rounded">
-                          {calculateDistance(
+                      <div className="flex justify-center">
+                        <Badge variant="secondary" className="bg-primary/10 text-primary hover:bg-primary/20">
+                          📍 {calculateDistance(
                             user.address.coordinates.lat,
                             user.address.coordinates.lng,
                             vendor.address.coordinates.lat,
                             vendor.address.coordinates.lng
                           ).toFixed(1)} km away
-                        </span>
+                        </Badge>
                       </div>
                     )}
                     
-                    <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
-                      <span className="flex items-center gap-1">
-                        <FaShoppingCart className="w-3 h-3" />
-                        {vendor.plans || 0} meal plans
-                      </span>
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="flex items-center gap-2 p-2 bg-muted/20 rounded-md">
+                        <FaShoppingCart className="w-3 h-3 text-primary" />
+                        <span className="font-medium">{vendor.plans || 0} Plans</span>
+                      </div>
                       {vendor.contactNumber && (
-                        <span className="text-xs">Contact available</span>
+                        <div className="flex items-center gap-2 p-2 bg-muted/20 rounded-md">
+                          <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                          </svg>
+                          <span className="font-medium text-xs">Available</span>
+                        </div>
                       )}
                     </div>
 
-                    <div className="flex gap-2">
-                      <Button 
-                        className="flex-1" 
-                        size="sm"
-                        onClick={() => navigate(`/customer/vendor/${vendor._id}/plans`)}
-                        disabled={!vendor.plans || vendor.plans === 0}
-                      >
-                        <FaShoppingCart className="w-4 h-4 mr-2" />
-                        {vendor.plans > 0 ? 'View Plans' : 'No Plans'}
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleViewDetails(vendor)}
-                      >
-                        <FaInfoCircle className="w-4 h-4 mr-2" />
-                        Details
-                      </Button>
-                    </div>
+                    {/* Action Button */}
+                    <Button 
+                      className="w-full group-hover:bg-primary group-hover:shadow-lg transition-all duration-300" 
+                      size="lg"
+                      onClick={() => handleViewDetails(vendor)}
+                      disabled={!vendor.plans || vendor.plans === 0}
+                    >
+                      <FaShoppingCart className="w-4 h-4 mr-2" />
+                      {vendor.plans > 0 ? 'View Plans & Details' : 'No Plans Available'}
+                    </Button>
                   </CardContent>
                 </Card>
               </motion.div>
