@@ -1,12 +1,36 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDriverContext } from '../context/DriverContext';
 import { Ionicons } from '@expo/vector-icons';
-import '../global.css';
 
 export default function Profile() {
-  const { driver, loading, logout } = useDriverContext();
+  // Add error boundary and logging
+  console.log('👤 Profile component rendering...');
+  
+  let driverContextData;
+  try {
+    driverContextData = useDriverContext();
+    console.log('✅ Profile - Successfully got driver context:', {
+      hasDriver: !!driverContextData.driver,
+      loading: driverContextData.loading,
+      contextReady: driverContextData.contextReady
+    });
+  } catch (error) {
+    console.error('💥 Profile - Error getting driver context:', error);
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <Text style={{ color: 'red', textAlign: 'center', fontSize: 16 }}>
+          Error loading driver context: {error.message}
+        </Text>
+        <Text style={{ color: '#666', textAlign: 'center', marginTop: 10 }}>
+          Please restart the app or contact support.
+        </Text>
+      </View>
+    );
+  }
+
+  const { driver, loading, logout } = driverContextData;
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -41,98 +65,98 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-gray-50">
-        <Text className="text-base text-gray-600">Loading...</Text>
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
 
   if (!driver) {
     return (
-      <View className="flex-1 justify-center items-center bg-gray-50">
-        <Text className="text-base text-gray-600">Please log in to view your profile</Text>
+      <View style={styles.loadingContainer}>
+        <Text style={styles.loadingText}>Please log in to view your profile</Text>
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <View className="p-5">
+    <View style={styles.container}>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
           {/* Header */}
-          <View className="items-center mt-10 mb-8">
-            <Text className="text-2xl font-bold text-gray-900 mb-2">Driver Profile</Text>
-            <Text className="text-base text-gray-600">Manage your account settings</Text>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Driver Profile</Text>
+            <Text style={styles.headerSubtitle}>Manage your account settings</Text>
           </View>
 
           {/* Profile Card */}
-          <View className="bg-white rounded-2xl p-6 mb-6 shadow-sm">
+          <View style={styles.profileCard}>
             {/* Profile Picture */}
-            <View className="items-center mb-6">
-              <View className="w-24 h-24 bg-blue-100 rounded-full items-center justify-center mb-4">
+            <View style={styles.profilePictureSection}>
+              <View style={styles.profilePicture}>
                 <Ionicons name="person" size={40} color="#007AFF" />
               </View>
-              <TouchableOpacity className="bg-blue-500 px-4 py-2 rounded-full">
-                <Text className="text-white text-sm font-medium">Change Photo</Text>
+              <TouchableOpacity style={styles.changePhotoButton}>
+                <Text style={styles.changePhotoText}>Change Photo</Text>
               </TouchableOpacity>
             </View>
 
             {/* Profile Info */}
-            <View className="space-y-4">
-              <View className="flex-row items-center p-3 bg-gray-50 rounded-lg">
+            <View style={styles.profileInfo}>
+              <View style={styles.infoRow}>
                 <Ionicons name="person-outline" size={20} color="#666" />
-                <View className="ml-3 flex-1">
-                  <Text className="text-sm text-gray-600">Full Name</Text>
-                  <Text className="text-base font-medium text-gray-900">
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Full Name</Text>
+                  <Text style={styles.infoValue}>
                     {driver.name || 'Not provided'}
                   </Text>
                 </View>
               </View>
 
-              <View className="flex-row items-center p-3 bg-gray-50 rounded-lg">
+              <View style={styles.infoRow}>
                 <Ionicons name="mail-outline" size={20} color="#666" />
-                <View className="ml-3 flex-1">
-                  <Text className="text-sm text-gray-600">Email</Text>
-                  <Text className="text-base font-medium text-gray-900">{driver.email}</Text>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Email</Text>
+                  <Text style={styles.infoValue}>{driver.email}</Text>
                 </View>
               </View>
 
-              <View className="flex-row items-center p-3 bg-gray-50 rounded-lg">
+              <View style={styles.infoRow}>
                 <Ionicons name="call-outline" size={20} color="#666" />
-                <View className="ml-3 flex-1">
-                  <Text className="text-sm text-gray-600">Phone</Text>
-                  <Text className="text-base font-medium text-gray-900">
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Phone</Text>
+                  <Text style={styles.infoValue}>
                     {driver.contactNumber || 'Not provided'}
                   </Text>
                 </View>
               </View>
 
-              <View className="flex-row items-center p-3 bg-gray-50 rounded-lg">
+              <View style={styles.infoRow}>
                 <Ionicons name="car-outline" size={20} color="#666" />
-                <View className="ml-3 flex-1">
-                  <Text className="text-sm text-gray-600">Vehicle Type</Text>
-                  <Text className="text-base font-medium text-gray-900 capitalize">
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Vehicle Type</Text>
+                  <Text style={[styles.infoValue, styles.capitalize]}>
                     {driver.vehicleType || 'Not provided'}
                   </Text>
                 </View>
               </View>
 
-              <View className="flex-row items-center p-3 bg-gray-50 rounded-lg">
+              <View style={styles.infoRow}>
                 <Ionicons name="car-sport-outline" size={20} color="#666" />
-                <View className="ml-3 flex-1">
-                  <Text className="text-sm text-gray-600">Vehicle Number</Text>
-                  <Text className="text-base font-medium text-gray-900">
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Vehicle Number</Text>
+                  <Text style={styles.infoValue}>
                     {driver.vehicleNumber || 'Not provided'}
                   </Text>
                 </View>
               </View>
 
               {driver.address && (
-                <View className="flex-row items-center p-3 bg-gray-50 rounded-lg">
+                <View style={styles.infoRow}>
                   <Ionicons name="location-outline" size={20} color="#666" />
-                  <View className="ml-3 flex-1">
-                    <Text className="text-sm text-gray-600">Address</Text>
-                    <Text className="text-base font-medium text-gray-900">
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoLabel}>Address</Text>
+                    <Text style={styles.infoValue}>
                       {driver.address}
                     </Text>
                   </View>
@@ -142,61 +166,61 @@ export default function Profile() {
           </View>
 
           {/* Action Buttons */}
-          <View className="space-y-3">
+          <View style={styles.actionButtons}>
             <TouchableOpacity 
-              className="bg-white rounded-xl p-4 flex-row items-center justify-between shadow-sm"
+              style={styles.actionButton}
               onPress={handleEditProfile}
             >
-              <View className="flex-row items-center">
+              <View style={styles.actionButtonContent}>
                 <Ionicons name="create-outline" size={24} color="#007AFF" />
-                <Text className="text-base font-medium text-gray-900 ml-3">Edit Profile</Text>
+                <Text style={styles.actionButtonText}>Edit Profile</Text>
               </View>
               <Ionicons name="chevron-forward-outline" size={20} color="#666" />
             </TouchableOpacity>
 
             <TouchableOpacity 
-              className="bg-white rounded-xl p-4 flex-row items-center justify-between shadow-sm"
+              style={styles.actionButton}
               onPress={handleChangePassword}
             >
-              <View className="flex-row items-center">
+              <View style={styles.actionButtonContent}>
                 <Ionicons name="lock-closed-outline" size={24} color="#007AFF" />
-                <Text className="text-base font-medium text-gray-900 ml-3">Change Password</Text>
+                <Text style={styles.actionButtonText}>Change Password</Text>
               </View>
               <Ionicons name="chevron-forward-outline" size={20} color="#666" />
             </TouchableOpacity>
 
             <TouchableOpacity 
-              className="bg-white rounded-xl p-4 flex-row items-center justify-between shadow-sm"
+              style={styles.actionButton}
               onPress={handleSupport}
             >
-              <View className="flex-row items-center">
+              <View style={styles.actionButtonContent}>
                 <Ionicons name="help-circle-outline" size={24} color="#007AFF" />
-                <Text className="text-base font-medium text-gray-900 ml-3">Help & Support</Text>
+                <Text style={styles.actionButtonText}>Help & Support</Text>
               </View>
               <Ionicons name="chevron-forward-outline" size={20} color="#666" />
             </TouchableOpacity>
 
             <TouchableOpacity 
-              className="bg-white rounded-xl p-4 flex-row items-center justify-between shadow-sm"
+              style={styles.actionButton}
               onPress={handleLogout}
             >
-              <View className="flex-row items-center">
+              <View style={styles.actionButtonContent}>
                 <Ionicons name="log-out-outline" size={24} color="#dc3545" />
-                <Text className="text-base font-medium text-red-600 ml-3">Sign Out</Text>
+                <Text style={styles.logoutButtonText}>Sign Out</Text>
               </View>
               <Ionicons name="chevron-forward-outline" size={20} color="#dc3545" />
             </TouchableOpacity>
           </View>
 
           {/* App Info */}
-          <View className="mt-8 p-4 bg-gray-100 rounded-lg">
-            <Text className="text-xs text-gray-500 text-center">
+          <View style={styles.appInfo}>
+            <Text style={styles.appInfoText}>
               Driver App v1.0.0
             </Text>
-            <Text className="text-xs text-gray-500 text-center mt-1">
+            <Text style={styles.appInfoText}>
               Logged in as: {driver.email}
             </Text>
-            <Text className="text-xs text-gray-500 text-center mt-1">
+            <Text style={styles.appInfoText}>
               Driver ID: {driver.mongoid || driver.id || 'N/A'}
             </Text>
           </View>
@@ -205,3 +229,146 @@ export default function Profile() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  content: {
+    padding: 20,
+  },
+  header: {
+    alignItems: 'center',
+    marginTop: 40,
+    marginBottom: 32,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 8,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#666',
+  },
+  profileCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 24,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  profilePictureSection: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  profilePicture: {
+    width: 96,
+    height: 96,
+    backgroundColor: '#e3f2fd',
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  changePhotoButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  changePhotoText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  profileInfo: {
+    gap: 16,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+  },
+  infoContent: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  infoValue: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#1a1a1a',
+  },
+  capitalize: {
+    textTransform: 'capitalize',
+  },
+  actionButtons: {
+    gap: 12,
+  },
+  actionButton: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  actionButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#1a1a1a',
+    marginLeft: 12,
+  },
+  logoutButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#dc3545',
+    marginLeft: 12,
+  },
+  appInfo: {
+    marginTop: 32,
+    padding: 16,
+    backgroundColor: '#e9ecef',
+    borderRadius: 8,
+  },
+  appInfoText: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginVertical: 2,
+  },
+});

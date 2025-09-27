@@ -1,14 +1,77 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Platform, Alert, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDriverContext } from '../context/DriverContext';
 import { Ionicons } from '@expo/vector-icons';
 import DriverDetailsForm from '../components/DriverDetailsForm';
+import LiveMapView from '../components/LiveMapView';
+import * as Location from 'expo-location';
 import '../global.css';
 
 export default function Dashboard() {
-  const { driver, loading } = useDriverContext();
+  // Add error boundary and logging
+  console.log('📊 Dashboard component rendering...');
+  
+  let driverContextData;
+  try {
+    driverContextData = useDriverContext();
+    console.log('✅ Dashboard - Successfully got driver context:', {
+      hasDriver: !!driverContextData.driver,
+      loading: driverContextData.loading,
+      contextReady: driverContextData.contextReady
+    });
+  } catch (error) {
+    console.error('💥 Dashboard - Error getting driver context:', error);
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+        <Text style={{ color: 'red', textAlign: 'center', fontSize: 16 }}>
+          Error loading driver context: {error.message}
+        </Text>
+        <Text style={{ color: '#666', textAlign: 'center', marginTop: 10 }}>
+          Please restart the app or contact support.
+        </Text>
+      </View>
+    );
+  }
+
+  const { 
+    driver, 
+    loading, 
+    locationPermission, 
+    isLocationTracking,
+    initializeLocationTracking 
+  } = driverContextData;
   const router = useRouter();
+
+  // Manual location permission request
+  const requestLocationPermission = async () => {
+    try {
+      console.log('🔄 Manual location permission request triggered');
+      
+      Alert.alert(
+        'Enable Location Tracking',
+        'This will enable live location tracking for your driver services. You will be prompted to allow location access.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Enable Now', 
+            onPress: async () => {
+              try {
+                console.log('🚀 Starting manual location initialization...');
+                await initializeLocationTracking(driver);
+              } catch (error) {
+                console.error('💥 Manual location setup failed:', error);
+                Alert.alert('Error', 'Failed to enable location tracking. Please try again.');
+              }
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error in manual location request:', error);
+      Alert.alert('Error', 'Failed to request location permission');
+    }
+  };
 
   // Check if driver profile is complete
   const isProfileComplete = (driver) => {
@@ -65,7 +128,9 @@ export default function Dashboard() {
   if (loading) {
     return (
       <View className="flex-1 justify-center items-center bg-gray-50">
-        <Text className="text-base text-gray-600">Loading...</Text>
+        <Ionicons name="car-outline" size={48} color="#007AFF" />
+        <Text className="text-base text-gray-600 mt-4">Loading your dashboard...</Text>
+        <Text className="text-sm text-gray-400 mt-2">Setting up your driver profile</Text>
       </View>
     );
   }
@@ -86,6 +151,29 @@ export default function Dashboard() {
           <View className="mb-8 mt-10">
             <Text className="text-base text-gray-600">Welcome back sir,</Text>
             <Text className="text-2xl font-bold text-gray-900">{driver.name}!</Text>
+          </View>
+
+          {/* Location Permission Notice */}
+          {!isLocationTracking && (
+            <TouchableOpacity 
+              style={styles.locationBanner}
+              onPress={requestLocationPermission}
+            >
+              <Ionicons name="location-outline" size={28} color="#FF6B35" />
+              <View style={styles.locationBannerContent}>
+                <Text style={styles.locationBannerTitle}>Enable Location Tracking</Text>
+                <Text style={styles.locationBannerSubtitle}>
+                  Tap to enable GPS tracking for ride services
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#FF6B35" />
+            </TouchableOpacity>
+          )}
+
+          {/* Live Map View */}
+          <View className="mb-5">
+            <Text className="text-lg font-semibold text-gray-900 mb-3">Your Location</Text>
+            <LiveMapView height={250} />
           </View>
 
       {/* Status Card */}
@@ -154,3 +242,41 @@ export default function Dashboard() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+  },
+  locationBanner: {
+    backgroundColor: '#fff3f0',
+    borderColor: '#FF6B35',
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  locationBannerContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  locationBannerTitle: {
+    color: '#FF6B35',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  locationBannerSubtitle: {
+    color: '#FF6B35',
+    fontSize: 14,
+    marginTop: 4,
+  },
+});
