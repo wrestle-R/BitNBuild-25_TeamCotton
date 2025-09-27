@@ -4,7 +4,9 @@ const {
   getAllUsers,
   getAllVendors,
   deleteUser,
-  deleteVendor
+  deleteVendor,
+  toggleVendorVerification,
+  getVendorDetails
 } = require('../Controllers/adminControllers');
 
 // Admin middleware (simple check for now)
@@ -18,6 +20,12 @@ router.get('/users', adminAuth, getAllUsers);
 
 // Get all vendors
 router.get('/vendors', adminAuth, getAllVendors);
+
+// Get vendor details
+router.get('/vendors/:vendorId', adminAuth, getVendorDetails);
+
+// Toggle vendor verification
+router.patch('/vendors/:vendorId/verification', adminAuth, toggleVendorVerification);
 
 // Delete user
 router.delete('/users/:userId', adminAuth, deleteUser);

@@ -7,7 +7,10 @@ import {
   FaEye, 
   FaEdit, 
   FaTrash,
-  FaPlus
+  FaPlus,
+  FaCheck,
+  FaTimes,
+  FaCertificate
 } from 'react-icons/fa';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
@@ -39,63 +42,32 @@ const ManageVendors = () => {
     try {
       setLoading(true);
       
-      // Mock vendors data for now
-      const mockVendors = [
-        {
-          id: '1',
-          name: 'Fresh Market Co.',
-          email: 'contact@freshmarket.com',
-          phone: '+1 234 567 8901',
-          category: 'Grocery',
-          status: 'Active',
-          joinedAt: new Date('2024-01-15'),
-          lastActive: new Date('2024-09-26'),
-          avatar: null,
-          totalProducts: 45,
-          totalSales: 1250
+      // Fetch real vendors data from API
+      const response = await fetch('http://localhost:8000/api/admin/vendors', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        {
-          id: '2',
-          name: 'Tech Solutions Inc.',
-          email: 'info@techsolutions.com',
-          phone: '+1 234 567 8902',
-          category: 'Electronics',
-          status: 'Active',
-          joinedAt: new Date('2024-02-20'),
-          lastActive: new Date('2024-09-25'),
-          avatar: null,
-          totalProducts: 28,
-          totalSales: 890
-        },
-        {
-          id: '3',
-          name: 'Fashion Hub',
-          email: 'hello@fashionhub.com',
-          phone: '+1 234 567 8903',
-          category: 'Fashion',
-          status: 'Pending',
-          joinedAt: new Date('2024-09-01'),
-          lastActive: new Date('2024-09-27'),
-          avatar: null,
-          totalProducts: 12,
-          totalSales: 340
-        },
-        {
-          id: '4',
-          name: 'Home & Garden',
-          email: 'support@homegarden.com',
-          phone: '+1 234 567 8904',
-          category: 'Home & Garden',
-          status: 'Inactive',
-          joinedAt: new Date('2024-03-10'),
-          lastActive: new Date('2024-08-15'),
-          avatar: null,
-          totalProducts: 67,
-          totalSales: 2100
-        }
-      ];
+      });
 
-      setVendors(mockVendors);
+      if (!response.ok) {
+        throw new Error('Failed to fetch vendors');
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Transform the data to match component expectations
+        const transformedVendors = data.vendors.map(vendor => ({
+          ...vendor,
+          avatar: null, // Add avatar field
+          status: vendor.verified ? 'Active' : 'Pending' // Map verified to status
+        }));
+        setVendors(transformedVendors);
+        console.log('Vendors loaded:', transformedVendors);
+      } else {
+        throw new Error(data.message || 'Failed to fetch vendors');
+      }
     } catch (error) {
       console.error('Failed to fetch vendors data:', error);
       toast.error('Failed to fetch vendors data');
@@ -111,12 +83,59 @@ const ManageVendors = () => {
     }
 
     try {
-      // Mock delete functionality
-      setVendors(vendors.filter(vendor => vendor.id !== vendorId));
-      toast.success('Vendor deleted successfully');
+      const response = await fetch(`http://localhost:8000/api/admin/vendors/${vendorId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setVendors(vendors.filter(vendor => vendor.id !== vendorId));
+        toast.success('Vendor deleted successfully');
+      } else {
+        throw new Error(data.message || 'Failed to delete vendor');
+      }
     } catch (error) {
       console.error('Failed to delete vendor:', error);
       toast.error('Failed to delete vendor');
+    }
+  };
+
+  const handleToggleVerification = async (vendorId, currentVerified, vendorName) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/admin/vendors/${vendorId}/verification`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          verified: !currentVerified
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update the vendor in the local state
+        setVendors(vendors.map(vendor => 
+          vendor.id === vendorId 
+            ? { 
+                ...vendor, 
+                verified: !currentVerified,
+                status: !currentVerified ? 'Active' : 'Pending'
+              }
+            : vendor
+        ));
+        toast.success(`${vendorName} ${!currentVerified ? 'verified' : 'unverified'} successfully`);
+      } else {
+        throw new Error(data.message || 'Failed to update verification status');
+      }
+    } catch (error) {
+      console.error('Failed to toggle verification:', error);
+      toast.error('Failed to update verification status');
     }
   };
 
@@ -222,13 +241,13 @@ const ManageVendors = () => {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-muted-foreground font-inter text-sm font-medium">Active</p>
+                      <p className="text-muted-foreground font-inter text-sm font-medium">Verified</p>
                       <p className="text-2xl font-bold text-foreground font-montserrat">
-                        {vendors.filter(v => v.status === 'Active').length}
+                        {vendors.filter(v => v.verified === true).length}
                       </p>
                     </div>
                     <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <FaCertificate className="w-4 h-4 text-green-500" />
                     </div>
                   </div>
                 </CardContent>
@@ -243,13 +262,13 @@ const ManageVendors = () => {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-muted-foreground font-inter text-sm font-medium">Pending</p>
+                      <p className="text-muted-foreground font-inter text-sm font-medium">Pending Verification</p>
                       <p className="text-2xl font-bold text-foreground font-montserrat">
-                        {vendors.filter(v => v.status === 'Pending').length}
+                        {vendors.filter(v => v.verified === false).length}
                       </p>
                     </div>
                     <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                      <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                      <FaTimes className="w-4 h-4 text-yellow-500" />
                     </div>
                   </div>
                 </CardContent>
@@ -264,13 +283,13 @@ const ManageVendors = () => {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-muted-foreground font-inter text-sm font-medium">Inactive</p>
+                      <p className="text-muted-foreground font-inter text-sm font-medium">Total Earnings</p>
                       <p className="text-2xl font-bold text-foreground font-montserrat">
-                        {vendors.filter(v => v.status === 'Inactive').length}
+                        ${vendors.reduce((sum, v) => sum + (v.earnings || 0), 0).toLocaleString()}
                       </p>
                     </div>
-                    <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-500 font-bold text-sm">$</span>
                     </div>
                   </div>
                 </CardContent>
@@ -345,6 +364,12 @@ const ManageVendors = () => {
                           <Badge className={`${getStatusColor(vendor.status)} border transition-all`}>
                             {vendor.status}
                           </Badge>
+                          {vendor.verified && (
+                            <Badge className="bg-green-100 text-green-800 border-green-200 flex items-center gap-1">
+                              <FaCertificate className="w-3 h-3" />
+                              Verified
+                            </Badge>
+                          )}
                         </div>
                         <p className="text-sm text-muted-foreground">{vendor.email}</p>
                         <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
@@ -366,6 +391,19 @@ const ManageVendors = () => {
                       <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
                         <Button variant="outline" size="sm" className="hover:bg-yellow-500/10 hover:text-yellow-500 hover:border-yellow-500/20">
                           <FaEdit className="w-4 h-4" />
+                        </Button>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                        <Button 
+                          variant={vendor.verified ? "destructive" : "default"}
+                          size="sm"
+                          onClick={() => handleToggleVerification(vendor.id, vendor.verified, vendor.name)}
+                          className={vendor.verified 
+                            ? "hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20 bg-red-50 text-red-600 border-red-200"
+                            : "hover:bg-green-500/10 hover:text-green-500 hover:border-green-500/20 bg-green-50 text-green-600 border-green-200"
+                          }
+                        >
+                          {vendor.verified ? <FaTimes className="w-4 h-4" /> : <FaCheck className="w-4 h-4" />}
                         </Button>
                       </motion.div>
                       <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>

@@ -8,7 +8,7 @@ const adminRoutes = require('./Routes/adminRoutes');
 require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT ;
+const PORT = process.env.PORT || 8000;
 
 app.use(cors({
   origin: ['http://localhost:5173', 'http://localhost:8082', 'http://localhost:8081'],
