@@ -7,8 +7,8 @@ import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import ThemeToggle from '../ui/ThemeToggle';
 
-const CustomerSidebar = ({ isOpen, setIsOpen, profileImage }) => {
-  const { user, logout } = useUserContext();
+const CustomerSidebar = ({ isOpen, setIsOpen }) => {
+  const { user, logout, profileImage } = useUserContext();
   const navigate = useNavigate();
   const location = useLocation();
 
