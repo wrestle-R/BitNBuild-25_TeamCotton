@@ -169,7 +169,11 @@ const VendorProfile = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <VendorSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      <VendorSidebar
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
+        profileImage={formData.profileImage}
+      />
 
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
         <div className="p-6">
@@ -204,8 +208,9 @@ const VendorProfile = () => {
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
+              className="h-full"
             >
-              <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
+              <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg h-full flex flex-col">
                 <CardHeader>
                   <CardTitle className="text-xl font-bold text-foreground font-montserrat">
                     Profile Information
@@ -214,7 +219,7 @@ const VendorProfile = () => {
                     Update your basic profile details
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-6 flex-1">
                   {/* Profile Image */}
                   <div className="flex flex-col items-center space-y-4">
                     <Avatar className="w-24 h-24">
@@ -335,8 +340,9 @@ const VendorProfile = () => {
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
+              className="h-full"
             >
-              <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
+              <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg h-full flex flex-col">
                 <CardHeader>
                   <CardTitle className="text-xl font-bold text-foreground font-montserrat flex items-center gap-2">
                     <FaMapMarkerAlt className="w-5 h-5 text-primary" />
@@ -346,8 +352,8 @@ const VendorProfile = () => {
                     Your business location on the map
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <div className="h-96 rounded-lg overflow-hidden border border-border">
+                <CardContent className="flex-1 flex flex-col">
+                  <div className="flex-1 rounded-lg overflow-hidden border border-border">
                     {formData.address.coordinates ? (
                       <MapContainer
                         center={[formData.address.coordinates.lat, formData.address.coordinates.lng]}

@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { toast } from 'sonner';
 
 const VendorMenus = () => {
-  const { user } = useUserContext();
+  const { user, vendorProfile } = useUserContext();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [menus, setMenus] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -189,7 +189,11 @@ const VendorMenus = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <VendorSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      <VendorSidebar
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
+        profileImage={vendorProfile?.profileImage}
+      />
 
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
         <div className="p-6">

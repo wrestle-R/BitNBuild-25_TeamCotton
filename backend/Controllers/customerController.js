@@ -9,10 +9,15 @@ const customerController = {
     try {
       const vendors = await Vendor.find({ verified: true }).select('-firebaseUid -__v');
       
-      // Get plan count for each vendor
+      // Get plan count for each vendor and filter vendors with at least one meal plan
       const vendorsWithPlanCount = await Promise.all(
         vendors.map(async (vendor) => {
           const planCount = await Plan.countDocuments({ vendor_id: vendor._id });
+          
+          // Only return vendors with at least one meal plan
+          if (planCount === 0) {
+            return null;
+          }
           
           // Generate a random but consistent specialty based on vendor ID
           const specialty = (vendor._id.toString().charCodeAt(0) % 2 === 0) ? 'veg' : 'nonveg';
@@ -31,7 +36,10 @@ const customerController = {
         })
       );
       
-      res.json(vendorsWithPlanCount);
+      // Filter out null values (vendors with no meal plans)
+      const filteredVendors = vendorsWithPlanCount.filter(vendor => vendor !== null);
+      
+      res.json(filteredVendors);
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -152,6 +160,30 @@ const customerController = {
         preference: customer.preference,
         name: customer.name
       });
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Get vendor meal plans
+  async getVendorPlans(req, res) {
+    try {
+      const { vendorId } = req.params;
+      
+      // Verify vendor exists and is verified
+      const vendor = await Vendor.findById(vendorId);
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      if (!vendor.verified) {
+        return res.status(403).json({ message: 'Vendor is not verified' });
+      }
+
+      // Get all plans for the vendor
+      const plans = await Plan.find({ vendor_id: vendorId }).select('-__v');
+      
+      res.json(plans);
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
