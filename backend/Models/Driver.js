@@ -23,6 +23,25 @@ const driverUserSchema = new mongoose.Schema({
     type: String,
     required: false
   },
+  location: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point'
+    },
+    coordinates: {
+      type: [Number], // [longitude, latitude]
+      default: [0, 0]
+    },
+    address: {
+      type: String,
+      default: ''
+    },
+    lastUpdated: {
+      type: Date,
+      default: Date.now
+    }
+  },
   vehicleType: {
     type: String,
     required: false,
@@ -61,5 +80,8 @@ driverUserSchema.pre('save', function(next) {
   this.lastActive = new Date();
   next();
 });
+
+// Create geospatial index for location queries
+driverUserSchema.index({ location: '2dsphere' });
 
 module.exports = mongoose.model('Driver', driverUserSchema, 'drivers');

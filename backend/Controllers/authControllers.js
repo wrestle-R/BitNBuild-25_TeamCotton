@@ -263,7 +263,8 @@ const getUserByFirebaseUid = async (req, res) => {
         verified: user.verified,
         available: user.available,
         rating: user.rating,
-        earnings: user.earnings
+        earnings: user.earnings,
+        location: user.location
       };
     }
 
@@ -344,9 +345,93 @@ const updateDriverProfile = async (req, res) => {
   }
 };
 
+const updateDriverLocation = async (req, res) => {
+  try {
+    console.log('📍 Received update driver location request:', req.body);
+
+    const { 
+      firebaseUid, 
+      latitude, 
+      longitude, 
+      address = '' 
+    } = req.body;
+
+    if (!firebaseUid) {
+      console.log('❌ Missing Firebase UID');
+      return res.status(400).json({
+        message: 'Firebase UID is required',
+      });
+    }
+
+    if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+      console.log('❌ Invalid coordinates:', { latitude, longitude });
+      return res.status(400).json({
+        message: 'Valid latitude and longitude are required',
+      });
+    }
+
+    // Find the driver
+    const driver = await Driver.findOne({ firebaseUid });
+    
+    if (!driver) {
+      console.log('❌ Driver not found for Firebase UID:', firebaseUid);
+      return res.status(404).json({
+        message: 'Driver not found',
+      });
+    }
+
+    // Log the location update details
+    console.log('🚗 Updating location for driver:', {
+      driverEmail: driver.email,
+      driverName: driver.name,
+      coordinates: { latitude, longitude },
+      address: address || 'No address provided',
+      timestamp: new Date().toISOString()
+    });
+
+    // Update location data
+    const locationData = {
+      location: {
+        type: 'Point',
+        coordinates: [longitude, latitude], // GeoJSON format: [longitude, latitude]
+        address: address,
+        lastUpdated: new Date()
+      }
+    };
+
+    const updatedDriver = await Driver.findOneAndUpdate(
+      { firebaseUid },
+      locationData,
+      { new: true }
+    );
+
+    console.log('✅ Driver location updated successfully:', {
+      driverEmail: updatedDriver.email,
+      driverName: updatedDriver.name,
+      driverId: updatedDriver._id,
+      coordinates: [longitude, latitude],
+      address: address || 'No address',
+      timestamp: new Date().toISOString(),
+      previousLocation: driver.location ? {
+        coords: driver.location.coordinates,
+        lastUpdated: driver.location.lastUpdated
+      } : 'No previous location'
+    });
+
+    res.status(200).json({
+      message: 'Location updated successfully',
+      location: updatedDriver.location
+    });
+  } catch (error) {
+    console.error('Error updating driver location:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 module.exports = {
   createUser,
   validateRole,
   getUserByFirebaseUid,
   updateDriverProfile,
+  updateDriverLocation,
 };

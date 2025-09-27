@@ -8,15 +8,37 @@ import {
 } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth } from '../firebase.config';
-import { Alert } from 'react-native';
+import { Alert, Platform, View, Text, ActivityIndicator } from 'react-native';
+import LocationService from '../services/LocationService';
 
 const DriverContext = createContext();
 
 export const useDriverContext = () => {
   const context = useContext(DriverContext);
+  
+  // Enhanced debugging
+  console.log('🔍 useDriverContext called:', {
+    contextExists: !!context,
+    contextKeys: context ? Object.keys(context) : null,
+    contextReady: context ? context.contextReady : null,
+    stackTrace: new Error().stack?.split('\n')[1]?.trim()
+  });
+  
   if (!context) {
+    console.error('❌ useDriverContext called outside of DriverProvider!');
+    console.error('🔍 Call stack:', new Error().stack);
     throw new Error('useDriverContext must be used within a DriverProvider');
   }
+
+  // Additional check for context readiness
+  if (!context.contextReady) {
+    console.log('⏳ Context exists but not ready yet');
+    return {
+      ...context,
+      loading: true, // Ensure loading state is true when context isn't ready
+    };
+  }
+
   return context;
 };
 
@@ -24,6 +46,9 @@ export const DriverProvider = ({ children }) => {
   const [driver, setDriver] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [locationPermission, setLocationPermission] = useState(null);
+  const [isLocationTracking, setIsLocationTracking] = useState(false);
+  const [contextReady, setContextReady] = useState(false);
 
   const API_BASE = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
@@ -41,8 +66,15 @@ export const DriverProvider = ({ children }) => {
     } : null,
     loading,
     error,
+    contextReady,
     API_BASE
   });
+
+  // Mark context as ready after first render
+  useEffect(() => {
+    console.log('🚀 DriverProvider initializing...');
+    setContextReady(true);
+  }, []);
 
   // Configure Google Sign-In (temporarily disabled for testing)
   // useEffect(() => {
@@ -239,6 +271,14 @@ export const DriverProvider = ({ children }) => {
           
           setDriver(driverWithMongoId);
           console.log('✅ Driver data set in context');
+          
+          // Initialize location tracking for the authenticated driver (more aggressive)
+          try {
+            await initializeLocationTracking(driverWithMongoId);
+          } catch (error) {
+            console.warn('⚠️ Location tracking initialization failed:', error);
+            // Continue anyway, user can enable manually
+          }
         } else {
           console.log('❌ Backend fetch failed, trying validation...');
           // Try to validate as driver
@@ -313,6 +353,9 @@ export const DriverProvider = ({ children }) => {
     try {
       console.log('🚪 Starting direct logout...');
       
+      // Stop location tracking first
+      await stopLocationTracking();
+      
       // Clear AsyncStorage
       await AsyncStorage.removeItem('driver_token');
       console.log('✅ AsyncStorage cleared');
@@ -329,6 +372,7 @@ export const DriverProvider = ({ children }) => {
     } catch (err) {
       console.error('💥 Logout error (continuing anyway):', err);
       // Even if there's an error, clear the local state for security
+      await stopLocationTracking().catch(() => {});
       setDriver(null);
       setError('');
       await AsyncStorage.removeItem('driver_token').catch(() => {});
@@ -406,6 +450,14 @@ export const DriverProvider = ({ children }) => {
               });
               
               setDriver(driverWithMongoId);
+              
+              // Initialize location tracking for the authenticated driver (more aggressive)
+              try {
+                await initializeLocationTracking(driverWithMongoId);
+              } catch (error) {
+                console.warn('⚠️ Location tracking initialization failed:', error);
+                // Continue anyway, user can enable manually
+              }
             } else {
               // Try to validate as driver
               try {
@@ -528,18 +580,144 @@ export const DriverProvider = ({ children }) => {
     }
   };
 
+  // Initialize location tracking for authenticated driver
+  const initializeLocationTracking = async (driverData) => {
+    try {
+      console.log('🚀 Initializing location tracking for driver:', driverData.email);
+      
+      // Always try to request location permissions (don't skip on web for testing)
+      console.log('📍 Requesting location permissions...');
+      const permissions = await LocationService.requestLocationPermission();
+      setLocationPermission(permissions);
+      
+      console.log('� Location permissions result:', permissions);
+      
+      if (!permissions.foreground) {
+        console.log('⚠️ Location permission denied, showing alert');
+        Alert.alert(
+          'Location Permission Required',
+          'Location access is required for drivers to receive ride requests and navigate to customers. Please enable location access.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Enable Location', 
+              onPress: async () => {
+                // Try again
+                const retryPermissions = await LocationService.requestLocationPermission();
+                setLocationPermission(retryPermissions);
+                if (retryPermissions.foreground) {
+                  // Start tracking after permission granted
+                  await startLocationTracking(driverData);
+                }
+              }
+            }
+          ]
+        );
+        return;
+      }
+
+      // Start location tracking immediately
+      await startLocationTracking(driverData);
+      
+    } catch (error) {
+      console.error('💥 Error initializing location tracking:', error);
+      Alert.alert(
+        'Location Error',
+        'Failed to initialize location tracking. Please try enabling location manually.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  // Separate function to start location tracking
+  const startLocationTracking = async (driverData) => {
+    try {
+      console.log('🎯 Starting location tracking...');
+      
+      // Define location update callback
+      const onLocationUpdate = (coordinates) => {
+        console.log('📍 Location updated in context:', coordinates);
+        setDriver(prevDriver => {
+          if (!prevDriver) return prevDriver;
+          return {
+            ...prevDriver,
+            location: {
+              type: 'Point',
+              coordinates: [coordinates.longitude, coordinates.latitude],
+              address: prevDriver.location?.address || 'Location updated',
+              lastUpdated: new Date()
+            }
+          };
+        });
+      };
+
+      // Start location tracking with callback
+      await LocationService.startTracking(driverData, onLocationUpdate);
+      setIsLocationTracking(true);
+      
+      console.log('✅ Location tracking started successfully');
+      
+    } catch (error) {
+      console.error('💥 Error starting location tracking:', error);
+      setIsLocationTracking(false);
+      throw error;
+    }
+  };
+
+  // Stop location tracking
+  const stopLocationTracking = async () => {
+    try {
+      console.log('🛑 Stopping location tracking...');
+      await LocationService.stopTracking();
+      setIsLocationTracking(false);
+      console.log('✅ Location tracking stopped');
+    } catch (error) {
+      console.error('💥 Error stopping location tracking:', error);
+    }
+  };
+
+  // Get current location
+  const getCurrentLocation = async () => {
+    try {
+      return await LocationService.getCurrentLocation();
+    } catch (error) {
+      console.error('💥 Error getting current location:', error);
+      throw error;
+    }
+  };
+
   const contextValue = {
     driver,
     loading,
     error,
+    locationPermission,
+    isLocationTracking,
+    contextReady,
     loginWithEmail,
     registerWithEmail,
     loginWithGoogle,
     logout,
     testConnection,
     updateDriverProfile,
+    initializeLocationTracking,
+    stopLocationTracking,
+    getCurrentLocation,
   };
 
+  // Don't render children until context is ready, but always provide the context
+  if (!contextReady) {
+    console.log('⏳ DriverContext not ready yet, showing loading...');
+    return (
+      <DriverContext.Provider value={contextValue}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={{ marginTop: 10, fontSize: 16, color: '#666' }}>Initializing Driver App...</Text>
+        </View>
+      </DriverContext.Provider>
+    );
+  }
+
+  console.log('✅ DriverContext ready, rendering children');
   return (
     <DriverContext.Provider value={contextValue}>
       {children}
