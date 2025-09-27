@@ -135,6 +135,84 @@ const CustomerMarket = () => {
     navigate(`/customer/vendor/${vendor._id || vendor.id}`);
   };
 
+  const handleBuyPlan = async (plan, vendorId) => {
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      
+      // Create Razorpay order
+      const orderResponse = await fetch(`${API_BASE}/api/payment/create-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          plan_id: plan._id,
+          vendor_id: vendorId
+        })
+      });
+
+      if (!orderResponse.ok) {
+        throw new Error('Failed to create order');
+      }
+
+      const orderData = await orderResponse.json();
+
+      // Razorpay options
+      const options = {
+        key: orderData.key,
+        amount: orderData.amount,
+        currency: 'INR',
+        name: 'NourishNet',
+        description: `${plan.name} Plan Subscription`,
+        order_id: orderData.order_id,
+        handler: async function (response) {
+          try {
+            // Verify payment
+            const verifyResponse = await fetch(`${API_BASE}/api/payment/verify`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${idToken}`,
+              },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                payment_id: orderData.payment_id
+              })
+            });
+
+            if (verifyResponse.ok) {
+              toast.success('Payment successful! Your subscription is now active.');
+              // Redirect to subscriptions page or refresh
+              navigate('/customer/subscriptions');
+            } else {
+              toast.error('Payment verification failed');
+            }
+          } catch (error) {
+            console.error('Payment verification error:', error);
+            toast.error('Payment verification failed');
+          }
+        },
+        prefill: {
+          name: user?.name || '',
+          email: user?.email || '',
+          contact: user?.contactNumber || ''
+        },
+        theme: {
+          color: '#3B82F6'
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast.error('Failed to initiate payment');
+    }
+  };
+
   const filteredVendors = vendors.filter(vendor => {
     const matchesSearch = vendor.name.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
@@ -359,6 +437,7 @@ const CustomerMarket = () => {
                       <Button 
                         className="flex-1" 
                         size="sm"
+                        onClick={() => navigate(`/customer/vendor/${vendor._id}/plans`)}
                         disabled={!vendor.plans || vendor.plans === 0}
                       >
                         <FaShoppingCart className="w-4 h-4 mr-2" />

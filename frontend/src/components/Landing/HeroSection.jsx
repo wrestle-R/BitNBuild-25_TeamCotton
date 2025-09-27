@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../ui/button'
 import { TextEffect } from '../ui/text-effect'
 import { AnimatedGroup } from '../ui/animated-group'
+import { useTheme } from '../../../context/ThemeContext'
 import NavbarComponent from './Navbar'
 
 const transitionVariants = {
@@ -28,6 +29,7 @@ const transitionVariants = {
 
 export default function HeroSection() {
     const navigate = useNavigate();
+    const { theme } = useTheme();
 
     const handleVendorJoin = () => {
         navigate('/vendor/auth');
@@ -118,17 +120,11 @@ export default function HeroSection() {
                             }}>
                             <div className="mask-b-from-55% relative -mr-56 mt-8 overflow-hidden px-2 sm:mr-0 sm:mt-12 md:mt-20">
                                 <div className="relative mx-auto max-w-5xl overflow-hidden rounded-2xl border border-border bg-background p-4 shadow-lg ring-1 ring-border">
-<img
-  className="aspect-15/8 relative hidden rounded-2xl bg-background dark:block"
-  src="/Dashboard.png"
-  alt="app screen"
-/>
-<img
-  className="aspect-15/8 relative rounded-2xl border border-border/25 dark:hidden"
-  src="/Dashboard.png"
-  alt="app screen"
-/>
-
+                                    <img
+                                        className="object-cover relative rounded-2xl bg-background"
+                                        src={theme === 'dark' ? '/Dashboard_dark.png' : '/Dashboard_light.png'}
+                                        alt="app screen"
+                                    />
                                 </div>
                             </div>
                         </AnimatedGroup>
