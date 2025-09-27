@@ -292,41 +292,30 @@ export const DriverProvider = ({ children }) => {
     }
   };
 
-  // Logout
-  const logout = async (message = 'Thank you for driving with us! 🚗') => {
+  // Logout - direct and simple
+  const logout = async () => {
     try {
-      console.log('🚪 Starting logout process...');
-      setLoading(true);
+      console.log('🚪 Starting direct logout...');
       
-      // Step 1: Clear async storage first
-      console.log('🗑️ Clearing async storage...');
+      // Clear AsyncStorage
       await AsyncStorage.removeItem('driver_token');
       console.log('✅ AsyncStorage cleared');
       
-      // Step 2: Sign out from Firebase
-      console.log('🔥 Signing out from Firebase...');
+      // Sign out from Firebase
       await signOut(auth);
-      console.log('✅ Firebase signout completed');
+      console.log('✅ Firebase signed out');
       
-      // Step 3: Clear driver state immediately
-      console.log('👤 Clearing driver state...');
+      // Clear driver state immediately
       setDriver(null);
       setError('');
-      console.log('✅ Driver state cleared');
-      
-      // Step 4: Wait a moment to ensure everything is cleared
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      console.log('✅ Logout process completed successfully');
-      return { success: true, message };
+      console.log('✅ Driver context cleared');
       
     } catch (err) {
-      console.error('💥 Logout error:', err);
-      console.error('💥 Error details:', err.message);
-      Alert.alert('Error', 'Error during logout. Please try again.');
-      return { success: false, error: err.message };
-    } finally {
-      setLoading(false);
+      console.error('💥 Logout error (continuing anyway):', err);
+      // Even if there's an error, clear the local state for security
+      setDriver(null);
+      setError('');
+      await AsyncStorage.removeItem('driver_token').catch(() => {});
     }
   };
 

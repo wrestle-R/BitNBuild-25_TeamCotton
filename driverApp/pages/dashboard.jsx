@@ -33,44 +33,21 @@ export default function Dashboard() {
   }, [driver, loading, router]);
 
   const handleLogout = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out? You will need to login again.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Sign Out', 
-          style: 'destructive', 
-          onPress: async () => {
-            try {
-              console.log('🚪 User confirmed logout - starting logout process');
-              
-              // Call the logout function
-              const result = await logout('Goodbye! Come back soon 👋');
-              
-              if (result && result.success) {
-                console.log('✅ Logout successful, clearing everything and navigating...');
-                
-                // Force navigation immediately
-                router.replace('/auth/login');
-                console.log('🧭 Forced navigation to login page completed');
-                
-                // Show success message
-                setTimeout(() => {
-                  Alert.alert('Signed Out', 'You have been successfully signed out. Please login again to continue.');
-                }, 200);
-              } else {
-                console.error('❌ Logout failed:', result?.error || 'Unknown error');
-                Alert.alert('Error', 'Failed to sign out. Please try again.');
-              }
-            } catch (error) {
-              console.error('💥 Logout error:', error);
-              Alert.alert('Error', 'An error occurred while signing out. Please try again.');
-            }
-          }
-        }
-      ]
-    );
+    try {
+      console.log('🚪 Direct logout initiated');
+      
+      // Call logout to clear everything
+      await logout();
+      
+      // Immediately navigate to login
+      console.log('🧭 Navigating to login page');
+      router.replace('/auth/login');
+      
+    } catch (error) {
+      console.error('💥 Logout error:', error);
+      // Even if logout fails, navigate to login for security
+      router.replace('/auth/login');
+    }
   };
 
   if (loading) {
