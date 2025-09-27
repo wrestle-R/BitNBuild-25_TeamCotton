@@ -2,30 +2,22 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
-import { FaShoppingCart, FaHeart, FaUser, FaTachometerAlt, FaCog, FaSignOutAlt, FaMapMarkerAlt, FaBell, FaStore } from 'react-icons/fa';
+import { FaShoppingCart, FaHeart, FaUser, FaTachometerAlt, FaSignOutAlt, FaBell, FaStore, FaClipboardList } from 'react-icons/fa';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Badge } from '../ui/badge';
-import { Separator } from '../ui/separator';
 import ThemeToggle from '../ui/ThemeToggle';
 
-const CustomerSidebar = ({ isOpen, setIsOpen }) => {
+const CustomerSidebar = ({ isOpen, setIsOpen, profileImage }) => {
   const { user, logout } = useUserContext();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Debug logging
-  console.log('🎯 CustomerSidebar Props:', { isOpen, setIsOpen: !!setIsOpen });
-  console.log('🎯 CustomerSidebar User:', user);
-
   const handleLogout = async () => {
     try {
-      console.log('🚪 CustomerSidebar - Initiating logout');
       await logout();
       navigate('/');
     } catch (error) {
-      console.error('💥 CustomerSidebar - Logout error:', error);
-      // Error handled in context
+      console.error('Logout error:', error);
     }
   };
 
@@ -33,7 +25,10 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
     { icon: FaTachometerAlt, label: 'Dashboard', path: '/customer/dashboard' },
     { icon: FaUser, label: 'Profile', path: '/customer/profile' },
     { icon: FaStore, label: 'Market', path: '/customer/market' },
-    { icon: FaShoppingCart, label: 'Subscriptions', path: '/customer/subscriptions' }, // Add this line
+    { icon: FaShoppingCart, label: 'Subscriptions', path: '/customer/subscriptions' },
+    { icon: FaHeart, label: 'Favorites', path: '/customer/favorites' },
+    { icon: FaClipboardList, label: 'Orders', path: '/customer/orders' },
+    { icon: FaBell, label: 'Notifications', path: '/customer/notifications' }
   ];
 
   return (
@@ -71,7 +66,6 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
                 <h1 className="font-montserrat font-bold text-sidebar-foreground text-lg">
                   Customer
                 </h1>
-               
               </motion.div>
             )}
           </div>
@@ -124,7 +118,7 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
             <div className="p-4 border-b border-sidebar-border">
               <div className="flex items-center gap-3">
                 <Avatar className="w-10 h-10 flex-shrink-0">
-                  <AvatarImage src={user.photoURL} alt={user.name} />
+                  <AvatarImage src={profileImage || user?.photoURL} alt={user?.name} />
                   <AvatarFallback>
                     <FaUser className="w-5 h-5" />
                   </AvatarFallback>
@@ -194,7 +188,7 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
           onClick={() => setIsOpen(!isOpen)}
           variant="ghost"
           size="sm"
-          className="absolute -right-3 top-6 bg-sidebar border border-sidebar-border rounded-full w-6 h-6 p-0 text-white"
+          className="absolute -right-3 top-6 bg-sidebar border border-sidebar-border rounded-full w-6 h-6 p-0 text-white dark:text-primary"
         >
           <motion.div
             animate={{ rotate: isOpen ? 180 : 0 }}

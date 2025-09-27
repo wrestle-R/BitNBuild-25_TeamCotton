@@ -58,7 +58,7 @@ const CustomerDashboard = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-foreground mx-auto mb-4"></div>
           <p className="text-foreground font-inter text-lg">
             Loading your customer dashboard...
           </p>
@@ -73,7 +73,7 @@ const CustomerDashboard = () => {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-foreground mb-4">Access Denied</h2>
           <p className="text-muted-foreground mb-4">Please sign in to access your dashboard.</p>
-          <Link to="/customer/auth" className="text-primary hover:underline">Go to Sign In</Link>
+          <Link to="/customer/auth" className="text-foreground hover:underline">Go to Sign In</Link>
         </div>
       </div>
     );
@@ -82,13 +82,13 @@ const CustomerDashboard = () => {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Customer Sidebar */}
-      <CustomerSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+      <CustomerSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} profileImage={user?.photoURL} />
 
       {/* Main Content */}
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
         {/* Modern Header */}
         <motion.div 
-          className="p-6 mb-6 bg-gradient-to-br from-background via-background/95 to-muted/20 backdrop-blur-xl border-b border-border/40"
+          className="p-6 mb-6 bg-background backdrop-blur-xl border-b border-border/40"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -113,9 +113,9 @@ const CustomerDashboard = () => {
             <div className="flex items-center gap-3">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" className="relative hover:bg-primary/10 hover:border-primary/30 transition-all duration-200">
+                  <Button variant="outline" size="icon" className="relative hover:bg-muted hover:border-border transition-all duration-200">
                     <FaBell className="w-4 h-4" />
-                    <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs animate-pulse">
+                    <Badge variant="secondary" className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs animate-pulse">
                       5
                     </Badge>
                   </Button>
@@ -127,7 +127,7 @@ const CustomerDashboard = () => {
               
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" className="hover:bg-primary/10 hover:border-primary/30 transition-all duration-200">
+                  <Button variant="outline" size="icon" className="hover:bg-muted hover:border-border transition-all duration-200">
                     <FaUser className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
@@ -154,8 +154,8 @@ const CustomerDashboard = () => {
                 value: "3",
                 subtitle: "2 lunch, 1 dinner plan",
                 icon: FaUtensils,
-                color: "text-emerald-600 dark:text-emerald-400",
-                bgColor: "bg-emerald-500/10",
+                color: "text-foreground",
+                bgColor: "bg-muted/20",
                 trend: "+2 this month"
               },
               {
@@ -163,8 +163,8 @@ const CustomerDashboard = () => {
                 value: "₹2,340",
                 subtitle: "↗ 12% vs last month",
                 icon: FaWallet,
-                color: "text-blue-600 dark:text-blue-400",
-                bgColor: "bg-blue-500/10",
+                color: "text-foreground",
+                bgColor: "bg-muted/20",
                 trend: "Within budget"
               },
               {
@@ -172,8 +172,8 @@ const CustomerDashboard = () => {
                 value: "7",
                 subtitle: "Recently added 2 more",
                 icon: FaHeart,
-                color: "text-pink-600 dark:text-pink-400",
-                bgColor: "bg-pink-500/10",
+                color: "text-foreground",
+                bgColor: "bg-muted/20",
                 trend: "Great variety"
               },
               {
@@ -181,8 +181,8 @@ const CustomerDashboard = () => {
                 value: "42",
                 subtitle: "98.5% delivery success",
                 icon: FaTruck,
-                color: "text-purple-600 dark:text-purple-400",
-                bgColor: "bg-purple-500/10",
+                color: "text-foreground",
+                bgColor: "bg-muted/20",
                 trend: "Excellent record"
               }
             ].map((stat, index) => (
@@ -193,7 +193,7 @@ const CustomerDashboard = () => {
                 transition={{ duration: 0.5, delay: 0.1 + index * 0.1 }}
                 whileHover={{ y: -2, transition: { duration: 0.2 } }}
               >
-                <Card className="relative overflow-hidden bg-card/60 backdrop-blur-xl border-border/50 hover:border-primary/20 transition-all duration-300 group">
+                <Card className="relative overflow-hidden bg-card/60 backdrop-blur-xl border-border/50 hover:border-border transition-all duration-300 group">
                   <div className={`absolute inset-0 ${stat.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
                   <CardContent className="relative p-6">
                     <div className="flex items-start justify-between">
@@ -225,8 +225,8 @@ const CustomerDashboard = () => {
               <Card className="bg-card/60 backdrop-blur-xl border-border/50 shadow-xl h-full">
                 <CardHeader className="pb-4">
                   <CardTitle className="text-xl font-bold text-foreground font-montserrat flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <FaCalendarAlt className="w-5 h-5 text-primary" />
+                    <div className="p-2 bg-muted/30 rounded-lg">
+                      <FaCalendarAlt className="w-5 h-5 text-foreground" />
                     </div>
                     Today's Schedule
                   </CardTitle>
@@ -244,22 +244,22 @@ const CustomerDashboard = () => {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="relative overflow-hidden rounded-xl border border-emerald-200/50 bg-emerald-50/50 dark:bg-emerald-500/10 dark:border-emerald-500/20 p-4"
+                    className="relative overflow-hidden rounded-xl border border-border/50 bg-muted/30 p-4"
                   >
                     <div className="flex items-center gap-4">
                       <div className="relative">
-                        <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                          <FaCheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                        <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
+                          <FaCheckCircle className="w-6 h-6 text-foreground" />
                         </div>
                       </div>
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Lunch Delivered</p>
-                          <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-800 dark:text-emerald-300">
+                          <p className="text-sm font-semibold text-foreground">Lunch Delivered</p>
+                          <Badge variant="secondary" className="text-xs">
                             Completed
                           </Badge>
                         </div>
-                        <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                        <p className="text-xs text-muted-foreground">
                           Rajma Rice from "Mama's Kitchen" • 12:45 PM
                         </p>
                         <div className="flex items-center gap-2 mt-2">
@@ -275,21 +275,21 @@ const CustomerDashboard = () => {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.1 }}
-                    className="relative overflow-hidden rounded-xl border border-blue-200/50 bg-blue-50/50 dark:bg-blue-500/10 dark:border-blue-500/20 p-4"
+                    className="relative overflow-hidden rounded-xl border border-border/50 bg-muted/30 p-4"
                   >
                     <div className="flex items-center gap-4">
                       <div className="relative">
-                        <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center">
-                          <FaClock className="w-6 h-6 text-blue-600 dark:text-blue-400 animate-pulse" />
+                        <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
+                          <FaClock className="w-6 h-6 text-foreground animate-pulse" />
                         </div>
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full animate-ping"></div>
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-foreground rounded-full animate-ping"></div>
                       </div>
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">Dinner Incoming</p>
-                          <Badge className="text-xs bg-blue-500 hover:bg-blue-600">7:00 PM</Badge>
+                          <p className="text-sm font-semibold text-foreground">Dinner Incoming</p>
+                          <Badge className="text-xs bg-foreground text-background hover:bg-muted-foreground">7:00 PM</Badge>
                         </div>
-                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                        <p className="text-xs text-muted-foreground">
                           Paneer Butter Masala from "Spice Garden"
                         </p>
                         <div className="flex items-center gap-2 mt-2">
@@ -345,7 +345,7 @@ const CustomerDashboard = () => {
               <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg h-full">
                 <CardHeader>
                   <CardTitle className="text-xl font-bold text-foreground font-montserrat flex items-center gap-2">
-                    <FaUtensils className="w-6 h-6 text-primary" />
+                    <FaUtensils className="w-6 h-6 text-foreground" />
                     Getting Started
                   </CardTitle>
                   <CardDescription className="text-muted-foreground font-inter">
@@ -355,19 +355,19 @@ const CustomerDashboard = () => {
                 <CardContent className="flex-1">
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                      <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                      <div className="w-6 h-6 bg-foreground text-background rounded-full flex items-center justify-center text-sm font-bold">1</div>
                       <span className="font-inter text-foreground">Browse local vendors and their menus</span>
                     </div>
                     <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                      <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                      <div className="w-6 h-6 bg-foreground text-background rounded-full flex items-center justify-center text-sm font-bold">2</div>
                       <span className="font-inter text-foreground">Choose your meal subscription plan</span>
                     </div>
                     <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                      <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                      <div className="w-6 h-6 bg-foreground text-background rounded-full flex items-center justify-center text-sm font-bold">3</div>
                       <span className="font-inter text-foreground">Set your delivery address and preferences</span>
                     </div>
                     <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                      <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">4</div>
+                      <div className="w-6 h-6 bg-foreground text-background rounded-full flex items-center justify-center text-sm font-bold">4</div>
                       <span className="font-inter text-foreground">Enjoy fresh, homemade meals delivered daily</span>
                     </div>
                   </div>
@@ -387,8 +387,8 @@ const CustomerDashboard = () => {
             <Card className="bg-card/60 backdrop-blur-xl border-border/50 shadow-xl">
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl font-bold text-foreground font-montserrat flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <FaUser className="w-5 h-5 text-primary" />
+                  <div className="p-2 bg-muted/30 rounded-lg">
+                    <FaUser className="w-5 h-5 text-foreground" />
                   </div>
                   Account Overview
                 </CardTitle>
@@ -412,10 +412,10 @@ const CustomerDashboard = () => {
                 {/* Account Details */}
                 <div className="space-y-4">
                   {[
-                    { label: "Account Type", value: "Premium Customer", icon: FaStar, color: "text-amber-500" },
-                    { label: "Email", value: user?.email || "customer@example.com", icon: FaEnvelope, color: "text-green-500" },
-                    { label: "Status", value: "Active", icon: FaCheckCircle, color: "text-emerald-500" },
-                    { label: "Member Since", value: "Aug 2025", icon: FaCalendarAlt, color: "text-blue-500" }
+                    { label: "Account Type", value: "Premium Customer", icon: FaStar, color: "text-foreground" },
+                    { label: "Email", value: user?.email || "customer@example.com", icon: FaEnvelope, color: "text-foreground" },
+                    { label: "Status", value: "Active", icon: FaCheckCircle, color: "text-foreground" },
+                    { label: "Member Since", value: "Aug 2025", icon: FaCalendarAlt, color: "text-foreground" }
                   ].map((item, index) => (
                     <motion.div
                       key={item.label}
@@ -457,7 +457,7 @@ const CustomerDashboard = () => {
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl font-bold text-foreground font-montserrat flex items-center gap-3">
                   <div className="p-2 bg-primary/10 rounded-lg">
-                    <FaCalendarAlt className="w-5 h-5 text-primary" />
+                    <FaCalendarAlt className="w-5 h-5 text-foreground" />
                   </div>
                   Today's Schedule
                 </CardTitle>
@@ -475,22 +475,22 @@ const CustomerDashboard = () => {
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="relative overflow-hidden rounded-xl border border-emerald-200/50 bg-emerald-50/50 dark:bg-emerald-500/10 dark:border-emerald-500/20 p-4"
+                  className="relative overflow-hidden rounded-xl border border-border/50 bg-muted/30 p-4"
                 >
                   <div className="flex items-center gap-4">
                     <div className="relative">
-                      <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                        <FaCheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                      <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
+                        <FaCheckCircle className="w-6 h-6 text-foreground" />
                       </div>
                     </div>
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Lunch Delivered</p>
-                        <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-800 dark:text-emerald-300">
+                        <p className="text-sm font-semibold text-foreground">Lunch Delivered</p>
+                        <Badge variant="secondary" className="text-xs">
                           Completed
                         </Badge>
                       </div>
-                      <p className="text-xs text-emerald-700 dark:text-emerald-300">
+                      <p className="text-xs text-muted-foreground">
                         Rajma Rice from "Mama's Kitchen" • 12:45 PM
                       </p>
                       <div className="flex items-center gap-2 mt-2">
@@ -506,21 +506,21 @@ const CustomerDashboard = () => {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.1 }}
-                  className="relative overflow-hidden rounded-xl border border-blue-200/50 bg-blue-50/50 dark:bg-blue-500/10 dark:border-blue-500/20 p-4"
+                  className="relative overflow-hidden rounded-xl border border-border/50 bg-muted/30 p-4"
                 >
                   <div className="flex items-center gap-4">
                     <div className="relative">
-                      <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center">
-                        <FaClock className="w-6 h-6 text-blue-600 dark:text-blue-400 animate-pulse" />
+                      <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
+                        <FaClock className="w-6 h-6 text-foreground animate-pulse" />
                       </div>
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full animate-ping"></div>
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-foreground rounded-full animate-ping"></div>
                     </div>
                     <div className="flex-1 space-y-1">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold text-blue-800 dark:text-blue-200">Dinner Incoming</p>
-                        <Badge className="text-xs bg-blue-500 hover:bg-blue-600">7:00 PM</Badge>
+                        <p className="text-sm font-semibold text-foreground">Dinner Incoming</p>
+                        <Badge className="text-xs bg-foreground text-background hover:bg-muted-foreground">7:00 PM</Badge>
                       </div>
-                      <p className="text-xs text-blue-700 dark:text-blue-300">
+                      <p className="text-xs text-muted-foreground">
                         Paneer Butter Masala from "Spice Garden"
                       </p>
                       <div className="flex items-center gap-2 mt-2">
@@ -577,8 +577,8 @@ const CustomerDashboard = () => {
             <Card className="bg-card/60 backdrop-blur-xl border-border/50 shadow-xl">
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl font-bold text-foreground font-montserrat flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <FaBell className="w-5 h-5 text-primary" />
+                  <div className="p-2 bg-muted/30 rounded-lg">
+                    <FaBell className="w-5 h-5 text-foreground" />
                   </div>
                   Recent Notifications
                 </CardTitle>
@@ -631,8 +631,8 @@ const CustomerDashboard = () => {
                         className="group relative overflow-hidden rounded-xl border border-border/40 bg-muted/30 dark:bg-muted/20 p-4 hover:shadow-lg hover:bg-muted/50 dark:hover:bg-muted/30 transition-all duration-300"
                       >
                         <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-primary/10">
-                            <notification.icon className="w-4 h-4 text-primary" />
+                          <div className="p-2 rounded-lg bg-muted/30">
+                            <notification.icon className="w-4 h-4 text-foreground" />
                           </div>
                           <div className="flex-1 space-y-1">
                             <p className="text-sm font-semibold text-foreground">
@@ -672,16 +672,16 @@ const CustomerDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.7 }}
           >
-            <Card className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-background to-accent/5 backdrop-blur-xl border-primary/20 shadow-2xl">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10" />
+            <Card className="relative overflow-hidden bg-card backdrop-blur-xl border-border shadow-2xl">
+              <div className="absolute inset-0 bg-muted/5" />
               <CardHeader className="relative text-center pb-4">
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.8, type: "spring" }}
-                  className="mx-auto w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center mb-4"
+                  className="mx-auto w-16 h-16 bg-foreground rounded-full flex items-center justify-center mb-4"
                 >
-                  <FaShoppingBasket className="w-8 h-8 text-primary-foreground" />
+                  <FaShoppingBasket className="w-8 h-8 text-background" />
                 </motion.div>
                 <CardTitle className="text-2xl font-bold text-foreground font-montserrat">
                   Discover Amazing Food 🍽️
@@ -694,9 +694,9 @@ const CustomerDashboard = () => {
                 {/* Feature highlights */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   {[
-                    { icon: FaUtensils, text: "Fresh Daily Meals", color: "text-emerald-500" },
-                    { icon: FaTruck, text: "Fast Delivery", color: "text-blue-500" },
-                    { icon: FaHeart, text: "Favorite Vendors", color: "text-pink-500" }
+                    { icon: FaUtensils, text: "Fresh Daily Meals", color: "text-foreground" },
+                    { icon: FaTruck, text: "Fast Delivery", color: "text-foreground" },
+                    { icon: FaHeart, text: "Favorite Vendors", color: "text-foreground" }
                   ].map((feature, index) => (
                     <motion.div
                       key={index}
@@ -715,7 +715,7 @@ const CustomerDashboard = () => {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button 
                     size="lg" 
-                    className="flex-1 font-inter font-semibold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-lg"
+                    className="flex-1 font-inter font-semibold bg-foreground text-background hover:bg-muted-foreground shadow-lg"
                     onClick={() => navigate('/customer/market')}
                   >
                     <FaShoppingBasket className="mr-2" />
@@ -724,7 +724,7 @@ const CustomerDashboard = () => {
                   <Button 
                     variant="outline" 
                     size="lg" 
-                    className="flex-1 font-inter font-semibold border-primary/30 hover:bg-primary/5"
+                    className="flex-1 font-inter font-semibold border-border hover:bg-muted"
                     onClick={() => navigate('/customer/profile')}
                   >
                     <FaMapPin className="mr-2" />
