@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
-
-import {Linkedin, Twitter} from 'lucide-react';
+import { Linkedin, Twitter } from 'lucide-react';
 
 const tape = <svg
   xmlns="http://www.w3.org/2000/svg"
@@ -17,142 +16,79 @@ const tape = <svg
 export const Component = () => {
   const currentYear = new Date().getFullYear();
 
-return (
-  <footer className="my-8 px-4 max-w-5xl text-foreground mx-auto">
-    <div className="relative bg-card rounded-3xl max-w-5xl mx-auto px-4 py-10 flex flex-col md:flex-row justify-between items-center gap-6 border">
-      <div className="hidden md:block absolute -top-4 -left-8 w-[80px] h-[36px] scale-75">
-        {tape}
+  return (
+    <footer className="my-8 px-4 max-w-5xl text-foreground mx-auto">
+      <div className="relative bg-card rounded-3xl max-w-5xl mx-auto px-4 py-10 flex flex-col md:flex-row justify-between items-center gap-6 border">
+        <div className="hidden md:block absolute -top-4 -left-8 w-[80px] h-[36px] scale-75">
+          {tape}
+        </div>
+        <div className="hidden md:block absolute -top-4 -right-8 rotate-90 w-[80px] h-[36px] scale-75">
+          {tape}
+        </div>
+        <div className="flex flex-col md:flex-row items-start justify-between gap-4 md:gap-10 px-2 md:px-8 flex-1">
+          <div className='flex flex-col items-start gap-2'>
+            <Link
+              to="/"
+              className="flex flex-row gap-1 items-center justify-start text-2xl font-display font-extrabold text-foreground">
+              NourishNet
+            </Link>
+            <p className='text-muted-foreground font-medium text-base w-full md:w-4/5'>
+              Connecting communities with sustainable food networks and smart agriculture.
+            </p>
+          </div>
+
+          <div className='flex flex-col md:mx-4 md:flex-row gap-2 md:gap-20 items-start md:items-start'>
+            <div className='flex flex-col gap-1 md:gap-4'>
+              <h4 className='uppercase font-display text-md text-muted-foreground font-semibold'>Explore</h4>
+              <div className="flex flex-wrap md:flex-col gap-2 text-sm text-foreground items-start">
+                <Link className='text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap font-medium' to="/#features">Features</Link>
+                <Link className='text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap font-medium' to="/#testimonials">Testimonials</Link>
+                <Link className='text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap font-medium' to="/#contact">Contact</Link>
+              </div>
+            </div>
+
+            <div className='flex flex-col gap-1 md:gap-4'>
+              <h4 className='uppercase font-display text-md text-muted-foreground font-semibold'>Legal</h4>
+              <div className="flex flex-col gap-2 text-sm text-foreground items-start">
+                <Link className='text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap font-medium' to="/privacy-policy">Privacy Policy</Link>
+                <Link className='text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap font-medium' to="/terms">Terms & Conditions</Link>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="hidden md:block absolute -top-4 -right-8 rotate-90 w-[80px] h-[36px] scale-75">
-        {tape}
-      </div>
-      <div className="flex flex-col md:flex-row items-start justify-between gap-4 md:gap-10 px-2 md:px-8 flex-1">
-        <div className='flex flex-col items-start gap-2'>
-          <Link
-            to="/"
-            className="flex flex-row gap-1 items-center justify-start text-2xl font-display font-extrabold text-foreground">
-            ActivationLed
-          </Link>
-          <p className='text-muted-foreground font-medium text-base w-full md:w-4/5'>
-            Behavioral Designed Activation Journeys for PLG SaaS to lift Aha! moments by 23%.
+      <div className="my-3 px-4 md:px-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-8 items-start sm:items-center">
+          <p className="whitespace-nowrap">
+            ©{currentYear} NourishNet. All rights reserved.
           </p>
-        </div>
-
-        <div className='flex flex-col md:mx-4 md:flex-row gap-2 md:gap-20 items-start md:items-start'>
-          <div className='flex flex-col gap-1 md:gap-4'>
-            <h4 className='uppercase font-display text-md text-muted-foreground font-semibold'>Resources</h4>
-            <div className="flex flex-wrap md:flex-col gap-2 text-sm text-foreground items-start">
-              <Link
-                className='text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap font-medium'
-                to="/resources/freebies">Freebies & Audits</Link>
-              <Link
-                className='text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap font-medium'
-                to="/resources/tools">Tools</Link>
-              <Link
-                className='text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap font-medium'
-                to="/resources/behavior-principles">Psychology</Link>
-              <Link
-                className='pointer-events-none text-muted-foreground whitespace-nowrap font-medium'
-                to="/resources/blog">Blog <span
-                className='inline-flex ml-1 py-0.5 px-3 bg-muted text-xs rounded-xl -rotate-3'>soon</span> </Link>
-              <Link
-                className='pointer-events-none text-muted-foreground whitespace-nowrap font-medium'
-                to="/resources/components">Components <span
-                className='inline-flex ml-1 py-0.5 px-3 bg-muted text-xs rounded-xl -rotate-3'>soon</span> </Link>
-              <Link
-                className='pointer-events-none text-muted-foreground whitespace-nowrap font-medium'
-                to="/resources/playbooks">Playbooks <span
-                className='inline-flex ml-1 py-0.5 px-3 bg-muted text-xs rounded-xl rotate-3'>soon</span></Link>
-            </div>
-          </div>
-
-          <div className='hidden md:flex flex-col gap-1 md:gap-4'>
-            <h4 className='uppercase whitespace-nowrap font-display text-md text-muted-foreground font-semibold'>
-              Company <span className='inline-flex ml-1 py-0.5 px-3 bg-muted text-xs rounded-xl rotate-3'>soon</span>
-            </h4>
-            <div className="flex gap-2 flex-wrap md:flex-col text-sm text-foreground items-start">
-              <Link
-                className='pointer-events-none text-muted-foreground whitespace-nowrap font-medium'
-                to="/company/mission">Mission</Link>
-              <Link
-                className='pointer-events-none text-muted-foreground whitespace-nowrap font-medium'
-                to="/company/ecosystem">SaaS Ecosystem</Link>
-              <Link
-                className='pointer-events-none text-muted-foreground whitespace-nowrap font-medium'
-                to="/company/affiliates">Affiliate Program</Link>
-              <Link
-                className='pointer-events-none text-muted-foreground whitespace-nowrap font-medium'
-                to="/company/referrals">Referral Program</Link>
-              <Link
-                className='pointer-events-none text-muted-foreground whitespace-nowrap font-medium'
-                to="/company/partners">Partners</Link>
-              <Link
-                className='pointer-events-none text-muted-foreground whitespace-nowrap font-medium'
-                to="/company/about-us">About Us</Link>
-            </div>
-          </div>
-          
-          <div className='hidden md:flex flex-col gap-1 md:gap-4'>
-            <h4 className='uppercase whitespace-nowrap font-display text-md text-muted-foreground font-semibold'>
-              Compare <span className='inline-flex ml-1 py-0.5 px-3 bg-muted text-xs rounded-xl rotate-3'>soon</span>
-            </h4>
-            <div className="flex flex-col gap-2 text-sm text-foreground items-start">
-              <Link
-                className='pointer-events-none text-muted-foreground whitespace-nowrap font-medium'
-                to="/legal/privacy-policy">DaaS</Link>
-              <Link
-                className='pointer-events-none text-muted-foreground whitespace-nowrap font-medium'
-                to="/legal/tos">PLG Boutique</Link>
-              <Link
-                className='pointer-events-none text-muted-foreground whitespace-nowrap font-medium'
-                to="/legal/tos">ProductLed</Link>
-              <Link
-                className='pointer-events-none text-muted-foreground whitespace-nowrap font-medium'
-                to="/legal/tos">Vulnabyl</Link>
-              <Link
-                className='pointer-events-none text-muted-foreground whitespace-nowrap font-medium'
-                to="/pricing">GrowthMates</Link>
-              <Link
-                className='pointer-events-none text-muted-foreground whitespace-nowrap font-medium'
-                to="/pricing">DelightPath</Link>
-            </div>
+          <div className="flex flex-row gap-4">
+            <Link to="/privacy-policy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-foreground transition-colors">Terms & Conditions</Link>
+            <a href="https://www.linkedin.com/in/radu-a-popescu/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+              Team Cotton
+            </a>
           </div>
         </div>
-      </div>
-    </div>
-    <div className="my-3 px-4 md:px-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-sm text-muted-foreground">
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-8 items-start sm:items-center">
-        <p className="whitespace-nowrap">
-          ©{currentYear} ActivationLed. All rights reserved.
-        </p>
-        <div className="flex flex-row gap-4">
-          <Link to="/legal/privacy-policy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
-          <Link to="/legal/tos" className="hover:text-foreground transition-colors">Terms &#38; Co</Link>
-          <a href="https://www.linkedin.com/in/radu-a-popescu/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
-            Radu Popescu
+        <div className="flex gap-4 items-center">
+          <a
+            href="https://www.linkedin.com/in/radu-a-popescu/"
+            target="_blank"
+            rel="nofollow noopener"
+            aria-label="Linkedin"
+            className="hover:text-foreground transition-colors">
+            <Linkedin className="w-5 h-5 fill-current" />
+          </a>
+          <a
+            href="https://x.com/activation_guy"
+            target="_blank"
+            rel="nofollow noopener"
+            aria-label="Twitter"
+            className="hover:text-foreground transition-colors">
+            <Twitter className="w-5 h-5 fill-current" />
           </a>
         </div>
       </div>
-
-      <div className="flex gap-4 items-center">
-        <a
-          href="https://www.linkedin.com/in/radu-a-popescu/"
-          target="_blank"
-          rel="nofollow noopener"
-          aria-label="Radu Popescu, Founder of ActivationLed Linkedin"
-          className="hover:text-foreground transition-colors">
-          <Linkedin className="w-5 h-5 fill-current" />
-        </a>
-        <a
-          href="https://x.com/activation_guy"
-          target="_blank"
-          rel="nofollow noopener"
-          aria-label="X (formerly Twitter)"
-          className="hover:text-foreground transition-colors">
-          <Twitter className="w-5 h-5 fill-current" />
-        </a>
-      </div>
-    </div>
-  </footer>
-);
+    </footer>
+  );
 };
