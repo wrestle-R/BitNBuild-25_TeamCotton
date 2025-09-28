@@ -5,13 +5,14 @@ const jwt = require('jsonwebtoken');
 const admin = require('firebase-admin');
 require('dotenv').config();
 
-const authRoutes = require('./routes/authRoutes'); // Fix path casing
-const adminRoutes = require('./routes/adminRoutes');
-const vendorRoutes = require('./routes/vendorRoutes');
-const uploadRoutes = require('./routes/uploadRoutes');
-const customerRoutes = require('./routes/customerRoutes');
-const paymentRoutes = require('./routes/paymentRoutes');
+const authRoutes = require('./Routes/authRoutes'); 
+const adminRoutes = require('./Routes/adminRoutes');
+const vendorRoutes = require('./Routes/vendorRoutes');
+const uploadRoutes = require('./Routes/uploadRoutes');
+const customerRoutes = require('./Routes/customerRoutes');
+const paymentRoutes = require('./Routes/paymentRoutes');
 const driverRoutes = require('./Routes/driverRoutes');
+const predictionRoutes = require('./Routes/predictionRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -59,6 +60,7 @@ app.use('/api/vendor/upload', uploadRoutes);
 app.use('/api/customer', customerRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/drivers', driverRoutes);
+app.use('/api/predictions', predictionRoutes);
 
 // Health check
 app.get('/', (req, res) => {
