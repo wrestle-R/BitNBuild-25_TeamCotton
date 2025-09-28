@@ -12,7 +12,8 @@ const {
   updateDriverLocationInDelivery,
   getActiveDelivery,
   getAllDriverDeliveries,
-  getDeliveryTracking
+  getDeliveryTracking,
+  getCustomerDeliveries
 } = require('../Controllers/driverController');
 const authMiddleware = require('../middleware/authMiddleware');
 const hybridAuthMiddleware = require('../middleware/hybridAuthMiddleware');
@@ -63,6 +64,7 @@ router.put('/delivery/:deliveryId/location', hybridAuthMiddleware, updateDriverL
 router.get('/delivery/active/:driverId', hybridAuthMiddleware, getActiveDelivery);
 router.get('/delivery/tracking/:customerId', getDeliveryTracking);
 router.get('/deliveries/:driverId', hybridAuthMiddleware, getAllDriverDeliveries);
+router.get('/customer/deliveries/:customerId', getCustomerDeliveries);
 
 // Get vendor subscribers with locations
 router.get('/vendor/:vendorId/subscribers', authMiddleware, getVendorSubscribersWithLocations);

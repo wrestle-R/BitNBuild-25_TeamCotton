@@ -13,7 +13,7 @@ const authMiddleware = async (req, res, next) => {
   try {
     const decoded = await admin.auth().verifyIdToken(token);
     console.log('✅ Token verified for user:', decoded.uid);
-    req.user = { firebaseUid: decoded.uid };
+    req.user = { firebaseUid: decoded.uid, uid: decoded.uid };
     next();
   } catch (err) {
     console.error('❌ Token verification failed:', err.message);

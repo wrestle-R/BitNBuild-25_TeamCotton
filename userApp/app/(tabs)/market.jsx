@@ -229,10 +229,21 @@ export default function Market() {
               styles.vendorCard, 
               { 
                 backgroundColor: colors.card,
-                ...shadows.md
+                borderWidth: colorScheme === 'light' ? 1 : 0,
+                borderColor: colorScheme === 'light' ? '#E5E7EB' : 'transparent',
+                ...shadows.lg,
+                shadowColor: colorScheme === 'light' ? '#000' : '#FFF',
+                shadowOffset: {
+                  width: 0,
+                  height: 4,
+                },
+                shadowOpacity: colorScheme === 'light' ? 0.12 : 0.3,
+                shadowRadius: 8,
+                elevation: colorScheme === 'light' ? 6 : 3,
               }
             ]}
             onPress={() => handleViewDetails(item)}
+            activeOpacity={0.85}
           >
             {/* Hero Image with Featured Item */}
             <View style={styles.imageContainer}>
@@ -490,7 +501,8 @@ const styles = StyleSheet.create({
     marginVertical: 12,
     borderRadius: borderRadius.lg,
     overflow: 'hidden',
-    elevation: 3,
+    elevation: 6,
+    transform: [{ scale: 1 }],
   },
   imageContainer: {
     position: 'relative',

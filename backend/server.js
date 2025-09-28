@@ -3,42 +3,45 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const admin = require('firebase-admin');
-const serviceAccount = require('./serviceAccountKey.json');
+require('dotenv').config();
+
 const authRoutes = require('./Routes/authRoutes');
 const adminRoutes = require('./Routes/adminRoutes');
 const vendorRoutes = require('./Routes/vendorRoutes');
 const uploadRoutes = require('./Routes/uploadRoutes');
 const customerRoutes = require('./Routes/customerRoutes');
-const paymentRoutes = require('./Routes/paymentRoutes'); // Added paymentRoutes
-const driverRoutes = require('./Routes/driverRoutes'); // Import driver routes
-
-require('dotenv').config();
+const paymentRoutes = require('./Routes/paymentRoutes');
+const driverRoutes = require('./Routes/driverRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 
 app.use(cors({
-  origin: true, // Allow all origins for development
+  origin: true,
   credentials: true
 }));
 app.use(express.json());
 
 mongoose.connect(process.env.MONGO_URL)
-.then(() => console.log('MongoDB connected successfully'))
-.catch(err => console.error('MongoDB connection error:', err));
+  .then(() => console.log('MongoDB connected successfully'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+  }),
 });
 
 // Use routes
-app.use('/api/auth', authRoutes); // Unified routes for dual user system
-app.use('/api/admin', adminRoutes); // Admin routes
-app.use('/api/vendor', vendorRoutes); // Vendor routes
-app.use('/api/vendor/upload', uploadRoutes); // Upload routes
-app.use('/api/customer', customerRoutes); // Customer routes
-app.use('/api/payment', paymentRoutes); // Payment routes
-app.use('/api/drivers', driverRoutes); // Driver routes
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/vendor', vendorRoutes);
+app.use('/api/vendor/upload', uploadRoutes);
+app.use('/api/customer', customerRoutes);
+app.use('/api/payment', paymentRoutes);
+app.use('/api/drivers', driverRoutes);
 
 // Health check
 app.get('/', (req, res) => {
@@ -49,5 +52,4 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`NourishNet server running on port ${PORT}`);
   console.log(`Available at:`);
   console.log(`  - Local: http://localhost:${PORT}`);
-  console.log(`  - Network: http://192.168.1.40:${PORT}`);
 });

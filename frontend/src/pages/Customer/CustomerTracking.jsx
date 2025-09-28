@@ -25,6 +25,7 @@ import {
 } from 'react-icons/fa';
 import { MdLocationOn, MdDeliveryDining, MdDirections } from 'react-icons/md';
 import CustomerSidebar from '../../components/Customer/CustomerSidebar';
+import LiveTrackingMap from '../../components/Customer/LiveTrackingMap';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -69,15 +70,61 @@ const CustomerTracking = () => {
     }
   }, [user, userType, navigate]);
 
+  // New comprehensive fetch function
+  const fetchAllDeliveryData = async () => {
+    try {
+      console.log('🔄 Fetching comprehensive delivery data...');
+      
+      // Try to get both active and historical deliveries from one endpoint
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/drivers/customer/deliveries/${user.id}`, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.success) {
+          console.log('✅ Got comprehensive delivery data:', {
+            active: data.activeDeliveries?.length || 0,
+            historical: data.historicalDeliveries?.length || 0
+          });
+          
+          setActiveDeliveries(data.activeDeliveries || []);
+          setDeliveryHistory(data.historicalDeliveries || []);
+          return true; // Success
+        }
+      }
+      
+      console.log('⚠️ Comprehensive endpoint failed, falling back to individual calls');
+      return false; // Failed, need fallback
+    } catch (error) {
+      console.error('❌ Error in comprehensive fetch:', error);
+      return false; // Failed, need fallback
+    }
+  };
+
   useEffect(() => {
     if (user && userType === 'customer') {
-      fetchActiveDeliveries();
-      fetchDeliveryHistory();
+      // Try comprehensive fetch first, fallback to individual calls
+      fetchAllDeliveryData().then(success => {
+        if (!success) {
+          console.log('📞 Using fallback individual API calls');
+          fetchActiveDeliveries();
+          fetchDeliveryHistory();
+        }
+      });
+      
       fetchCustomerLocation();
       
       // Poll for updates every 30 seconds
       const interval = setInterval(() => {
-        fetchActiveDeliveries();
+        fetchAllDeliveryData().then(success => {
+          if (!success) {
+            fetchActiveDeliveries();
+          }
+        });
       }, 30000);
 
       return () => clearInterval(interval);
@@ -87,6 +134,8 @@ const CustomerTracking = () => {
   const fetchActiveDeliveries = async () => {
     setIsLoadingActive(true);
     try {
+      console.log('🔍 Fetching active deliveries for user:', user.id);
+      
       // Use the existing delivery tracking endpoint
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/drivers/delivery/tracking/${user.id}`, {
         headers: {
@@ -94,32 +143,58 @@ const CustomerTracking = () => {
         }
       });
 
+      console.log('📡 API Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
-        if (data.success) {
+        console.log('📦 API Response data:', data);
+        
+        if (data.success && data.tracking) {
+          // Extract all available data from tracking
+          const tracking = data.tracking;
+          
+          console.log('🚚 Driver data:', tracking.driver);
+          console.log('📍 Driver location:', tracking.driverLocation);
+          console.log('🏪 Vendor data:', tracking.vendor);
+          
           // Convert the tracking data to active delivery format
-          setActiveDeliveries([{
-            _id: data.tracking.deliveryId,
-            status: data.tracking.status || 'in_progress',
-            driver: data.tracking.driver,
-            vendor: data.tracking.vendor,
-            estimatedArrival: data.tracking.estimatedArrival,
-            deliveryOrder: data.tracking.deliveryOrder,
-            totalCustomers: data.tracking.totalCustomers,
-            completedDeliveries: data.tracking.deliveryOrder - 1,
-            customers: Array(data.tracking.totalCustomers).fill({}),
+          const activeDelivery = {
+            _id: tracking.deliveryId,
+            status: tracking.status || 'in_progress',
+            driver: {
+              ...tracking.driver,
+              location: tracking.driverLocation, // Include driver's current location
+              phone: tracking.driver?.contactNumber,
+              rating: tracking.driver?.rating || 4.5
+            },
+            vendor: {
+              ...tracking.vendor,
+              businessName: tracking.vendor?.name,
+              address: tracking.vendor?.address
+            },
+            driverLocation: tracking.driverLocation, // Add this for easy access
+            estimatedArrival: tracking.estimatedArrival,
+            deliveryOrder: tracking.deliveryOrder,
+            totalCustomers: tracking.totalCustomers,
+            completedDeliveries: (tracking.deliveryOrder || 1) - 1,
+            customers: Array(tracking.totalCustomers || 1).fill({}),
             createdAt: new Date().toISOString()
-          }]);
+          };
+
+          console.log('✅ Processed active delivery:', activeDelivery);
+          setActiveDeliveries([activeDelivery]);
         } else {
+          console.log('❌ No active tracking found');
           setActiveDeliveries([]);
         }
       } else {
-        // No active delivery found
+        console.log('❌ API Response not OK:', response.status);
+        const errorText = await response.text();
+        console.log('Error response:', errorText);
         setActiveDeliveries([]);
       }
     } catch (error) {
-      console.error('Error fetching active deliveries:', error);
-      // Don't set error for no active deliveries
+      console.error('❌ Error fetching active deliveries:', error);
       setActiveDeliveries([]);
     } finally {
       setIsLoadingActive(false);
@@ -129,11 +204,38 @@ const CustomerTracking = () => {
   const fetchDeliveryHistory = async () => {
     setIsLoadingHistory(true);
     try {
-      // For now, delivery history is not available in backend
-      // Set empty array to avoid errors
-      setDeliveryHistory([]);
+      console.log('🔍 Fetching delivery history for user:', user.id);
+      
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/drivers/customer/deliveries/${user.id}`, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('📡 History API Response status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📦 History API Response data:', data);
+        
+        if (data.success) {
+          // Use historical deliveries from the response
+          setDeliveryHistory(data.historicalDeliveries || []);
+          
+          // Also update active deliveries if we got them from this endpoint
+          if (data.activeDeliveries && data.activeDeliveries.length > 0) {
+            console.log('🔄 Also updating active deliveries from comprehensive endpoint');
+            setActiveDeliveries(data.activeDeliveries);
+          }
+        } else {
+          setDeliveryHistory([]);
+        }
+      } else {
+        console.log('❌ History API Response not OK:', response.status);
+        setDeliveryHistory([]);
+      }
     } catch (error) {
-      console.error('Error fetching delivery history:', error);
+      console.error('❌ Error fetching delivery history:', error);
       setDeliveryHistory([]);
     } finally {
       setIsLoadingHistory(false);
@@ -153,30 +255,53 @@ const CustomerTracking = () => {
       const text = await response.text();
       if (response.ok) {
         const data = JSON.parse(text);
-        if (data.address) {
-          setCustomerLocation({
-            ...data.address,
-            coordinates: {
-              lat: 19.248364,
-              lng: 72.850088
-            }
-          });
-        }
+        // Always use hardcoded coordinates regardless of API response
+        setCustomerLocation({
+          ...data.address,
+          coordinates: {
+            lat: 19.248364,
+            lng: 72.850088
+          }
+        });
+      } else {
+        // Set default location if API fails
+        setCustomerLocation({
+          coordinates: {
+            lat: 19.248364,
+            lng: 72.850088
+          }
+        });
       }
     } catch (error) {
       console.error('Error fetching customer location:', error);
+      // Set default location on error
+      setCustomerLocation({
+        coordinates: {
+          lat: 19.248364,
+          lng: 72.850088
+        }
+      });
     }
   };
 
   const refreshData = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([
-        fetchActiveDeliveries(),
-        fetchCustomerLocation()
-      ]);
+      console.log('🔄 Refreshing all data...');
+      
+      const success = await fetchAllDeliveryData();
+      if (!success) {
+        // Fallback to individual calls
+        await Promise.all([
+          fetchActiveDeliveries(),
+          fetchDeliveryHistory()
+        ]);
+      }
+      
+      await fetchCustomerLocation();
       toast.success('Data refreshed successfully');
     } catch (error) {
+      console.error('❌ Error refreshing data:', error);
       toast.error('Failed to refresh data');
     } finally {
       setRefreshing(false);
@@ -238,20 +363,36 @@ const CustomerTracking = () => {
     return (completedDeliveries / delivery.customers.length) * 100;
   };
 
-  const trackDriverLocation = (delivery) => {
-    if (delivery.driver?.location?.coordinates && customerLocation?.coordinates) {
-      // Driver coordinates are in [lng, lat] format (GeoJSON), customer coordinates are in {lat, lng} format
-      const driverLat = delivery.driver.location.coordinates[1];
-      const driverLng = delivery.driver.location.coordinates[0];
-      const customerLat = customerLocation.coordinates.lat;
-      const customerLng = customerLocation.coordinates.lng;
-      
+  const openGoogleMapsRoute = (delivery) => {
+    const customerLat = 19.248364;
+    const customerLng = 72.850088;
+    
+    let driverLocation = null;
+    
+    if (delivery.driverLocation?.coordinates && 
+        delivery.driverLocation.coordinates[0] !== 0 && 
+        delivery.driverLocation.coordinates[1] !== 0) {
+      driverLocation = {
+        lat: delivery.driverLocation.coordinates[1],
+        lng: delivery.driverLocation.coordinates[0]
+      };
+    } else if (delivery.driver?.location?.coordinates &&
+               delivery.driver.location.coordinates[0] !== 0 && 
+               delivery.driver.location.coordinates[1] !== 0) {
+      driverLocation = {
+        lat: delivery.driver.location.coordinates[1],
+        lng: delivery.driver.location.coordinates[0]
+      };
+    }
+    
+    if (driverLocation) {
       window.open(
-        `https://www.google.com/maps/dir/${driverLat},${driverLng}/${customerLat},${customerLng}`,
+        `https://www.google.com/maps/dir/${driverLocation.lat},${driverLocation.lng}/${customerLat},${customerLng}`,
         '_blank'
       );
     } else {
-      toast.error('Driver or customer location not available');
+      toast.error('Driver location not available');
+      window.open(`https://www.google.com/maps?q=${customerLat},${customerLng}`, '_blank');
     }
   };
 
@@ -281,7 +422,7 @@ const CustomerTracking = () => {
         <div className="text-center">
           <h1 className="text-3xl font-bold text-foreground font-montserrat mb-4 flex items-center justify-center gap-2">
             Access Denied!
-            <FaTruck className="w-8 h-8 text-primary" />
+            {/* <FaTruck className="w-8 h-8 text-primary" /> */}
           </h1>
           <p className="text-muted-foreground font-inter mb-6">
             You need to be signed in as a customer to track deliveries.
@@ -395,14 +536,31 @@ const CustomerTracking = () => {
                                 </AvatarFallback>
                               </Avatar>
                               <div>
-                                <span className="font-medium text-foreground">{delivery.driver?.name}</span>
+                                <span className="font-medium text-foreground">{delivery.driver?.name || 'Driver'}</span>
                                 {delivery.driver?.vehicleNumber && (
                                   <p className="text-xs text-muted-foreground">
-                                    {delivery.driver.vehicleType} - {delivery.driver.vehicleNumber}
+                                    {delivery.driver.vehicleType || 'Vehicle'} - {delivery.driver.vehicleNumber}
                                   </p>
+                                )}
+                                {delivery.driver?.rating && (
+                                  <div className="flex items-center gap-1">
+                                    <FaStar className="w-3 h-3 text-yellow-500" />
+                                    <span className="text-xs text-muted-foreground">
+                                      {delivery.driver.rating}/5
+                                    </span>
+                                  </div>
                                 )}
                               </div>
                             </div>
+                            {/* Driver Location Info */}
+                            {delivery.driverLocation && delivery.driverLocation.coordinates && (
+                              <div className="text-xs text-muted-foreground">
+                                <p>📍 Driver Location: {delivery.driverLocation.coordinates[1]?.toFixed(6)}, {delivery.driverLocation.coordinates[0]?.toFixed(6)}</p>
+                                {delivery.driverLocation.lastUpdated && (
+                                  <p>🕐 Last Updated: {new Date(delivery.driverLocation.lastUpdated).toLocaleTimeString()}</p>
+                                )}
+                              </div>
+                            )}
                           </div>
 
                           <div className="space-y-2">
@@ -411,8 +569,16 @@ const CustomerTracking = () => {
                               Started: {formatTime(delivery.createdAt)}
                             </p>
                             <p className="text-sm text-foreground">
-                              {delivery.customers?.length || 0} total stops
+                              {delivery.totalCustomers || delivery.customers?.length || 0} total stops
                             </p>
+                            <p className="text-sm text-foreground">
+                              Your Position: #{delivery.deliveryOrder || 1}
+                            </p>
+                            {delivery.estimatedArrival && (
+                              <p className="text-sm text-foreground">
+                                📅 ETA: {formatTime(delivery.estimatedArrival)}
+                              </p>
+                            )}
                           </div>
                         </div>
 
@@ -432,17 +598,15 @@ const CustomerTracking = () => {
                         )}
 
                         <div className="flex gap-2 mt-4">
-                          {delivery.driver?.location && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="gap-2"
-                              onClick={() => trackDriverLocation(delivery)}
-                            >
-                              <FaDirections className="w-3 h-3" />
-                              Track Driver
-                            </Button>
-                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => openGoogleMapsRoute(delivery)}
+                          >
+                            <FaDirections className="w-3 h-3" />
+                            Google Maps
+                          </Button>
                           
                           {delivery.driver?.phone && (
                             <Button
@@ -463,24 +627,37 @@ const CustomerTracking = () => {
                             size="sm"
                             className="gap-2"
                             onClick={() => {
-                              if (delivery.vendor?.address?.coordinates && customerLocation?.coordinates) {
-                                // Vendor coordinates are in [lng, lat] format (GeoJSON), customer coordinates are in {lat, lng} format
-                                const vendorLat = delivery.vendor.address.coordinates[1];
-                                const vendorLng = delivery.vendor.address.coordinates[0];
-                                const customerLat = customerLocation.coordinates.lat;
-                                const customerLng = customerLocation.coordinates.lng;
+                              const customerLat = 19.248364;
+                              const customerLng = 72.850088;
+                              
+                              if (delivery.vendor?.address?.coordinates) {
+                                let vendorLat, vendorLng;
                                 
-                                window.open(
-                                  `https://www.google.com/maps/dir/${vendorLat},${vendorLng}/${customerLat},${customerLng}`,
-                                  '_blank'
-                                );
+                                if (Array.isArray(delivery.vendor.address.coordinates)) {
+                                  // GeoJSON format [lng, lat]
+                                  vendorLat = delivery.vendor.address.coordinates[1];
+                                  vendorLng = delivery.vendor.address.coordinates[0];
+                                } else if (delivery.vendor.address.coordinates.lat) {
+                                  // Object format {lat, lng}
+                                  vendorLat = delivery.vendor.address.coordinates.lat;
+                                  vendorLng = delivery.vendor.address.coordinates.lng;
+                                }
+                                
+                                if (vendorLat && vendorLng) {
+                                  window.open(
+                                    `https://www.google.com/maps/dir/${vendorLat},${vendorLng}/${customerLat},${customerLng}`,
+                                    '_blank'
+                                  );
+                                } else {
+                                  window.open(`https://www.google.com/maps?q=${customerLat},${customerLng}`, '_blank');
+                                }
                               } else {
-                                toast.error('Location information not available');
+                                window.open(`https://www.google.com/maps?q=${customerLat},${customerLng}`, '_blank');
                               }
                             }}
                           >
                             <FaMapMarkerAlt className="w-3 h-3" />
-                            View Route
+                            Vendor Route
                           </Button>
                         </div>
                       </div>
@@ -496,6 +673,21 @@ const CustomerTracking = () => {
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* Live Tracking Map */}
+          {activeDeliveries.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+            >
+              <LiveTrackingMap 
+                delivery={activeDeliveries[0]} 
+                customerLocation={customerLocation}
+                onRefresh={refreshData}
+              />
+            </motion.div>
+          )}
 
           {/* Delivery History */}
           <motion.div
