@@ -13,7 +13,7 @@ const customerRoutes = require('./Routes/customerRoutes');
 const paymentRoutes = require('./Routes/paymentRoutes');
 const driverRoutes = require('./Routes/driverRoutes');
 const predictionRoutes = require('./Routes/predictionRoutes');
-
+const goalRoutes = require('./Routes/goalRoutes')
 const app = express();
 const PORT = process.env.PORT || 8000;
 
@@ -61,6 +61,7 @@ app.use('/api/customer', customerRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/drivers', driverRoutes);
 app.use('/api/predictions', predictionRoutes);
+app.use('/api/goals', goalRoutes);
 
 // Health check
 app.get('/', (req, res) => {

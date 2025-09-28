@@ -13,7 +13,9 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDriverContext } from '../context/DriverContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Ionicons } from '@expo/vector-icons';
+import LanguageSelector from './LanguageSelector';
 
 const DriverLogin = () => {
   const router = useRouter();
@@ -23,12 +25,14 @@ const DriverLogin = () => {
     error,
     loginWithEmail
   } = useDriverContext();
+  const { t } = useLanguage();
 
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showLanguageSelector, setShowLanguageSelector] = useState(false);
 
   // Navigate directly to dashboard when authenticated
   useEffect(() => {
@@ -47,7 +51,7 @@ const DriverLogin = () => {
 
   const handleEmailLogin = async () => {
     if (!formData.email || !formData.password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('common.error'), t('login.errors.fillAllFields'));
       return;
     }
 
@@ -65,7 +69,7 @@ const DriverLogin = () => {
       <View style={styles.loadingContainer}>
         <View style={styles.loadingContent}>
           <ActivityIndicator size="large" color="#8B5CF6" />
-          <Text style={styles.loadingText}>Signing you in...</Text>
+          <Text style={styles.loadingText}>{t('login.signingYouIn')}</Text>
         </View>
       </View>
     );
@@ -85,12 +89,23 @@ const DriverLogin = () => {
         </View>
 
         <View style={styles.content}>
+          {/* Language Selector Button */}
+          <TouchableOpacity 
+            style={styles.languageToggle}
+            onPress={() => setShowLanguageSelector(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="language" size={20} color="#8B5CF6" />
+            <Text style={styles.languageToggleText}>{t('common.language')}</Text>
+            <Ionicons name="chevron-down" size={16} color="#8B5CF6" />
+          </TouchableOpacity>
+
           <View style={styles.header}>
             <View style={styles.logoContainer}>
               <Ionicons name="car-sport" size={48} color="#8B5CF6" />
             </View>
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Sign in to continue your journey</Text>
+            <Text style={styles.title}>{t('login.title')}</Text>
+            <Text style={styles.subtitle}>{t('login.subtitle')}</Text>
           </View>
 
           <View style={styles.formCard}>
@@ -101,7 +116,7 @@ const DriverLogin = () => {
                 </View>
                 <TextInput
                   style={styles.input}
-                  placeholder="Email address"
+                  placeholder={t('login.emailPlaceholder')}
                   placeholderTextColor="#9CA3AF"
                   value={formData.email}
                   onChangeText={(value) => handleInputChange('email', value)}
@@ -117,7 +132,7 @@ const DriverLogin = () => {
                 </View>
                 <TextInput
                   style={styles.input}
-                  placeholder="Password"
+                  placeholder={t('login.passwordPlaceholder')}
                   placeholderTextColor="#9CA3AF"
                   value={formData.password}
                   onChangeText={(value) => handleInputChange('password', value)}
@@ -145,7 +160,7 @@ const DriverLogin = () => {
                 <View style={styles.loginButtonContent}>
                   {loading && <ActivityIndicator size="small" color="#FFFFFF" style={styles.buttonLoader} />}
                   <Text style={styles.loginButtonText}>
-                    {loading ? 'Signing In...' : 'Sign In'}
+                    {loading ? t('login.signingIn') : t('login.signIn')}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -159,7 +174,7 @@ const DriverLogin = () => {
 
               <View style={styles.divider}>
                 <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>or</Text>
+                <Text style={styles.dividerText}>{t('login.or')}</Text>
                 <View style={styles.dividerLine} />
               </View>
 
@@ -168,7 +183,7 @@ const DriverLogin = () => {
                 onPress={() => router.push('/auth/signup')}
                 activeOpacity={0.7}
               >
-                <Text style={styles.signupButtonText}>Create New Account</Text>
+                <Text style={styles.signupButtonText}>{t('login.createNewAccount')}</Text>
                 <Ionicons name="arrow-forward" size={18} color="#8B5CF6" />
               </TouchableOpacity>
             </View>
@@ -176,10 +191,16 @@ const DriverLogin = () => {
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              By signing in, you agree to our Terms & Privacy Policy
+              {t('login.termsText')}
             </Text>
           </View>
         </View>
+
+        {/* Language Selector Modal */}
+        <LanguageSelector
+          visible={showLanguageSelector}
+          onClose={() => setShowLanguageSelector(false)}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -261,6 +282,29 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingBottom: 40,
     justifyContent: 'center',
+  },
+  languageToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.2)',
+  },
+  languageToggleText: {
+    color: '#8B5CF6',
+    fontSize: 14,
+    fontWeight: '600',
+    marginHorizontal: 8,
   },
   header: {
     alignItems: 'center',

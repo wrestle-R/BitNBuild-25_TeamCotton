@@ -6,8 +6,12 @@ import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import 'react-native-reanimated';
 import "../global.css";
 
+// Initialize i18n
+import '../i18n';
+
 import { useColorScheme } from '../hooks/useColorScheme';
 import { DriverProvider } from '../context/DriverContext';
+import { LanguageProvider } from '../context/LanguageContext';
 
 // App content wrapper that can safely use the context
 function AppContent() {
@@ -40,9 +44,11 @@ export default function RootLayout() {
   }
 
   return (
-    <DriverProvider>
-      <AppContent />
-    </DriverProvider>
+    <LanguageProvider>
+      <DriverProvider>
+        <AppContent />
+      </DriverProvider>
+    </LanguageProvider>
   );
 }
 
