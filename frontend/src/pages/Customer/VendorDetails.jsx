@@ -699,35 +699,15 @@ const VendorDetails = () => {
                           className="group h-full"
                         >
                           <Card 
-                            className={`h-full bg-gradient-to-br from-card to-card/50 border transition-all duration-300 hover:shadow-lg overflow-hidden cursor-pointer flex flex-col ${
-                              selectedPlan && selectedPlan._id === plan._id 
-                                ? 'border-primary shadow-lg ring-2 ring-primary/20' 
-                                : 'border-border/50 hover:border-primary/50'
-                            }`}
-                            onClick={() => handleCardSelection(plan)}
+                            className="h-full bg-gradient-to-br from-card to-card/50 border border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg overflow-hidden flex flex-col"
                           >
                             {/* Gradient overlay */}
-                            <div className={`absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 transition-opacity duration-300 ${
-                              selectedPlan && selectedPlan._id === plan._id 
-                                ? 'opacity-100' 
-                                : 'opacity-0 group-hover:opacity-100'
-                            }`} />
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                             
                             <CardContent className="relative p-4 flex flex-col h-full">
-                              {/* Selection Indicator */}
-                              {selectedPlan && selectedPlan._id === plan._id && (
-                                <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center z-10">
-                                  <FaCheckCircle className="w-4 h-4 text-white" />
-                                </div>
-                              )}
-                              
                               {/* Header Section - Fixed Height */}
                               <div className="text-center mb-4 min-h-[80px] flex flex-col justify-center">
-                                <div className={`w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center transition-all duration-200 ${
-                                  selectedPlan && selectedPlan._id === plan._id
-                                    ? 'bg-primary text-white'
-                                    : 'bg-primary/10 text-primary'
-                                }`}>
+                                <div className="w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center bg-primary/10 text-primary transition-all duration-200">
                                   <FaShoppingCart className="w-5 h-5" />
                                 </div>
                                 <h3 className="text-sm font-bold text-foreground font-montserrat mb-2 line-clamp-2 min-h-[2.5rem] flex items-center justify-center">
