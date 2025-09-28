@@ -300,10 +300,30 @@ const VendorDetails = () => {
     return grouped;
   };
 
+  // Function to handle card selection (without opening modal)
+  const handleCardSelection = (plan) => {
+    // If the same plan is clicked again, deselect it
+    if (selectedPlan && selectedPlan._id === plan._id) {
+      setSelectedPlan(null);
+      setShowPlanModal(false);
+    } else {
+      // Otherwise, select the new plan (but don't open modal automatically)
+      setSelectedPlan(plan);
+      setShowPlanModal(false);
+    }
+  };
+
   // Function to get plan details and open modal
   const handleViewPlanDetails = (plan) => {
+    // Always select the plan and open modal
     setSelectedPlan(plan);
     setShowPlanModal(true);
+  };
+
+  // Function to close modal and reset selection
+  const handleCloseModal = () => {
+    setSelectedPlan(null);
+    setShowPlanModal(false);
   };
 
   // Function to get menus for specific meal types in a plan
@@ -494,8 +514,9 @@ const VendorDetails = () => {
 
                     {vendor.address && vendor.address.coordinates && user && user.address && user.address.coordinates && (
                       <div className="flex items-center justify-center md:justify-start gap-2">
-                        <span className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full">
-                          📍 {calculateDistance(
+                        <span className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full flex items-center gap-1">
+                          <FaMapMarkerAlt className="w-3 h-3" />
+                          {calculateDistance(
                             user.address.coordinates.lat,
                             user.address.coordinates.lng,
                             vendor.address.coordinates.lat,
@@ -668,48 +689,72 @@ const VendorDetails = () => {
                       ))}
                     </div>
                   ) : mealPlans && mealPlans.length > 0 ? (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                       {mealPlans.map((plan, index) => (
                         <motion.div
                           key={plan._id}
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.1 * index }}
-                          className="group"
+                          className="group h-full"
                         >
-                          <Card className="h-full bg-gradient-to-br from-card to-card/50 border border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg overflow-hidden">
+                          <Card 
+                            className={`h-full bg-gradient-to-br from-card to-card/50 border transition-all duration-300 hover:shadow-lg overflow-hidden cursor-pointer flex flex-col ${
+                              selectedPlan && selectedPlan._id === plan._id 
+                                ? 'border-primary shadow-lg ring-2 ring-primary/20' 
+                                : 'border-border/50 hover:border-primary/50'
+                            }`}
+                            onClick={() => handleCardSelection(plan)}
+                          >
                             {/* Gradient overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            <div className={`absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 transition-opacity duration-300 ${
+                              selectedPlan && selectedPlan._id === plan._id 
+                                ? 'opacity-100' 
+                                : 'opacity-0 group-hover:opacity-100'
+                            }`} />
                             
-                            <CardContent className="relative p-3">
-                              <div className="text-center mb-3">
-                                <div className="text-2xl mb-1">
-                                  {getMealPlanIcon(plan.selected_meals)}
+                            <CardContent className="relative p-4 flex flex-col h-full">
+                              {/* Selection Indicator */}
+                              {selectedPlan && selectedPlan._id === plan._id && (
+                                <div className="absolute top-2 right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center z-10">
+                                  <FaCheckCircle className="w-4 h-4 text-white" />
                                 </div>
-                                <h3 className="text-sm font-bold text-foreground font-montserrat mb-1">
+                              )}
+                              
+                              {/* Header Section - Fixed Height */}
+                              <div className="text-center mb-4 min-h-[80px] flex flex-col justify-center">
+                                <div className={`w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center transition-all duration-200 ${
+                                  selectedPlan && selectedPlan._id === plan._id
+                                    ? 'bg-primary text-white'
+                                    : 'bg-primary/10 text-primary'
+                                }`}>
+                                  <FaShoppingCart className="w-5 h-5" />
+                                </div>
+                                <h3 className="text-sm font-bold text-foreground font-montserrat mb-2 line-clamp-2 min-h-[2.5rem] flex items-center justify-center">
                                   {plan.name}
                                 </h3>
-                                <Badge variant="outline" className="text-xs">
+                                <Badge variant="outline" className="text-xs mx-auto">
                                   {getPlanDuration(plan.duration_days)} Plan
                                 </Badge>
                               </div>
 
-                              <div className="space-y-1.5 mb-3">
-                                <div className="flex items-center justify-between p-1.5 bg-muted/20 rounded border border-muted/30">
+                              {/* Info Section - Flexible Height */}
+                              <div className="space-y-2 mb-4 flex-grow">
+                                <div className="flex items-center justify-between p-2 bg-muted/20 rounded border border-muted/30">
                                   <span className="text-xs font-medium">Duration</span>
-                                  <Badge variant="secondary" className="bg-primary/10 text-primary text-xs px-1.5 py-0.5">
+                                  <Badge variant="secondary" className="bg-primary/10 text-primary text-xs px-2 py-1">
                                     {plan.duration_days}d
                                   </Badge>
                                 </div>
                                 
-                                <div className="flex items-center justify-between p-1.5 bg-muted/20 rounded border border-muted/30">
+                                <div className="flex items-center justify-between p-2 bg-muted/20 rounded border border-muted/30 min-h-[2.5rem]">
                                   <span className="text-xs font-medium">Meals</span>
-                                  <span className="text-xs font-semibold text-foreground">
+                                  <span className="text-xs font-semibold text-foreground text-right flex-1 ml-2 line-clamp-2">
                                     {formatMealTypes(plan.selected_meals)}
                                   </span>
                                 </div>
 
-                                <div className="flex items-center justify-between p-1.5 bg-muted/20 rounded border border-muted/30">
+                                <div className="flex items-center justify-between p-2 bg-muted/20 rounded border border-muted/30">
                                   <span className="text-xs font-medium">Per Day</span>
                                   <span className="text-xs font-semibold text-foreground">
                                     {plan.meals_per_day} meal{plan.meals_per_day > 1 ? 's' : ''}
@@ -717,19 +762,20 @@ const VendorDetails = () => {
                                 </div>
                               </div>
 
-                              <div className="text-center mb-3 p-2 bg-gradient-to-br from-primary/10 to-primary/5 rounded border border-primary/20">
-                                <div className="flex items-center justify-center mb-1">
+                              {/* Price Section - Fixed Height */}
+                              <div className="text-center mb-4 p-3 bg-gradient-to-br from-primary/10 to-primary/5 rounded border border-primary/20 min-h-[90px] flex flex-col justify-center">
+                                <div className="flex items-center justify-center mb-2">
                                   <span className="text-xl font-bold text-primary">
                                     ₹{plan.price}
                                   </span>
                                 </div>
-                                <div className="space-y-0.5">
+                                <div className="space-y-1">
                                   <p className="text-xs text-muted-foreground">
                                     Total for {plan.duration_days}d
                                   </p>
                                   {plan.duration_days > 1 && (
                                     <div className="flex items-center justify-center">
-                                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-200 px-1 py-0.5">
+                                      <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-200 px-2 py-1">
                                         ₹{Math.round(plan.price / plan.duration_days)}/day
                                       </Badge>
                                     </div>
@@ -737,22 +783,29 @@ const VendorDetails = () => {
                                 </div>
                               </div>
 
-                              <div className="space-y-1.5">
+                              {/* Buttons Section - Fixed Height */}
+                              <div className="space-y-2 mt-auto">
                                 <Button 
-                                  onClick={() => handleViewPlanDetails(plan)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleViewPlanDetails(plan);
+                                  }}
                                   variant="outline"
-                                  className="w-full border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary hover:text-primary transition-all duration-200 text-xs py-1.5"
+                                  className="w-full transition-all duration-200 text-xs py-2 border-primary/20 bg-primary/5 hover:bg-primary/10 text-primary hover:text-primary"
                                   size="sm"
                                 >
-                                  <FaInfoCircle className="w-3 h-3 mr-1" />
-                                  Details
+                                  <FaInfoCircle className="w-3 h-3 mr-2" />
+                                  View Details
                                 </Button>
                                 <Button 
-                                  onClick={() => handleSubscribe(plan._id)}
-                                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-200 text-xs py-1.5"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSubscribe(plan._id);
+                                  }}
+                                  className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all duration-200 text-xs py-2"
                                   size="sm"
                                 >
-                                  <FaShoppingCart className="w-3 h-3 mr-1" />
+                                  <FaShoppingCart className="w-3 h-3 mr-2" />
                                   Subscribe
                                 </Button>
                               </div>
@@ -784,62 +837,59 @@ const VendorDetails = () => {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-background border border-border/50 rounded-xl shadow-2xl max-w-lg w-full mx-4 max-h-[85vh] overflow-y-auto"
+                className="bg-background border border-border/50 rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
               >
-                <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border/50 p-4 flex justify-between items-center">
+                <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border/50 p-6 flex justify-between items-center">
                   <div>
-                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                      {getMealPlanIcon(selectedPlan.selected_meals)} {selectedPlan.name}
+                    <h2 className="text-2xl font-bold text-foreground">
+                      {selectedPlan.name}
                     </h2>
-                    <p className="text-sm text-muted-foreground">Plan Details & Menu</p>
+                    <p className="text-sm text-muted-foreground">Plan Details & Menu Information</p>
                   </div>
                   <Button
-                    onClick={() => setShowPlanModal(false)}
+                    onClick={handleCloseModal}
                     variant="ghost"
                     size="sm"
                     className="text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   >
-                    <FaTimes className="w-4 h-4" />
+                    <FaTimes className="w-5 h-5" />
                   </Button>
                 </div>
 
-                <div className="p-4 space-y-4">
+                <div className="p-6 space-y-6">
                   {/* Plan Overview */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="text-center p-3 bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-lg">
-                      <div className="text-lg font-bold text-primary">₹{selectedPlan.price}</div>
-                      <div className="text-xs text-muted-foreground">Total</div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="text-center p-4 bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-lg">
+                      <div className="text-xl font-bold text-primary">₹{selectedPlan.price}</div>
+                      <div className="text-sm text-muted-foreground">Total Price</div>
                       {selectedPlan.duration_days > 1 && (
-                        <div className="text-xs text-green-600 dark:text-green-400">
+                        <div className="text-xs text-green-600 dark:text-green-400 mt-1">
                           ₹{Math.round(selectedPlan.price / selectedPlan.duration_days)}/day
                         </div>
                       )}
                     </div>
-                    <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-                      <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{selectedPlan.duration_days}</div>
-                      <div className="text-xs text-muted-foreground">Days</div>
+                    <div className="text-center p-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg">
+                      <div className="text-xl font-bold text-blue-600 dark:text-blue-400">{selectedPlan.duration_days}</div>
+                      <div className="text-sm text-muted-foreground">Duration (Days)</div>
                     </div>
-                    <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg">
-                      <div className="text-lg font-bold text-orange-600 dark:text-orange-400">{selectedPlan.meals_per_day}</div>
-                      <div className="text-xs text-muted-foreground">Meals/Day</div>
+                    <div className="text-center p-4 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-lg">
+                      <div className="text-xl font-bold text-orange-600 dark:text-orange-400">{selectedPlan.meals_per_day}</div>
+                      <div className="text-sm text-muted-foreground">Meals per Day</div>
                     </div>
                   </div>
 
                   {/* Meal Times & Food Types Combined */}
                   <div>
-                    <h3 className="text-sm font-semibold mb-2 flex items-center gap-2 text-foreground">
-                      🍽️ Plan Includes
+                    <h3 className="text-sm font-semibold mb-3 text-foreground">
+                      Plan Includes
                     </h3>
-                    <div className="flex flex-wrap gap-2 mb-3">
+                    <div className="flex flex-wrap gap-2 mb-4">
                       {selectedPlan.selected_meals.map((mealType, idx) => (
                         <Badge 
                           key={idx}
                           variant="outline" 
-                          className="bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 text-xs"
+                          className="bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 text-xs font-medium"
                         >
-                          {mealType === 'breakfast' && '🌅 '}
-                          {mealType === 'lunch' && '☀️ '}
-                          {mealType === 'dinner' && '🌙 '}
                           {mealType.charAt(0).toUpperCase() + mealType.slice(1)}
                         </Badge>
                       ))}
@@ -851,20 +901,23 @@ const VendorDetails = () => {
                       const foodTypes = getPlanFoodTypes(planMenus);
                       
                       return foodTypes.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {foodTypes.map((foodType, idx) => (
-                            <Badge 
-                              key={idx}
-                              variant="secondary"
-                              className={`text-xs ${
-                                foodType === 'Vegetarian' 
-                                  ? 'bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800' 
-                                  : 'bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800'
-                              }`}
-                            >
-                              {foodType === 'Vegetarian' ? '🥬 Veg' : '🍖 Non-Veg'}
-                            </Badge>
-                          ))}
+                        <div>
+                          <h4 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Food Types</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {foodTypes.map((foodType, idx) => (
+                              <Badge 
+                                key={idx}
+                                variant="secondary"
+                                className={`text-xs font-medium ${
+                                  foodType === 'Vegetarian' 
+                                    ? 'bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800' 
+                                    : 'bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800'
+                                }`}
+                              >
+                                {foodType}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
                       );
                     })()}
@@ -876,8 +929,8 @@ const VendorDetails = () => {
                     
                     return planMenus.length > 0 && (
                       <div>
-                        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-foreground">
-                          📋 Sample Menu Items
+                        <h3 className="text-sm font-semibold mb-3 text-foreground">
+                          Sample Menu Items
                         </h3>
                         <div className="space-y-3">
                           {selectedPlan.selected_meals.map((mealType) => {
@@ -909,29 +962,34 @@ const VendorDetails = () => {
                               .slice(0, 4);
                             
                             return (
-                              <div key={mealType} className="p-3 bg-muted/20 dark:bg-muted/10 border border-border/30 rounded-lg">
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm">
-                                      {mealType === 'breakfast' && '🌅'}
-                                      {mealType === 'lunch' && '☀️'}
-                                      {mealType === 'dinner' && '🌙'}
-                                    </span>
-                                    <span className="text-sm font-medium text-foreground">
-                                      {mealType.charAt(0).toUpperCase() + mealType.slice(1)}
+                              <div key={mealType} className="p-4 bg-muted/20 dark:bg-muted/10 border border-border/30 rounded-lg">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-sm font-medium text-foreground capitalize">
+                                      {mealType}
                                     </span>
                                   </div>
-                                  <div className="flex gap-1">
-                                    {hasVeg && <span className="w-2 h-2 rounded-full bg-green-500"></span>}
-                                    {hasNonVeg && <span className="w-2 h-2 rounded-full bg-red-500"></span>}
+                                  <div className="flex gap-2 items-center">
+                                    {hasVeg && (
+                                      <div className="flex items-center gap-1">
+                                        <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                        <span className="text-xs text-muted-foreground">Veg</span>
+                                      </div>
+                                    )}
+                                    {hasNonVeg && (
+                                      <div className="flex items-center gap-1">
+                                        <span className="w-2 h-2 rounded-full bg-red-500"></span>
+                                        <span className="text-xs text-muted-foreground">Non-Veg</span>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                                 
                                 {uniqueItems.length > 0 && (
-                                  <div className="grid grid-cols-2 gap-1">
+                                  <div className="grid grid-cols-2 gap-2">
                                     {uniqueItems.map((item, itemIdx) => (
-                                      <div key={itemIdx} className="text-xs text-muted-foreground flex items-center gap-1">
-                                        <span className={`w-1.5 h-1.5 rounded-full ${item.isVeg ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                      <div key={itemIdx} className="text-xs text-muted-foreground flex items-center gap-2">
+                                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.isVeg ? 'bg-green-500' : 'bg-red-500'}`}></span>
                                         <span className="truncate">{item.name}</span>
                                       </div>
                                     ))}
@@ -939,8 +997,8 @@ const VendorDetails = () => {
                                 )}
                                 
                                 {allItems.length > 4 && (
-                                  <div className="text-xs text-primary font-medium mt-2">
-                                    + {allItems.length - 4} more options
+                                  <div className="text-xs text-primary font-medium mt-2 text-right">
+                                    + {allItems.length - 4} more items available
                                   </div>
                                 )}
                               </div>
@@ -952,25 +1010,25 @@ const VendorDetails = () => {
                   })()}
 
                   {/* Action Buttons */}
-                  <div className="flex gap-3 pt-2 border-t border-border/30">
+                  <div className="flex gap-4 pt-4 border-t border-border/30">
                     <Button
-                      onClick={() => setShowPlanModal(false)}
+                      onClick={handleCloseModal}
                       variant="outline"
-                      className="flex-1 text-sm"
-                      size="sm"
+                      className="flex-1"
+                      size="default"
                     >
                       Close
                     </Button>
                     <Button
                       onClick={() => {
-                        setShowPlanModal(false);
+                        handleCloseModal();
                         handleSubscribe(selectedPlan._id);
                       }}
-                      className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-sm"
-                      size="sm"
+                      className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                      size="default"
                     >
-                      <FaShoppingCart className="w-3 h-3 mr-1" />
-                      Subscribe
+                      <FaShoppingCart className="w-4 h-4 mr-2" />
+                      Subscribe Now
                     </Button>
                   </div>
                 </div>
