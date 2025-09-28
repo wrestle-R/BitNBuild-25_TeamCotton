@@ -13,7 +13,7 @@ const customerRoutes = require('./Routes/customerRoutes');
 const paymentRoutes = require('./Routes/paymentRoutes');
 const driverRoutes = require('./Routes/driverRoutes');
 const predictionRoutes = require('./Routes/predictionRoutes');
-
+const goalRoutes = require('./Routes/goalRoutes')
 const app = express();
 const PORT = process.env.PORT || 8000;
 
