@@ -12,12 +12,14 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDriverContext } from '../context/DriverContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Ionicons } from '@expo/vector-icons';
 import '../global.css';
 
 const DriverDetailsForm = () => {
   const router = useRouter();
   const { driver, updateDriverProfile, loading } = useDriverContext();
+  const { t } = useLanguage();
   
   console.log('🔍 DriverDetailsForm - Current driver data:', {
     email: driver?.email,
@@ -35,10 +37,10 @@ const DriverDetailsForm = () => {
   const [formLoading, setFormLoading] = useState(false);
 
   const vehicleTypes = [
-    { value: 'bike', label: '🏍️ Bike', icon: 'bicycle-outline' },
-    { value: 'car', label: '🚗 Car', icon: 'car-outline' },
-    { value: 'truck', label: '🚚 Truck', icon: 'bus-outline' },
-    { value: 'van', label: '🚐 Van', icon: 'car-sport-outline' }
+    { value: 'bike', label: t('profile.vehicles.bike'), icon: 'bicycle-outline' },
+    { value: 'car', label: t('profile.vehicles.car'), icon: 'car-outline' },
+    { value: 'truck', label: t('profile.vehicles.truck'), icon: 'bus-outline' },
+    { value: 'van', label: t('profile.vehicles.van'), icon: 'car-sport-outline' }
   ];
 
   const handleInputChange = (field, value) => {
@@ -50,17 +52,17 @@ const DriverDetailsForm = () => {
 
   const validateForm = () => {
     if (!formData.contactNumber.trim()) {
-      Alert.alert('Error', 'Phone number is required');
+      Alert.alert(t('common.error'), t('profile.errors.phoneRequired'));
       return false;
     }
     
     if (formData.contactNumber.length < 10) {
-      Alert.alert('Error', 'Please enter a valid phone number (at least 10 digits)');
+      Alert.alert(t('common.error'), t('profile.errors.validPhone'));
       return false;
     }
     
     if (!formData.vehicleNumber.trim()) {
-      Alert.alert('Error', 'Vehicle number is required');
+      Alert.alert(t('common.error'), t('profile.errors.vehicleNumberRequired'));
       return false;
     }
 
@@ -81,11 +83,11 @@ const DriverDetailsForm = () => {
       if (result.success) {
         console.log('✅ Profile updated successfully, updated driver:', result.user);
         Alert.alert(
-          'Profile Updated!',
-          'Your driver profile has been completed successfully.',
+          t('profile.profileUpdated'),
+          t('profile.profileUpdatedText'),
           [
             {
-              text: 'Continue',
+              text: t('profile.continue'),
               onPress: () => {
                 console.log('✅ Driver details completed, navigating to dashboard');
                 router.replace('/(tabs)');
@@ -95,11 +97,11 @@ const DriverDetailsForm = () => {
         );
       } else {
         console.error('❌ Profile update failed:', result.error);
-        Alert.alert('Error', result.error || 'Failed to update profile');
+        Alert.alert(t('common.error'), result.error || 'Failed to update profile');
       }
     } catch (error) {
       console.error('💥 Error submitting driver details:', error);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      Alert.alert(t('common.error'), t('profile.errors.somethingWentWrong'));
     } finally {
       setFormLoading(false);
     }
@@ -107,15 +109,15 @@ const DriverDetailsForm = () => {
 
   const handleSkip = () => {
     Alert.alert(
-      'Skip Profile Completion?',
-      'You can complete your profile later from the Profile tab. Some features may be limited until your profile is complete.',
+      t('profile.skipConfirmTitle'),
+      t('profile.skipConfirmText'),
       [
         {
-          text: 'Complete Now',
+          text: t('profile.completeNow'),
           style: 'cancel'
         },
         {
-          text: 'Skip',
+          text: t('profile.skip'),
           style: 'destructive',
           onPress: () => {
             console.log('⏭️ Skipping driver details form');
@@ -130,7 +132,7 @@ const DriverDetailsForm = () => {
     return (
       <View className="flex-1 justify-center items-center bg-gray-50">
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text className="text-base text-gray-600 mt-3">Loading...</Text>
+        <Text className="text-base text-gray-600 mt-3">{t('profile.loading')}</Text>
       </View>
     );
   }
@@ -147,9 +149,9 @@ const DriverDetailsForm = () => {
             <View className="w-20 h-20 bg-blue-100 rounded-full items-center justify-center mb-4">
               <Ionicons name="car" size={32} color="#007AFF" />
             </View>
-            <Text className="text-2xl font-bold text-gray-900 mb-2">Complete Your Profile</Text>
+            <Text className="text-2xl font-bold text-gray-900 mb-2">{t('profile.title')}</Text>
             <Text className="text-base text-gray-600 text-center">
-              Please provide your phone number and vehicle details to start accepting rides
+              {t('profile.subtitle')}
             </Text>
           </View>
 
@@ -157,12 +159,12 @@ const DriverDetailsForm = () => {
           <View className="space-y-5">
             {/* Phone Number */}
             <View>
-              <Text className="text-base font-medium text-gray-900 mb-2">Phone Number *</Text>
+              <Text className="text-base font-medium text-gray-900 mb-2">{t('profile.phoneNumber')} {t('common.required')}</Text>
               <View className="flex-row items-center bg-white rounded-xl px-4 py-4 border border-gray-200">
                 <Ionicons name="call-outline" size={20} color="#666" />
                 <TextInput
                   className="flex-1 ml-3 text-base text-gray-900"
-                  placeholder="Enter your phone number"
+                  placeholder={t('profile.phoneNumberPlaceholder')}
                   placeholderTextColor="#999"
                   value={formData.contactNumber}
                   onChangeText={(value) => handleInputChange('contactNumber', value)}
@@ -174,7 +176,7 @@ const DriverDetailsForm = () => {
 
             {/* Vehicle Type */}
             <View>
-              <Text className="text-base font-medium text-gray-900 mb-3">Vehicle Type *</Text>
+              <Text className="text-base font-medium text-gray-900 mb-3">{t('profile.vehicleType')} {t('common.required')}</Text>
               <View className="flex-row flex-wrap justify-between">
                 {vehicleTypes.map((vehicle) => (
                   <TouchableOpacity
@@ -205,12 +207,12 @@ const DriverDetailsForm = () => {
 
             {/* Vehicle Number */}
             <View>
-              <Text className="text-base font-medium text-gray-900 mb-2">Vehicle Number *</Text>
+              <Text className="text-base font-medium text-gray-900 mb-2">{t('profile.vehicleNumber')} {t('common.required')}</Text>
               <View className="flex-row items-center bg-white rounded-xl px-4 py-4 border border-gray-200">
                 <Ionicons name="car-outline" size={20} color="#666" />
                 <TextInput
                   className="flex-1 ml-3 text-base text-gray-900"
-                  placeholder="e.g., MH12AB1234"
+                  placeholder={t('profile.vehicleNumberPlaceholder')}
                   placeholderTextColor="#999"
                   value={formData.vehicleNumber}
                   onChangeText={(value) => handleInputChange('vehicleNumber', value.toUpperCase())}
@@ -234,12 +236,12 @@ const DriverDetailsForm = () => {
                 <View className="flex-row items-center">
                   <ActivityIndicator size="small" color="#fff" />
                   <Text className="text-white text-base font-semibold ml-2">
-                    Updating Profile...
+                    {t('profile.updatingProfile')}
                   </Text>
                 </View>
               ) : (
                 <Text className="text-white text-base font-semibold">
-                  Complete Profile
+                  {t('profile.completeProfile')}
                 </Text>
               )}
             </TouchableOpacity>
@@ -250,7 +252,7 @@ const DriverDetailsForm = () => {
               disabled={formLoading}
             >
               <Text className="text-gray-700 text-base font-medium">
-                Skip for Now
+                {t('profile.skipForNow')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -259,11 +261,11 @@ const DriverDetailsForm = () => {
             <View className="flex-row items-center mb-2">
               <Ionicons name="information-circle-outline" size={20} color="#f59e0b" />
               <Text className="text-sm font-medium text-yellow-800 ml-2">
-                Profile Completion Required
+                {t('profile.profileCompletionRequired')}
               </Text>
             </View>
             <Text className="text-sm text-yellow-700">
-              Complete your profile to start accepting ride requests and access all driver features.
+              {t('profile.profileCompletionText')}
             </Text>
           </View>
         </View>

@@ -5,14 +5,14 @@ const jwt = require('jsonwebtoken');
 const admin = require('firebase-admin');
 require('dotenv').config();
 
-const authRoutes = require('./Routes/authRoutes'); // Fix path casing
+const authRoutes = require('./Routes/authRoutes'); 
 const adminRoutes = require('./Routes/adminRoutes');
 const vendorRoutes = require('./Routes/vendorRoutes');
 const uploadRoutes = require('./Routes/uploadRoutes');
 const customerRoutes = require('./Routes/customerRoutes');
 const paymentRoutes = require('./Routes/paymentRoutes');
 const driverRoutes = require('./Routes/driverRoutes');
-const goalRoutes = require('./Routes/goalRoutes');
+const predictionRoutes = require('./Routes/predictionRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -60,6 +60,7 @@ app.use('/api/vendor/upload', uploadRoutes);
 app.use('/api/customer', customerRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/drivers', driverRoutes);
+app.use('/api/predictions', predictionRoutes);
 app.use('/api/goals', goalRoutes);
 
 // Health check
