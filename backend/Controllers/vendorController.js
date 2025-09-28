@@ -2,6 +2,7 @@ const Vendor = require('../Models/Vendor');
 const Menu = require('../Models/Menu');
 const Plan = require('../Models/Plan');
 const PlanMenu = require('../Models/PlanMenu');
+const Customer = require('../Models/Customer');
 const axios = require('axios');
 const ConsumerSubscription = require('../Models/ConsumerSubscription');
 const Payment = require('../Models/Payment');
@@ -383,7 +384,7 @@ const vendorController = {
     }
   },
 
-  // Get subscribers - ADD THIS METHOD
+  // Get subscribers
   async getSubscribers(req, res) {
     try {
       const vendor = await Vendor.findOne({ firebaseUid: req.user.firebaseUid });
@@ -402,6 +403,181 @@ const vendorController = {
     } catch (error) {
       console.error('Error fetching subscribers:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Get dashboard data
+  async getDashboard(req, res) {
+    try {
+      const vendor = await Vendor.findOne({ firebaseUid: req.user.firebaseUid });
+      if (!vendor) {
+        return res.status(404).json({ message: 'Vendor not found' });
+      }
+
+      // Get basic stats
+      const [activeSubscribers, totalSubscribers, menuCount, planCount, recentPayments] = await Promise.all([
+        ConsumerSubscription.countDocuments({ vendor_id: vendor._id, active: true }),
+        ConsumerSubscription.countDocuments({ vendor_id: vendor._id }),
+        Menu.countDocuments({ vendor_id: vendor._id }),
+        Plan.countDocuments({ vendor_id: vendor._id }),
+        Payment.find({ vendor_id: vendor._id, payment_status: 'success' })
+          .populate('consumer_id', 'name')
+          .populate('plan_id', 'name')
+          .sort({ payment_date: -1 })
+          .limit(5)
+      ]);
+
+      // Calculate earnings
+      let totalEarnings = 0;
+      if (vendor.earnings) {
+        if (typeof vendor.earnings === 'object' && vendor.earnings.$numberDecimal) {
+          totalEarnings = parseFloat(vendor.earnings.$numberDecimal);
+        } else {
+          totalEarnings = parseFloat(vendor.earnings) || 0;
+        }
+      }
+
+      // Get recent plans
+      const recentPlans = await Plan.find({ vendor_id: vendor._id })
+        .sort({ created_at: -1 })
+        .limit(5);
+
+      // Convert Decimal128 to number for recent plans
+      recentPlans.forEach(plan => {
+        if (plan.price && plan.price.$numberDecimal) {
+          plan.price = parseFloat(plan.price.$numberDecimal);
+        }
+      });
+
+      // Get notifications
+      const notifications = await vendorController.getNotifications(vendor._id);
+
+      res.json({
+        stats: {
+          activeSubscribers,
+          totalSubscribers,
+          menuItems: menuCount,
+          plans: planCount,
+          totalEarnings,
+          accountStatus: vendor.verified ? 'Verified' : 'Pending Verification'
+        },
+        recentPayments,
+        recentPlans,
+        notifications,
+        vendor: {
+          name: vendor.name,
+          email: vendor.email,
+          profileImage: vendor.profileImage,
+          verified: vendor.verified,
+          address: vendor.address
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Get notifications for vendor
+  async getNotifications(vendorId) {
+    try {
+      const notifications = [];
+
+      // Check for expiring subscriptions
+      const expiringSubscriptions = await ConsumerSubscription.find({
+        vendor_id: vendorId,
+        active: true,
+        end_date: {
+          $gte: new Date(),
+          $lte: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Next 7 days
+        }
+      }).populate('consumer_id', 'name').populate('plan_id', 'name');
+
+      expiringSubscriptions.forEach(sub => {
+        const daysLeft = Math.ceil((sub.end_date - new Date()) / (1000 * 60 * 60 * 24));
+        notifications.push({
+          id: `expiring-${sub._id}`,
+          type: 'warning',
+          title: 'Subscription Expiring Soon',
+          message: `${sub.consumer_id?.name}'s ${sub.plan_id?.name} expires in ${daysLeft} day(s)`,
+          timestamp: new Date(),
+          priority: daysLeft <= 2 ? 'high' : 'medium'
+        });
+      });
+
+      // Check for new subscriptions today
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+
+      const newSubscriptionsToday = await ConsumerSubscription.countDocuments({
+        vendor_id: vendorId,
+        start_date: { $gte: todayStart, $lte: todayEnd }
+      });
+
+      if (newSubscriptionsToday > 0) {
+        notifications.push({
+          id: 'new-subs-today',
+          type: 'success',
+          title: 'New Subscriptions Today',
+          message: `You got ${newSubscriptionsToday} new subscription(s) today!`,
+          timestamp: new Date(),
+          priority: 'medium'
+        });
+      }
+
+      // Check for recent payments
+      const recentPayments = await Payment.countDocuments({
+        vendor_id: vendorId,
+        payment_status: 'success',
+        payment_date: { $gte: todayStart, $lte: todayEnd }
+      });
+
+      if (recentPayments > 0) {
+        notifications.push({
+          id: 'payments-today',
+          type: 'success',
+          title: 'Payments Received',
+          message: `You received ${recentPayments} payment(s) today`,
+          timestamp: new Date(),
+          priority: 'medium'
+        });
+      }
+
+      // Check if vendor profile is incomplete
+      const vendor = await Vendor.findById(vendorId);
+      if (!vendor.address || !vendor.address.street || !vendor.contactNumber) {
+        notifications.push({
+          id: 'incomplete-profile',
+          type: 'info',
+          title: 'Complete Your Profile',
+          message: 'Add your address and contact details to attract more customers',
+          timestamp: new Date(),
+          priority: 'high'
+        });
+      }
+
+      // Check for low menu items
+      const menuCount = await Menu.countDocuments({ vendor_id: vendorId });
+      if (menuCount < 3) {
+        notifications.push({
+          id: 'low-menu-items',
+          type: 'info',
+          title: 'Add More Menu Items',
+          message: 'Create more menu items to offer variety to your customers',
+          timestamp: new Date(),
+          priority: 'medium'
+        });
+      }
+
+      return notifications.sort((a, b) => {
+        const priorityOrder = { high: 3, medium: 2, low: 1 };
+        return priorityOrder[b.priority] - priorityOrder[a.priority];
+      });
+    } catch (error) {
+      console.error('Error getting notifications:', error);
+      return [];
     }
   }
 };

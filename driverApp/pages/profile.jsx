@@ -94,7 +94,7 @@ export default function Profile() {
             {/* Profile Picture */}
             <View style={styles.profilePictureSection}>
               <View style={styles.profilePicture}>
-                <Ionicons name="person" size={40} color="#007AFF" />
+                <Ionicons name="person" size={45} color="#8b5cf6" />
               </View>
               <TouchableOpacity style={styles.changePhotoButton}>
                 <Text style={styles.changePhotoText}>Change Photo</Text>
@@ -104,7 +104,7 @@ export default function Profile() {
             {/* Profile Info */}
             <View style={styles.profileInfo}>
               <View style={styles.infoRow}>
-                <Ionicons name="person-outline" size={20} color="#666" />
+                <Ionicons name="person-outline" size={22} color="#8b5cf6" />
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Full Name</Text>
                   <Text style={styles.infoValue}>
@@ -114,7 +114,7 @@ export default function Profile() {
               </View>
 
               <View style={styles.infoRow}>
-                <Ionicons name="mail-outline" size={20} color="#666" />
+                <Ionicons name="mail-outline" size={22} color="#8b5cf6" />
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Email</Text>
                   <Text style={styles.infoValue}>{driver.email}</Text>
@@ -122,7 +122,7 @@ export default function Profile() {
               </View>
 
               <View style={styles.infoRow}>
-                <Ionicons name="call-outline" size={20} color="#666" />
+                <Ionicons name="call-outline" size={22} color="#8b5cf6" />
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Phone</Text>
                   <Text style={styles.infoValue}>
@@ -132,7 +132,7 @@ export default function Profile() {
               </View>
 
               <View style={styles.infoRow}>
-                <Ionicons name="car-outline" size={20} color="#666" />
+                <Ionicons name="car-outline" size={22} color="#8b5cf6" />
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Vehicle Type</Text>
                   <Text style={[styles.infoValue, styles.capitalize]}>
@@ -142,7 +142,7 @@ export default function Profile() {
               </View>
 
               <View style={styles.infoRow}>
-                <Ionicons name="car-sport-outline" size={20} color="#666" />
+                <Ionicons name="car-sport-outline" size={22} color="#8b5cf6" />
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Vehicle Number</Text>
                   <Text style={styles.infoValue}>
@@ -153,7 +153,7 @@ export default function Profile() {
 
               {driver.address && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="location-outline" size={20} color="#666" />
+                  <Ionicons name="location-outline" size={22} color="#8b5cf6" />
                   <View style={styles.infoContent}>
                     <Text style={styles.infoLabel}>Address</Text>
                     <Text style={styles.infoValue}>
@@ -172,10 +172,10 @@ export default function Profile() {
               onPress={handleEditProfile}
             >
               <View style={styles.actionButtonContent}>
-                <Ionicons name="create-outline" size={24} color="#007AFF" />
+                <Ionicons name="create-outline" size={24} color="#8b5cf6" />
                 <Text style={styles.actionButtonText}>Edit Profile</Text>
               </View>
-              <Ionicons name="chevron-forward-outline" size={20} color="#666" />
+              <Ionicons name="chevron-forward-outline" size={20} color="#8b5cf6" />
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -183,10 +183,10 @@ export default function Profile() {
               onPress={handleChangePassword}
             >
               <View style={styles.actionButtonContent}>
-                <Ionicons name="lock-closed-outline" size={24} color="#007AFF" />
+                <Ionicons name="lock-closed-outline" size={24} color="#8b5cf6" />
                 <Text style={styles.actionButtonText}>Change Password</Text>
               </View>
-              <Ionicons name="chevron-forward-outline" size={20} color="#666" />
+              <Ionicons name="chevron-forward-outline" size={20} color="#8b5cf6" />
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -194,10 +194,10 @@ export default function Profile() {
               onPress={handleSupport}
             >
               <View style={styles.actionButtonContent}>
-                <Ionicons name="help-circle-outline" size={24} color="#007AFF" />
+                <Ionicons name="help-circle-outline" size={24} color="#8b5cf6" />
                 <Text style={styles.actionButtonText}>Help & Support</Text>
               </View>
-              <Ionicons name="chevron-forward-outline" size={20} color="#666" />
+              <Ionicons name="chevron-forward-outline" size={20} color="#8b5cf6" />
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -205,10 +205,10 @@ export default function Profile() {
               onPress={handleLogout}
             >
               <View style={styles.actionButtonContent}>
-                <Ionicons name="log-out-outline" size={24} color="#dc3545" />
+                <Ionicons name="log-out-outline" size={24} color="#dc2626" />
                 <Text style={styles.logoutButtonText}>Sign Out</Text>
               </View>
-              <Ionicons name="chevron-forward-outline" size={20} color="#dc3545" />
+              <Ionicons name="chevron-forward-outline" size={20} color="#dc2626" />
             </TouchableOpacity>
           </View>
 
@@ -233,17 +233,17 @@ export default function Profile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f8f7ff', // Light purple-tinted background
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f8f7ff',
   },
   loadingText: {
     fontSize: 16,
-    color: '#666',
+    color: '#8b5cf6', // Purple text
   },
   scrollView: {
     flex: 1,
@@ -255,51 +255,67 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 40,
     marginBottom: 32,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    backgroundColor: 'rgba(139, 92, 246, 0.05)', // Subtle purple background
+    borderRadius: 20,
+    marginHorizontal: -4,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#1a1a1a',
+    color: '#6b46c1', // Deep purple
     marginBottom: 8,
+    textAlign: 'center',
   },
   headerSubtitle: {
     fontSize: 16,
-    color: '#666',
+    color: '#8b5cf6', // Medium purple
+    textAlign: 'center',
   },
   profileCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 28,
     marginBottom: 24,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    elevation: 4,
+    shadowColor: '#8b5cf6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.1)',
   },
   profilePictureSection: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 28,
   },
   profilePicture: {
-    width: 96,
-    height: 96,
-    backgroundColor: '#e3f2fd',
-    borderRadius: 48,
+    width: 110,
+    height: 110,
+    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+    borderRadius: 55,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
+    borderWidth: 3,
+    borderColor: 'rgba(139, 92, 246, 0.2)',
   },
   changePhotoButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    backgroundColor: '#8b5cf6', // Purple button
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 25,
+    elevation: 2,
+    shadowColor: '#8b5cf6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   changePhotoText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   profileInfo: {
     gap: 16,
@@ -307,41 +323,49 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
+    padding: 16,
+    backgroundColor: 'rgba(139, 92, 246, 0.04)', // Very light purple
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#8b5cf6',
   },
   infoContent: {
     marginLeft: 12,
     flex: 1,
   },
   infoLabel: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 13,
+    color: '#8b5cf6', // Purple labels
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   infoValue: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#1a1a1a',
+    color: '#4c1d95', // Dark purple text
+    marginTop: 2,
   },
   capitalize: {
     textTransform: 'capitalize',
   },
   actionButtons: {
-    gap: 12,
+    gap: 14,
   },
   actionButton: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    elevation: 3,
+    shadowColor: '#8b5cf6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.1)',
   },
   actionButtonContent: {
     flexDirection: 'row',
@@ -349,26 +373,29 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#1a1a1a',
+    fontWeight: '600',
+    color: '#4c1d95', // Dark purple text
     marginLeft: 12,
   },
   logoutButtonText: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#dc3545',
+    fontWeight: '600',
+    color: '#dc2626', // Red for logout
     marginLeft: 12,
   },
   appInfo: {
     marginTop: 32,
-    padding: 16,
-    backgroundColor: '#e9ecef',
-    borderRadius: 8,
+    padding: 20,
+    backgroundColor: 'rgba(139, 92, 246, 0.08)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.15)',
   },
   appInfoText: {
     fontSize: 12,
-    color: '#666',
+    color: '#6b46c1', // Deep purple
     textAlign: 'center',
     marginVertical: 2,
+    fontWeight: '500',
   },
 });
