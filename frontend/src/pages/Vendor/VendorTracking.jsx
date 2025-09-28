@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
+import { useTheme } from '../../../context/ThemeContext';
 import { auth } from '../../../firebase.config';
 import { 
   FaTruck, 
@@ -17,9 +18,11 @@ import {
   FaSync,
   FaPlay,
   FaStop,
-  FaCheckCircle
+  FaCheckCircle,
+  FaDirections,
+  FaMapSigns
 } from 'react-icons/fa';
-import { MdLocationOn, MdDeliveryDining } from 'react-icons/md';
+import { MdLocationOn, MdDeliveryDining, MdDirections } from 'react-icons/md';
 import VendorSidebar from '../../components/Vendor/VendorSidebar';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
@@ -30,9 +33,12 @@ import { Progress } from '../../components/ui/progress';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import DeliveryMapView from '../../components/Vendor/DeliveryMapView';
+import ThemeToggle from '../../components/ui/ThemeToggle';
+import DirectionsModal from '../../components/Vendor/DirectionsModal';
 
 const VendorTracking = () => {
   const { user, userType, loading } = useUserContext();
+  const { theme, isDark, isLight } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [availableDrivers, setAvailableDrivers] = useState([]);
@@ -45,6 +51,8 @@ const VendorTracking = () => {
   const [deliveryHistory, setDeliveryHistory] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [showDirections, setShowDirections] = useState(false);
+  const [directionsData, setDirectionsData] = useState(null);
   const navigate = useNavigate();
 
   console.log('VendorTracking - Render State:', {
@@ -251,6 +259,60 @@ const VendorTracking = () => {
     }
   };
 
+  const getDirectionsBetweenLocations = async (origin, destination) => {
+    try {
+      // Using OpenStreetMap routing service (OSRM)
+      const url = `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson&steps=true`;
+      
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      if (data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        return {
+          distance: (route.distance / 1000).toFixed(2) + ' km',
+          duration: Math.round(route.duration / 60) + ' minutes',
+          geometry: route.geometry,
+          steps: route.legs[0]?.steps || []
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error fetching directions:', error);
+      toast.error('Failed to fetch directions');
+      return null;
+    }
+  };
+
+  const handleShowDirections = async () => {
+    if (!vendorLocationData || subscribersWithLocations.length === 0) {
+      toast.error('Need vendor location and customer locations to show directions');
+      return;
+    }
+
+    setShowDirections(true);
+    
+    // Get directions from vendor to first customer
+    const firstCustomer = subscribersWithLocations[0];
+    const origin = {
+      lat: vendorLocationData.coordinates[1],
+      lng: vendorLocationData.coordinates[0]
+    };
+    const destination = {
+      lat: firstCustomer.coordinates[1], 
+      lng: firstCustomer.coordinates[0]
+    };
+
+    const directions = await getDirectionsBetweenLocations(origin, destination);
+    if (directions) {
+      setDirectionsData({
+        from: 'Your Vendor Location',
+        to: firstCustomer.name || 'Customer Location',
+        ...directions
+      });
+    }
+  };
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-IN', {
       year: 'numeric',
@@ -302,15 +364,15 @@ const VendorTracking = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex">
+      <div className={`min-h-screen ${isDark ? 'bg-background' : 'bg-gradient-to-br from-blue-50/30 to-green-50/30'} flex`}>
         <VendorSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
         <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
           <div className="p-6">
             <div className="animate-pulse space-y-6">
-              <div className="h-8 w-64 bg-muted rounded"></div>
+              <div className={`h-8 w-64 rounded ${isDark ? 'bg-muted/50' : 'bg-muted'}`}></div>
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {[...Array(6)].map((_, i) => (
-                  <div key={i} className="h-32 bg-muted rounded"></div>
+                  <div key={i} className={`h-32 rounded-lg ${isDark ? 'bg-muted/30' : 'bg-muted/50'}`}></div>
                 ))}
               </div>
             </div>
@@ -342,7 +404,7 @@ const VendorTracking = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className={`min-h-screen ${isDark ? 'bg-background' : 'bg-gradient-to-br from-blue-50/20 via-white to-green-50/20'} flex`}>
       <VendorSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
@@ -362,15 +424,27 @@ const VendorTracking = () => {
                 Monitor and manage your delivery operations in real-time
               </p>
             </div>
-            <Button 
-              onClick={refreshData} 
-              disabled={refreshing}
-              variant="outline"
-              className="gap-2"
-            >
-              <FaSync className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh Data
-            </Button>
+            <div className="flex items-center gap-3">
+              <ThemeToggle variant="outline" size="sm" />
+              <Button 
+                onClick={handleShowDirections}
+                disabled={!vendorLocationData || subscribersWithLocations.length === 0}
+                variant="outline"
+                className="gap-2"
+              >
+                <FaDirections className="w-4 h-4" />
+                Directions
+              </Button>
+              <Button 
+                onClick={refreshData} 
+                disabled={refreshing}
+                variant="outline"
+                className="gap-2"
+              >
+                <FaSync className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                Refresh Data
+              </Button>
+            </div>
           </motion.div>
 
           {error && (
@@ -380,17 +454,52 @@ const VendorTracking = () => {
             </Alert>
           )}
 
+          {/* Directions Modal */}
+          <DirectionsModal
+            isOpen={showDirections}
+            onClose={() => setShowDirections(false)}
+            directionsData={directionsData}
+            onOpenInMaps={() => {
+              if (vendorLocationData && subscribersWithLocations[0]) {
+                window.open(
+                  `https://www.google.com/maps/dir/${vendorLocationData.coordinates[1]},${vendorLocationData.coordinates[0]}/${subscribersWithLocations[0].coordinates[1]},${subscribersWithLocations[0].coordinates[0]}`, 
+                  '_blank'
+                );
+              }
+            }}
+          />
+
           {/* Active Delivery Status */}
-          {activeDelivery && (
+          {/* {activeDelivery && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <Card className="border-primary/20 bg-primary/5">
+              <Card className={`${isDark ? 'border-primary/30 bg-primary/5' : 'border-primary/20 bg-primary/5'} shadow-lg backdrop-blur-sm`}>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FaCircle className="w-3 h-3 text-green-500 animate-pulse" />
-                    Active Delivery in Progress
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FaCircle className="w-3 h-3 text-green-500 animate-pulse" />
+                      <span className="text-foreground">Active Delivery in Progress</span>
+                    </div>
+                    {activeDelivery.driver?.location && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => {
+                          if (vendorLocationData && activeDelivery.driver.location.coordinates) {
+                            window.open(
+                              `https://www.google.com/maps/dir/${vendorLocationData.coordinates[1]},${vendorLocationData.coordinates[0]}/${activeDelivery.driver.location.coordinates[1]},${activeDelivery.driver.location.coordinates[0]}`,
+                              '_blank'
+                            );
+                          }
+                        }}
+                      >
+                        <FaDirections className="w-3 h-3" />
+                        Track Driver
+                      </Button>
+                    )}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -436,7 +545,7 @@ const VendorTracking = () => {
                 </CardContent>
               </Card>
             </motion.div>
-          )}
+          )} */}
 
           {/* Driver Assignment */}
           <motion.div
@@ -444,13 +553,13 @@ const VendorTracking = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <Card>
+            <Card className={`${isDark ? 'bg-card/95 backdrop-blur-sm border-border/50' : 'bg-card/90 backdrop-blur-sm border-border'} shadow-lg`}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FaTruck className="w-5 h-5" />
+                <CardTitle className="flex items-center gap-2 text-foreground">
+                  <FaTruck className="w-5 h-5 text-primary" />
                   Delivery Management
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-muted-foreground">
                   Assign drivers to create optimized delivery routes
                 </CardDescription>
               </CardHeader>
@@ -486,16 +595,42 @@ const VendorTracking = () => {
                   </div>
 
                   {selectedDriver && (
-                    <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                      <h4 className="font-medium flex items-center gap-2 mb-2">
-                        <FaUser className="w-4 h-4" />
+                    <div className={`p-4 rounded-lg border ${isDark ? 'bg-blue-900/20 border-blue-400/30' : 'bg-blue-50 border-blue-200'}`}>
+                      <h4 className="font-medium flex items-center gap-2 mb-2 text-foreground">
+                        <FaUser className="w-4 h-4 text-blue-600" />
                         Selected Driver Details
                       </h4>
                       <div className="grid gap-2 md:grid-cols-2 text-sm">
-                        <p><strong>Name:</strong> {selectedDriver.name}</p>
-                        <p><strong>Vehicle:</strong> {selectedDriver.vehicleType} - {selectedDriver.vehicleNumber}</p>
-                        <p><strong>Rating:</strong> ⭐ {selectedDriver.rating}</p>
-                        <p><strong>Status:</strong> {selectedDriver.available ? 'Available' : 'Busy'}</p>
+                        <p className="text-foreground"><strong>Name:</strong> {selectedDriver.name}</p>
+                        <p className="text-foreground"><strong>Vehicle:</strong> {selectedDriver.vehicleType} - {selectedDriver.vehicleNumber}</p>
+                        <p className="text-foreground"><strong>Rating:</strong> ⭐ {selectedDriver.rating}</p>
+                        <p className="text-foreground"><strong>Status:</strong> 
+                          <Badge variant={selectedDriver.available ? 'success' : 'secondary'} className="ml-2">
+                            {selectedDriver.available ? 'Available' : 'Busy'}
+                          </Badge>
+                        </p>
+                      </div>
+                      
+                      {/* Add a directions button for individual driver */}
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="gap-2"
+                          onClick={() => {
+                            if (selectedDriver.location?.coordinates && vendorLocationData) {
+                              window.open(
+                                `https://www.google.com/maps/dir/${vendorLocationData.coordinates[1]},${vendorLocationData.coordinates[0]}/${selectedDriver.location.coordinates[1]},${selectedDriver.location.coordinates[0]}`,
+                                '_blank'
+                              );
+                            } else {
+                              toast.error('Driver or vendor location not available');
+                            }
+                          }}
+                        >
+                          <FaDirections className="w-3 h-3" />
+                          Get Directions to Driver
+                        </Button>
                       </div>
                     </div>
                   )}
@@ -510,7 +645,7 @@ const VendorTracking = () => {
                         Create Delivery Route ({subscribersWithLocations.length} customers)
                       </Button>
                       
-                      <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded border">
+                      <div className={`text-xs p-2 rounded border ${isDark ? 'text-blue-200 bg-blue-900/20 border-blue-400/20' : 'text-blue-600 bg-blue-50 border-blue-200'}`}>
                         <p><strong>Next Steps:</strong></p>
                         <p>1. Driver will receive delivery assignment notification</p>
                         <p>2. Driver must be within 500m of your location to start</p>
@@ -567,23 +702,38 @@ const VendorTracking = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Card>
+            <Card className={`${isDark ? 'bg-card/95 backdrop-blur-sm border-border/50' : 'bg-card/90 backdrop-blur-sm border-border'} shadow-lg`}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FaRoute className="w-5 h-5" />
-                  Live Tracking Map
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-foreground">
+                    <FaRoute className="w-5 h-5 text-primary" />
+                    Live Tracking Map
+                  </div>
+                  {vendorLocationData && subscribersWithLocations.length > 0 && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleShowDirections}
+                      className="gap-2"
+                    >
+                      <MdDirections className="w-4 h-4" />
+                      Show Route Directions
+                    </Button>
+                  )}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-muted-foreground">
                   TSP optimized route visualization for efficient delivery
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <DeliveryMapView 
-                  selectedDriver={selectedDriver}
-                  subscribers={subscribersWithLocations}
-                  vendorLocation={vendorLocationData}
-                  activeDelivery={activeDelivery}
-                />
+              <CardContent className="p-6">
+                <div className={`rounded-lg overflow-hidden ${isDark ? 'ring-2 ring-border/20' : 'border-2 border-border'}`}>
+                  <DeliveryMapView 
+                    selectedDriver={selectedDriver}
+                    subscribers={subscribersWithLocations}
+                    vendorLocation={vendorLocationData}
+                    activeDelivery={activeDelivery}
+                  />
+                </div>
               </CardContent>
             </Card>
           </motion.div>
@@ -594,10 +744,10 @@ const VendorTracking = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <Card>
+            <Card className={`${isDark ? 'bg-card/95 backdrop-blur-sm border-border/50' : 'bg-card/90 backdrop-blur-sm border-border'} shadow-lg`}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MdDeliveryDining className="w-5 h-5" />
+                <CardTitle className="flex items-center gap-2 text-foreground">
+                  <MdDeliveryDining className="w-5 h-5 text-primary" />
                   Delivery History
                 </CardTitle>
               </CardHeader>
@@ -613,23 +763,23 @@ const VendorTracking = () => {
                 ) : deliveryHistory.length > 0 ? (
                   <div className="space-y-4 max-h-96 overflow-y-auto">
                     {deliveryHistory.map((delivery) => (
-                      <div key={delivery._id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div key={delivery._id} className={`flex items-center justify-between p-4 border rounded-lg transition-colors hover:bg-muted/20 ${isDark ? 'border-border/50 hover:border-border' : 'border-border hover:border-border/80'}`}>
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                             {getStatusIcon(delivery.status)}
                           </div>
                           <div>
-                            <p className="font-medium">{delivery.driver?.name}</p>
+                            <p className="font-medium text-foreground">{delivery.driver?.name}</p>
                             <p className="text-sm text-muted-foreground">
                               {delivery.customers?.length || 0} customers • {formatDate(delivery.createdAt)}
                             </p>
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right flex flex-col gap-2">
                           <Badge variant={getStatusBadgeVariant(delivery.status)}>
                             {delivery.status?.toUpperCase()}
                           </Badge>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-xs text-muted-foreground">
                             {formatTime(delivery.createdAt)}
                           </p>
                         </div>
