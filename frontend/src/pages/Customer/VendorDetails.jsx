@@ -193,7 +193,7 @@ const VendorDetails = () => {
         handler: async function (response) {
           try {
             // Verify payment
-            const verifyResponse = await fetch(`${API_BASE}/api/payment/verify`, {
+            const verifyResponse = await fetch(`${API_BASE}/api/payment/verify-payment`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

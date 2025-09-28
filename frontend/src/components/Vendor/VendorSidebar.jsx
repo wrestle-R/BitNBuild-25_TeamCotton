@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
-import { FaStore, FaUser, FaTachometerAlt, FaUtensils, FaClipboardList, FaSignOutAlt, FaUsers } from 'react-icons/fa';
+import { FaStore, FaUser, FaTachometerAlt, FaUtensils, FaClipboardList, FaSignOutAlt, FaUsers, FaTruck } from 'react-icons/fa';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import ThemeToggle from '../ui/ThemeToggle';
@@ -26,7 +26,8 @@ const VendorSidebar = ({ isOpen, setIsOpen, profileImage }) => {
     { icon: FaUser, label: 'Profile', path: '/vendor/profile' },
     { icon: FaUtensils, label: 'Menus', path: '/vendor/menus' },
     { icon: FaClipboardList, label: 'Plans', path: '/vendor/plans' },
-    { icon: FaUsers, label: 'Subscribers', path: '/vendor/subscribers' }
+    { icon: FaUsers, label: 'Subscribers', path: '/vendor/subscribers' },
+    { icon: FaTruck, label: 'Tracking', path: '/vendor/tracking' }
   ];
 
   return (
