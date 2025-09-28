@@ -204,7 +204,7 @@ const VendorMenus = () => {
             animate={{ opacity: 1, y: 0 }}
           >
             <div className="flex items-center gap-4 mb-6">
-              <Button
+              {/* <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate('/vendor/dashboard')}
@@ -212,13 +212,13 @@ const VendorMenus = () => {
               >
                 <FaArrowLeft className="w-4 h-4" />
                 Back to Dashboard
-              </Button>
+              </Button> */}
             </div>
             
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-4xl font-bold text-foreground font-montserrat flex items-center gap-3">
-                  <FaUtensils className="w-10 h-10 text-primary" />
+                  {/* <FaUtensils className="w-10 h-10 text-primary" /> */}
                   Menu Management
                 </h1>
                 <p className="text-muted-foreground font-inter mt-2">

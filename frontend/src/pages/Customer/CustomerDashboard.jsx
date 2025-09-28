@@ -113,7 +113,7 @@ const CustomerDashboard = () => {
             id: 'fake-1',
             type: 'subscription',
             title: 'Subscribed to Premium Lunch Plan',
-            description: 'Weekly meal plan from Dany\'s Kitchen - Delicious home-style meals',
+            description: 'Weekly meal plan from Dany\'s Kitchen - Delicious home-style meals with dal, rice, and vegetables',
             timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
             status: 'active',
             icon: 'subscription'
@@ -131,7 +131,7 @@ const CustomerDashboard = () => {
             id: 'fake-3',
             type: 'subscription',
             title: 'Subscribed to Ice & Spice Combo',
-            description: 'Monthly meal plan from Ice & Spice - Authentic Indian cuisine',
+            description: 'Monthly meal plan from Ice & Spice - Authentic Indian cuisine with biryani specials',
             timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
             status: 'active',
             icon: 'subscription'
@@ -148,18 +148,90 @@ const CustomerDashboard = () => {
           {
             id: 'fake-5',
             type: 'subscription',
+            title: 'Plan renewed automatically',
+            description: 'Breakfast Delight Plan from Morning Delights - Auto-renewed for next 7 days',
+            timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+            status: 'active',
+            icon: 'subscription'
+          },
+          {
+            id: 'fake-6',
+            type: 'payment',
+            title: 'Refund processed',
+            description: '₹450.00 refunded for cancelled weekend meals from Healthy Bites',
+            timestamp: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000), // 8 days ago
+            status: 'success',
+            icon: 'payment'
+          },
+          {
+            id: 'fake-7',
+            type: 'subscription',
             title: 'Completed meal plan',
-            description: 'Daily Breakfast Plan from Morning Delights - Plan completed successfully',
+            description: 'Daily Breakfast Plan from Morning Delights - Plan completed successfully with 5-star rating',
             timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
             status: 'completed',
             icon: 'subscription'
           },
           {
-            id: 'fake-6',
+            id: 'fake-8',
+            type: 'subscription',
+            title: 'Meal preferences updated',
+            description: 'Changed dietary preference to include more protein-rich meals',
+            timestamp: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000), // 12 days ago
+            status: 'success',
+            icon: 'subscription'
+          },
+          {
+            id: 'fake-9',
+            type: 'payment',
+            title: 'Payment successful',
+            description: '₹890.00 paid to Spice Garden for Weekend Special Thali Plan',
+            timestamp: new Date(Date.now() - 13 * 24 * 60 * 60 * 1000), // 13 days ago
+            status: 'success',
+            icon: 'payment'
+          },
+          {
+            id: 'fake-10',
+            type: 'subscription',
+            title: 'Trial plan activated',
+            description: '3-day trial from Grandma\'s Recipe - Traditional home-cooked meals',
+            timestamp: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000), // 14 days ago
+            status: 'completed',
+            icon: 'subscription'
+          },
+          {
+            id: 'fake-11',
+            type: 'subscription',
+            title: 'Delivery address updated',
+            description: 'Changed delivery location to Office Complex, Bandra West',
+            timestamp: new Date(Date.now() - 16 * 24 * 60 * 60 * 1000), // 16 days ago
+            status: 'success',
+            icon: 'subscription'
+          },
+          {
+            id: 'fake-12',
+            type: 'payment',
+            title: 'Cashback earned',
+            description: '₹120.00 cashback credited for being a loyal customer this month',
+            timestamp: new Date(Date.now() - 18 * 24 * 60 * 60 * 1000), // 18 days ago
+            status: 'success',
+            icon: 'payment'
+          },
+          {
+            id: 'fake-13',
+            type: 'subscription',
+            title: 'First meal delivered',
+            description: 'Your first meal from NourishNet was delivered successfully! How was it?',
+            timestamp: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000), // 20 days ago
+            status: 'success',
+            icon: 'subscription'
+          },
+          {
+            id: 'fake-14',
             type: 'subscription',
             title: 'Welcome to NourishNet!',
-            description: 'Your account has been created successfully. Start exploring meal plans!',
-            timestamp: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000), // 15 days ago
+            description: 'Your account has been created successfully. Start exploring meal plans from verified vendors!',
+            timestamp: new Date(Date.now() - 22 * 24 * 60 * 60 * 1000), // 22 days ago
             status: 'success',
             icon: 'subscription'
           }
