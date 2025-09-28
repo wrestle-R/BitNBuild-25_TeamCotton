@@ -3,32 +3,7 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
 import { auth } from '../../../firebase.config';
-import { 
-  FaStore, 
-  FaUsers, 
-  FaUser, 
-  FaClipboardList, 
-  FaUtensils, 
-  FaStar, 
-  FaBars, 
-  FaPlus, 
-  FaEye, 
-  FaSignOutAlt, 
-  FaTruck,
-  FaRupeeSign,
-  FaBell,
-  FaCalendarAlt,
-  FaMapMarkerAlt,
-  FaCheckCircle,
-  FaExclamationTriangle,
-  FaInfoCircle,
-  FaClock,
-  FaArrowUp,
-  FaArrowDown,
-  FaChartLine,
-  FaShieldAlt,
-  FaGift
-} from 'react-icons/fa';
+import { FaStore, FaUsers, FaUser, FaClipboardList, FaUtensils, FaStar, FaBars, FaPlus, FaEye, FaChartLine, FaSignOutAlt, FaTruck, FaRoute } from 'react-icons/fa';
 import VendorSidebar from '../../components/Vendor/VendorSidebar';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
@@ -38,56 +13,37 @@ import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar'
 import { Separator } from '../../components/ui/separator';
 import { Progress } from '../../components/ui/progress';
 import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import DeliveryMapView from '@/components/Vendor/DeliveryMapView';
 
 const VendorDashboard = () => {
   const { user, userType, loading, logout, vendorProfile } = useUserContext();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
+  const [selectedDriver, setSelectedDriver] = useState(null);
+  const [availableDrivers, setAvailableDrivers] = useState([]);
+  const [subscribersWithLocations, setSubscribersWithLocations] = useState([]);
+  const [vendorLocationData, setVendorLocationData] = useState(null); // Add this state
+  const [isLoadingDrivers, setIsLoadingDrivers] = useState(false);
+  const [isLoadingSubscribers, setIsLoadingSubscribers] = useState(false); // Add this state
+  const [activeDelivery, setActiveDelivery] = useState(null);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
-
-  // API call function
-  const apiCall = async (endpoint, options = {}) => {
-    try {
-      const user = auth.currentUser;
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-      
-      const token = await user.getIdToken(true);
-      
-      const defaultOptions = {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      };
-
-      const config = {
-        ...defaultOptions,
-        ...options,
-        headers: {
-          ...defaultOptions.headers,
-          ...options.headers,
-        },
-      };
-
-      const response = await fetch(`${API_BASE}${endpoint}`, config);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('API call error:', error);
-      throw error;
-    }
-  };
+  console.log('VendorDashboard - Render State:', {
+    userType,
+    loading,
+    sidebarOpen,
+    subscribersCount: subscribersWithLocations.length,
+    vendorLocation: vendorLocationData ? 'Has location' : 'No location',
+    user: user ? {
+      id: user.id,
+      displayName: user.displayName,
+      email: user.email,
+      role: user.role
+    } : null
+  });
 
   useEffect(() => {
     if (user && userType !== 'vendor') {
@@ -99,57 +55,216 @@ const VendorDashboard = () => {
 
   useEffect(() => {
     if (user && userType === 'vendor') {
-      fetchDashboardData();
+      fetchStats();
+      fetchAvailableDrivers();
+      fetchSubscribersWithLocations();
+      
+      // Poll for location updates every 15 seconds
+      const interval = setInterval(() => {
+        fetchAvailableDrivers();
+        fetchSubscribersWithLocations();
+      }, 15000);
+
+      return () => clearInterval(interval);
     }
   }, [user, userType]);
 
-  const fetchDashboardData = async () => {
-    if (!user) {
-      setLoadingDashboard(false);
-      setError('Please log in to view dashboard');
+  const fetchStats = async () => {
+    try {
+      const idToken = await auth.currentUser.getIdToken();
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/vendor/stats`, {
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data);
+      } else {
+        console.error('Failed to fetch stats');
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const fetchAvailableDrivers = async () => {
+    setIsLoadingDrivers(true);
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      console.log('Fetching drivers with token:', idToken ? 'Token exists' : 'No token');
+      
+      // Fix: Use VITE_BACKEND_URL instead of VITE_API_URL
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/drivers/available`, {
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Drivers API response:', data);
+      
+      if (data.success) {
+        setAvailableDrivers(data.drivers);
+        console.log('Set available drivers:', data.drivers.length);
+      } else {
+        console.error('API returned error:', data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching drivers:', error);
+    } finally {
+      setIsLoadingDrivers(false);
+    }
+  };
+
+  // Fetch subscribers with locations - Updated function
+  const fetchSubscribersWithLocations = async () => {
+    if (!user?.id) {
+      console.log('No user ID available');
+      return;
+    }
+
+    setIsLoadingSubscribers(true);
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      console.log('Fetching subscribers for vendor ID:', user.id);
+      
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/drivers/vendor/${user.id}/subscribers`, {
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+      console.log('Subscribers API response:', data);
+      
+      if (data.success) {
+        setSubscribersWithLocations(data.subscribers || []);
+        setVendorLocationData(data.vendorLocation); // Set vendor location from API
+        console.log('Set subscribers:', data.subscribers?.length || 0);
+        console.log('Set vendor location:', data.vendorLocation ? 'Yes' : 'No');
+      } else {
+        console.error('API returned error:', data.message);
+        toast.error(data.message || 'Failed to fetch subscribers');
+      }
+    } catch (error) {
+      console.error('Error fetching subscribers:', error);
+      toast.error('Failed to fetch subscribers with locations');
+    } finally {
+      setIsLoadingSubscribers(false);
+    }
+  };
+
+  // Update useEffect to fetch subscribers
+  useEffect(() => {
+    if (user && user.id) {
+      fetchAvailableDrivers();
+      fetchSubscribersWithLocations();
+      
+      // Poll for updates every 30 seconds
+      const interval = setInterval(() => {
+        fetchAvailableDrivers();
+        fetchSubscribersWithLocations();
+      }, 30000);
+
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  const createDeliveryAssignment = async () => {
+    if (!selectedDriver) {
+      toast.error('Please select a driver first');
       return;
     }
 
     try {
-      setLoadingDashboard(true);
-      setError(null);
+      const idToken = await auth.currentUser?.getIdToken();
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/drivers/delivery/create`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          vendorId: user.id,
+          driverId: selectedDriver._id
+        })
+      });
 
-      const data = await apiCall('/api/vendor/dashboard');
-      setDashboardData(data);
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Delivery assignment created successfully!');
+        setActiveDelivery(data.delivery);
+        fetchAvailableDrivers(); // Refresh driver list
+      } else {
+        toast.error(data.message || 'Failed to create delivery assignment');
+      }
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      setError(error.message || 'Failed to load dashboard data');
-      toast.error('Failed to load dashboard. Please try again.');
-    } finally {
-      setLoadingDashboard(false);
+      console.error('Error creating delivery:', error);
+      toast.error('Failed to create delivery assignment');
     }
   };
 
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case 'warning': return <FaExclamationTriangle className="w-4 h-4 text-orange-500" />;
-      case 'success': return <FaCheckCircle className="w-4 h-4 text-green-500" />;
-      case 'info': return <FaInfoCircle className="w-4 h-4 text-blue-500" />;
-      default: return <FaBell className="w-4 h-4 text-gray-500" />;
+  const assignDriverForDelivery = async () => {
+    if (!selectedDriver) {
+      toast.error('Please select a driver first');
+      return;
+    }
+
+    if (subscribersWithLocations.length === 0) {
+      toast.error('No subscribers with locations found');
+      return;
+    }
+
+    if (!vendorLocationData) {
+      toast.error('Vendor location is required for delivery assignment');
+      return;
+    }
+
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/drivers/delivery/create`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          vendorId: user.id,
+          driverId: selectedDriver._id,
+          customers: subscribersWithLocations.map(sub => ({
+            customerId: sub.id,
+            address: sub.address,
+            location: {
+              type: 'Point',
+              coordinates: sub.coordinates
+            }
+          }))
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success(`Delivery assignment created! Driver ${selectedDriver.name} has been notified.`);
+        setActiveDelivery(data.delivery);
+        fetchAvailableDrivers(); // Refresh driver list
+      } else {
+        toast.error(data.message || 'Failed to create delivery assignment');
+      }
+    } catch (error) {
+      console.error('Error creating delivery:', error);
+      toast.error('Failed to create delivery assignment');
     }
   };
 
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
-
-  const formatTime = (date) => {
-    return new Date(date).toLocaleTimeString('en-IN', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  if (loading || loadingDashboard) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex">
         <VendorSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
@@ -553,93 +668,199 @@ const VendorDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
           >
-            <div className="grid gap-6 lg:grid-cols-2">
-              <Card className="h-[350px] flex flex-col">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FaChartLine className="w-5 h-5 text-primary" />
-                    Business Growth Tips
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1">
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-                      <FaGift className="w-5 h-5 text-primary mt-1" />
-                      <div>
-                        <p className="font-medium text-sm">Offer Variety</p>
-                        <p className="text-xs text-muted-foreground">
-                          Create multiple meal plans for breakfast, lunch, and dinner to attract more customers
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-                      <FaStar className="w-5 h-5 text-primary mt-1" />
-                      <div>
-                        <p className="font-medium text-sm">Quality Photos</p>
-                        <p className="text-xs text-muted-foreground">
-                          Upload high-quality images of your dishes to make them more appealing
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-                      <FaMapMarkerAlt className="w-5 h-5 text-primary mt-1" />
-                      <div>
-                        <p className="font-medium text-sm">Complete Profile</p>
-                        <p className="text-xs text-muted-foreground">
-                          Add your complete address and contact information to help customers find you
-                        </p>
-                      </div>
-                    </div>
+            {/* Getting Started */}
+            <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-xl font-bold text-foreground font-montserrat flex items-center gap-2">
+                  <FaUtensils className="w-6 h-6 text-primary" />
+                  Getting Started
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                    <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">1</div>
+                    <span className="font-inter text-foreground">Complete your profile with location</span>
                   </div>
-                </CardContent>
-              </Card>
-
-              <Card className="h-[350px] flex flex-col">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FaCheckCircle className="w-5 h-5 text-primary" />
-                    Platform Statistics
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Profile Completion</span>
-                      <span className="text-sm font-medium">
-                        {dashboardData.vendor?.verified ? '100%' : '75%'}
-                      </span>
-                    </div>
-                    <Progress 
-                      value={dashboardData.vendor?.verified ? 100 : 75} 
-                      className="h-2" 
-                    />
-                    
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Menu Setup</span>
-                      <span className="text-sm font-medium">
-                        {dashboardData.stats?.menuItems > 0 ? 'Complete' : 'Pending'}
-                      </span>
-                    </div>
-                    <Progress 
-                      value={dashboardData.stats?.menuItems > 0 ? 100 : 0} 
-                      className="h-2" 
-                    />
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Plans Created</span>
-                      <span className="text-sm font-medium">
-                        {dashboardData.stats?.plans > 0 ? 'Complete' : 'Pending'}
-                      </span>
-                    </div>
-                    <Progress 
-                      value={dashboardData.stats?.plans > 0 ? 100 : 0} 
-                      className="h-2" 
-                    />
+                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                    <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">2</div>
+                    <span className="font-inter text-foreground">Create menu items with images</span>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                    <div className="w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">3</div>
+                    <span className="font-inter text-foreground">Set up subscription plans</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Account Information */}
+            <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-xl font-bold text-foreground font-montserrat flex items-center gap-2">
+                  <FaUsers className="w-6 h-6 text-primary" />
+                  Account Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                    <span className="font-inter text-muted-foreground">Account Type:</span>
+                    <span className="font-inter font-medium text-foreground">Vendor</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                    <span className="font-inter text-muted-foreground">Status:</span>
+                    <span className="font-inter font-medium text-green-600">
+                      {loadingStats ? '...' : (stats?.accountStatus ?? 'Active')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                    <span className="font-inter text-muted-foreground">Total Earnings:</span>
+                    <span className="font-inter font-medium text-foreground">
+                      ₹{loadingStats ? '...' : (stats?.earnings ?? '0')}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
+
+          {/* Delivery Management - Add margin-top */}
+          <Card className="mb-6 mt-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FaTruck className="w-5 h-5" />
+                Delivery Management
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Debug Info */}
+                <div className="bg-gray-100 p-3 rounded-lg text-sm">
+                  <p><strong>Debug Info:</strong></p>
+                  <p>Vendor Location: {vendorLocationData ? '✅ Available' : '❌ Missing'}</p>
+                  <p>Subscribers: {subscribersWithLocations.length} found</p>
+                  <p>Selected Driver: {selectedDriver ? selectedDriver.name : 'None'}</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Select Driver for Delivery</label>
+                  <Select 
+                    value={selectedDriver?._id || ""} 
+                    onValueChange={(value) => {
+                      const driver = availableDrivers.find(d => d._id === value);
+                      console.log('Selected driver:', driver);
+                      setSelectedDriver(driver);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={
+                        isLoadingDrivers 
+                          ? "Loading drivers..." 
+                          : availableDrivers.length === 0 
+                            ? "No drivers available" 
+                            : `Select from ${availableDrivers.length} drivers`
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableDrivers.map((driver) => (
+                        <SelectItem key={driver._id} value={driver._id}>
+                          {driver.name} - {driver.vehicleType} ({driver.vehicleNumber}) - {driver.rating} stars
+                          {!driver.verified && ' (Unverified)'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {availableDrivers.length === 0 && !isLoadingDrivers && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      No drivers are currently available. Make sure drivers have set their locations and are marked as available.
+                    </p>
+                  )}
+                </div>
+                
+                {selectedDriver && (
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-medium flex items-center gap-2">
+                      <FaUser className="w-4 h-4" />
+                      Selected Driver Details:
+                    </h4>
+                    <p>Name: {selectedDriver.name}</p>
+                    <p>Vehicle: {selectedDriver.vehicleType} - {selectedDriver.vehicleNumber}</p>
+                    <p>Rating: {selectedDriver.rating} stars</p>
+                    <p>Status: {selectedDriver.available ? 'Available' : 'Busy'}</p>
+                  </div>
+                )}
+
+                {selectedDriver && subscribersWithLocations.length > 0 && vendorLocationData && (
+                  <div className="mt-4 space-y-2">
+                    <Button 
+                      onClick={assignDriverForDelivery}
+                      className="w-full bg-green-600 hover:bg-green-700"
+                    >
+                      <FaTruck className="w-4 h-4 mr-2" />
+                      Create Delivery Route ({subscribersWithLocations.length} customers)
+                    </Button>
+                    
+                    <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded">
+                      <p><strong>Next Steps:</strong></p>
+                      <p>1. Driver will receive delivery assignment notification</p>
+                      <p>2. Driver must be within 500m of your location to start</p>
+                      <p>3. TSP optimized route will guide efficient delivery</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Show loading state */}
+                {isLoadingSubscribers && (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                    <p className="text-sm text-muted-foreground mt-2">Loading subscribers...</p>
+                  </div>
+                )}
+
+                {/* Show missing data warnings */}
+                {!vendorLocationData && !isLoadingSubscribers && (
+                  <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
+                    <p className="text-yellow-800 text-sm">
+                      <strong>Warning:</strong> Vendor location is missing. Please update your profile with a complete address to enable delivery routing.
+                    </p>
+                    <Button variant="outline" size="sm" className="mt-2" onClick={() => navigate('/vendor/profile')}>
+                      Update Profile
+                    </Button>
+                  </div>
+                )}
+
+                {subscribersWithLocations.length === 0 && !isLoadingSubscribers && (
+                  <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
+                    <p className="text-yellow-800 text-sm">
+                      <strong>Info:</strong> No subscribers with valid locations found. Customers need to update their addresses with coordinates.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Delivery Route Map */}
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FaRoute className="w-5 h-5" />
+                Delivery Route Map
+              </CardTitle>
+              <CardDescription>
+                TSP optimized route visualization for efficient delivery
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DeliveryMapView 
+                selectedDriver={selectedDriver}
+                subscribers={subscribersWithLocations}
+                vendorLocation={vendorLocationData} // Use the fetched vendor location
+                activeDelivery={activeDelivery}
+              />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
