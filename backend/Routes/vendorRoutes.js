@@ -17,7 +17,8 @@ const upload = multer({
 router.get('/profile', authMiddleware, vendorController.getProfile);
 router.put('/profile', authMiddleware, vendorController.updateProfile);
 
-// Stats route
+// Dashboard routes
+router.get('/dashboard', authMiddleware, vendorController.getDashboard);
 router.get('/stats', authMiddleware, vendorController.getStats);
 
 // Menu routes
