@@ -1,9 +1,10 @@
 const express = require('express');
 const multer = require('multer');
-const customerController = require('../controllers/customerController'); // Note: lowercase 'controllers'
+ // Note: lowercase 'controllers'
 
 const authMiddleware = require('../middleware/authMiddleware');
 const uploadController = require('../controllers/uploadController'); // Note: lowercase 'controllers'
+const customerController = require('../Controllers/customerController');
 
 const router = express.Router();
 

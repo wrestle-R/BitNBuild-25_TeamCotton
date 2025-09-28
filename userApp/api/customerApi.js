@@ -362,3 +362,110 @@ export const verifyPayment = async (paymentData) => {
     throw error;
   }
 };
+
+// Dashboard API functions
+export const getDashboardData = async () => {
+  console.log('🌟 getDashboardData called');
+  console.log('API_URL:', API_URL);
+  
+  const headers = await getAuthHeaders();
+  console.log('📨 Headers for dashboard request:', headers);
+  
+  const fetchWithAuthFallback = async (url, init) => {
+    let res;
+    try {
+      console.log('🚀 Making request to:', url);
+      res = await fetch(url, init);
+      console.log('📥 Response status:', res.status);
+      console.log('📥 Response headers:', Object.fromEntries(res.headers.entries()));
+    } catch (err) {
+      console.error('Network error while fetching dashboard:', err);
+      throw err;
+    }
+    
+    if (res.status === 401 && init && init.headers && init.headers.Authorization) {
+      console.log('🔄 Got 401, retrying without auth...');
+      try {
+        const initNoAuth = { ...init };
+        const headersCopy = { ...init.headers };
+        delete headersCopy.Authorization;
+        initNoAuth.headers = headersCopy;
+        const retryRes = await fetch(url, initNoAuth);
+        console.log('🔄 Retry response status:', retryRes.status);
+        return retryRes;
+      } catch (retryErr) {
+        console.error('Retry without auth failed:', retryErr);
+        throw retryErr;
+      }
+    }
+    
+    return res;
+  };
+  
+  try {
+    const res = await fetchWithAuthFallback(`${API_URL}/api/customer/dashboard`, {
+      method: 'GET',
+      headers,
+    });
+    
+    if (!res.ok) {
+      const text = await res.text();
+      console.error('❌ Dashboard API failed:', res.status, text);
+      throw new Error(text || 'Failed to fetch dashboard data');
+    }
+    
+    const data = await res.json();
+    console.log('✅ Dashboard API success:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Error fetching dashboard data:', error);
+    throw error;
+  }
+};
+
+export const getDashboardActivity = async () => {
+  const headers = await getAuthHeaders();
+  
+  const fetchWithAuthFallback = async (url, init) => {
+    let res;
+    try {
+      res = await fetch(url, init);
+    } catch (err) {
+      console.error('Network error while fetching activity:', err);
+      throw err;
+    }
+    
+    if (res.status === 401 && init && init.headers && init.headers.Authorization) {
+      try {
+        const initNoAuth = { ...init };
+        const headersCopy = { ...init.headers };
+        delete headersCopy.Authorization;
+        initNoAuth.headers = headersCopy;
+        const retryRes = await fetch(url, initNoAuth);
+        return retryRes;
+      } catch (retryErr) {
+        console.error('Retry without auth failed:', retryErr);
+        throw retryErr;
+      }
+    }
+    
+    return res;
+  };
+  
+  try {
+    const res = await fetchWithAuthFallback(`${API_URL}/api/customer/dashboard/activity`, {
+      method: 'GET',
+      headers,
+    });
+    
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || 'Failed to fetch dashboard activity');
+    }
+    
+    return res.json();
+  } catch (error) {
+    console.error('Error fetching dashboard activity:', error);
+    throw error;
+  }
+};
