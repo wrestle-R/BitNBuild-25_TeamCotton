@@ -145,7 +145,7 @@ const VendorAnalytics = () => {
           {analytics && (
             <>
               {/* Overall Business Metrics */}
-              {analytics.overallInsights && (
+              {analytics.overallInsights && analytics.overallInsights.businessMetrics && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -162,19 +162,19 @@ const VendorAnalytics = () => {
                       <div className="grid gap-4 md:grid-cols-3 mb-4">
                         <div className="text-center">
                           <p className="text-2xl font-bold text-primary">
-                            ₹{analytics.overallInsights.businessMetrics.totalRevenue}
+                            ₹{analytics.overallInsights.businessMetrics.totalRevenue || 0}
                           </p>
                           <p className="text-sm text-muted-foreground">Projected Revenue</p>
                         </div>
                         <div className="text-center">
                           <p className="text-2xl font-bold text-green-600">
-                            ₹{analytics.overallInsights.businessMetrics.totalProfit}
+                            ₹{analytics.overallInsights.businessMetrics.totalProfit || 0}
                           </p>
                           <p className="text-sm text-muted-foreground">Projected Profit</p>
                         </div>
                         <div className="text-center">
-                          <p className={`text-2xl font-bold ${getProfitColor(analytics.overallInsights.businessMetrics.averageMargin)}`}>
-                            {analytics.overallInsights.businessMetrics.averageMargin}%
+                          <p className={`text-2xl font-bold ${getProfitColor(analytics.overallInsights.businessMetrics.averageMargin || 0)}`}>
+                            {analytics.overallInsights.businessMetrics.averageMargin || 0}%
                           </p>
                           <p className="text-sm text-muted-foreground">Average Margin</p>
                         </div>
@@ -182,7 +182,7 @@ const VendorAnalytics = () => {
                       <Alert className="bg-background/50">
                         <FaLightbulb className="h-4 w-4" />
                         <AlertDescription className="text-sm leading-relaxed">
-                          {analytics.overallInsights.insights}
+                          {analytics.overallInsights.insights || 'No insights available'}
                         </AlertDescription>
                       </Alert>
                     </CardContent>
@@ -208,52 +208,58 @@ const VendorAnalytics = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="grid gap-4">
-                      {analytics.predictions.map((plan, index) => (
-                        <motion.div
-                          key={plan.planId}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.1 * index }}
-                          className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                            selectedPlan?.planId === plan.planId ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
-                          }`}
-                          onClick={() => handlePlanSelect(plan)}
-                        >
-                          <div className="flex items-center justify-between mb-3">
-                            <div>
-                              <h3 className="font-semibold text-lg">{plan.planName}</h3>
-                              <p className="text-sm text-muted-foreground">
-                                {plan.predictedSubscribers} predicted subscribers
-                              </p>
+                      {analytics.predictions && analytics.predictions.length > 0 ? (
+                        analytics.predictions.map((plan, index) => (
+                          <motion.div
+                            key={plan.planId}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 * index }}
+                            className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                              selectedPlan?.planId === plan.planId ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                            }`}
+                            onClick={() => handlePlanSelect(plan)}
+                          >
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <h3 className="font-semibold text-lg">{plan.planName || 'Unnamed Plan'}</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {plan.predictedSubscribers || 0} predicted subscribers
+                                </p>
+                              </div>
+                              <Badge {...getProfitBadge(plan.revenue?.profitMargin || 0)}>
+                                {plan.revenue?.profitMargin || 0}% margin
+                              </Badge>
                             </div>
-                            <Badge {...getProfitBadge(plan.revenue.profitMargin)}>
-                              {plan.revenue.profitMargin}% margin
-                            </Badge>
-                          </div>
-                          
-                          <div className="grid grid-cols-3 gap-4 text-center">
-                            <div>
-                              <p className="text-lg font-bold text-primary">₹{plan.revenue.totalRevenue}</p>
-                              <p className="text-xs text-muted-foreground">Revenue</p>
+                            
+                            <div className="grid grid-cols-3 gap-4 text-center">
+                              <div>
+                                <p className="text-lg font-bold text-primary">₹{plan.revenue?.totalRevenue || 0}</p>
+                                <p className="text-xs text-muted-foreground">Revenue</p>
+                              </div>
+                              <div>
+                                <p className="text-lg font-bold text-orange-600">₹{plan.costBreakdown?.totalCosts || 0}</p>
+                                <p className="text-xs text-muted-foreground">Total Costs</p>
+                              </div>
+                              <div>
+                                <p className={`text-lg font-bold ${(plan.revenue?.projectedProfit || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  ₹{plan.revenue?.projectedProfit || 0}
+                                </p>
+                                <p className="text-xs text-muted-foreground">Profit</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-lg font-bold text-orange-600">₹{plan.costBreakdown.totalCosts}</p>
-                              <p className="text-xs text-muted-foreground">Total Costs</p>
-                            </div>
-                            <div>
-                              <p className={`text-lg font-bold ${plan.revenue.projectedProfit > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                ₹{plan.revenue.projectedProfit}
-                              </p>
-                              <p className="text-xs text-muted-foreground">Profit</p>
-                            </div>
-                          </div>
 
-                          <Progress 
-                            value={plan.revenue.profitMargin} 
-                            className="mt-3" 
-                          />
-                        </motion.div>
-                      ))}
+                            <Progress 
+                              value={plan.revenue?.profitMargin || 0} 
+                              className="mt-3" 
+                            />
+                          </motion.div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8">
+                          <p className="text-muted-foreground">No plan predictions available</p>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -283,7 +289,7 @@ const VendorAnalytics = () => {
                             </div>
                           ))}
                         </div>
-                      ) : planPrediction ? (
+                      ) : planPrediction?.optimization ? (
                         <div className="space-y-6">
                           {/* Cost Breakdown */}
                           <div>
@@ -295,42 +301,42 @@ const VendorAnalytics = () => {
                               <div className="space-y-2">
                                 <div className="flex justify-between">
                                   <span className="text-sm">Food Costs:</span>
-                                  <span className="font-medium">₹{planPrediction.optimization.costBreakdown.foodCost}</span>
+                                  <span className="font-medium">₹{planPrediction.optimization.costBreakdown?.foodCost || 0}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm">Delivery Costs:</span>
-                                  <span className="font-medium">₹{planPrediction.optimization.costBreakdown.deliveryCosts.totalDeliveryCost}</span>
+                                  <span className="font-medium">₹{planPrediction.optimization.costBreakdown?.deliveryCosts?.totalDeliveryCost || 0}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm">Platform Cut (5%):</span>
-                                  <span className="font-medium">₹{planPrediction.optimization.costBreakdown.platformCut}</span>
+                                  <span className="font-medium">₹{planPrediction.optimization.costBreakdown?.platformCut || 0}</span>
                                 </div>
                                 <Separator />
                                 <div className="flex justify-between font-semibold">
                                   <span>Total Costs:</span>
-                                  <span>₹{planPrediction.optimization.costBreakdown.totalCosts}</span>
+                                  <span>₹{planPrediction.optimization.costBreakdown?.totalCosts || 0}</span>
                                 </div>
                               </div>
                               
                               <div className="space-y-2">
                                 <div className="flex justify-between">
                                   <span className="text-sm">Fuel Costs:</span>
-                                  <span className="font-medium">₹{planPrediction.optimization.costBreakdown.deliveryCosts.fuelCost}</span>
+                                  <span className="font-medium">₹{planPrediction.optimization.costBreakdown?.deliveryCosts?.fuelCost || 0}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm">Driver Payments:</span>
-                                  <span className="font-medium">₹{planPrediction.optimization.costBreakdown.deliveryCosts.driverCost}</span>
+                                  <span className="font-medium">₹{planPrediction.optimization.costBreakdown?.deliveryCosts?.driverCost || 0}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-sm">Expected Subscribers:</span>
-                                  <span className="font-medium">{planPrediction.optimization.predictedSubscribers}</span>
+                                  <span className="font-medium">{planPrediction.optimization.predictedSubscribers || 0}</span>
                                 </div>
                               </div>
                             </div>
                           </div>
 
                           {/* AI Recommendations */}
-                          {planPrediction.optimization.recommendations.length > 0 && (
+                          {planPrediction.optimization.recommendations && planPrediction.optimization.recommendations.length > 0 && (
                             <div>
                               <h4 className="font-semibold mb-3 flex items-center gap-2">
                                 <FaChartLine className="w-4 h-4" />
@@ -340,7 +346,7 @@ const VendorAnalytics = () => {
                                 {planPrediction.optimization.recommendations.map((rec, index) => (
                                   <Alert key={index} variant={rec.impact === 'high' ? 'destructive' : 'default'}>
                                     <FaLightbulb className="h-4 w-4" />
-                                    <AlertDescription>{rec.message}</AlertDescription>
+                                    <AlertDescription>{rec.message || rec}</AlertDescription>
                                   </Alert>
                                 ))}
                               </div>
@@ -357,7 +363,7 @@ const VendorAnalytics = () => {
                               <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
                                 <CardContent className="pt-4">
                                   <p className="text-sm leading-relaxed whitespace-pre-line">
-                                    {planPrediction.aiInsights.insights}
+                                    {planPrediction.aiInsights.insights || 'No insights available'}
                                   </p>
                                   <p className="text-xs text-muted-foreground mt-2">
                                     Generated by Gemini AI • {new Date(planPrediction.aiInsights.generatedAt).toLocaleString()}
@@ -367,7 +373,11 @@ const VendorAnalytics = () => {
                             </div>
                           )}
                         </div>
-                      ) : null}
+                      ) : (
+                        <div className="text-center py-8">
+                          <p className="text-muted-foreground">No prediction data available</p>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </motion.div>

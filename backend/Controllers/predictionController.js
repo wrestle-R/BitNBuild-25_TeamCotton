@@ -4,6 +4,7 @@ const Plan = require('../Models/Plan');
 const Menu = require('../Models/Menu');
 const Payment = require('../Models/Payment');
 const ConsumerSubscription = require('../Models/ConsumerSubscription');
+const mongoose = require('mongoose');
 require('dotenv').config();
 
 // Initialize Gemini AI
@@ -55,15 +56,23 @@ class ProfitOptimizer {
   // Predict demand based on historical data and market trends
   static async predictDemand(vendorId, planType) {
     try {
-      // Get historical subscription data
+      // First get the vendor's MongoDB ObjectId from their Firebase UID
+      const vendor = await Vendor.findOne({ firebaseUid: vendorId });
+      if (!vendor) {
+        console.log('Vendor not found with Firebase UID:', vendorId);
+        return 5; // Fallback
+      }
+
+      const vendorObjectId = vendor._id;
+
+      // Get historical subscription data using vendor's ObjectId
       const historicalSubs = await ConsumerSubscription.find({
-        vendor_id: vendorId,
-        active: true
+        vendor_id: vendorObjectId
       }).populate('plan_id');
 
-      // Get recent payments
+      // Get recent payments using vendor's ObjectId
       const recentPayments = await Payment.find({
-        vendor_id: vendorId,
+        vendor_id: vendorObjectId,
         payment_status: 'success',
         payment_date: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) }
       });
@@ -123,9 +132,17 @@ class ProfitOptimizer {
   // Main profit optimization function
   static async optimizeProfitForPlan(vendorId, planData) {
     try {
+      // Get vendor's MongoDB ObjectId from Firebase UID
+      const vendor = await Vendor.findOne({ firebaseUid: vendorId });
+      if (!vendor) {
+        throw new Error('Vendor not found');
+      }
+
+      const vendorObjectId = vendor._id;
+
       // Get vendor's menu items for the plan
       const menuItems = await Menu.find({
-        vendor_id: vendorId,
+        vendor_id: vendorObjectId,
         meal_type: { $in: planData.selected_meals }
       });
 
@@ -246,10 +263,16 @@ const getProfitPrediction = async (req, res) => {
 // Get overall business analytics
 const getBusinessAnalytics = async (req, res) => {
   try {
-    const vendorId = req.user.uid;
+    const vendorId = req.user.uid; // Firebase UID
 
-    // Get all vendor plans
-    const plans = await Plan.find({ vendor_id: vendorId });
+    // First, get the vendor's MongoDB ObjectId using their Firebase UID
+    const vendor = await Vendor.findOne({ firebaseUid: vendorId });
+    if (!vendor) {
+      return res.status(404).json({ error: 'Vendor not found' });
+    }
+
+    // Get all vendor plans using the MongoDB ObjectId
+    const plans = await Plan.find({ vendor_id: vendor._id });
     
     const analytics = {
       totalPlans: plans.length,
