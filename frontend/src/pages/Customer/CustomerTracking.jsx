@@ -25,6 +25,7 @@ import {
 } from 'react-icons/fa';
 import { MdLocationOn, MdDeliveryDining, MdDirections } from 'react-icons/md';
 import CustomerSidebar from '../../components/Customer/CustomerSidebar';
+import LiveTrackingMap from '../../components/Customer/LiveTrackingMap';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -362,15 +363,12 @@ const CustomerTracking = () => {
     return (completedDeliveries / delivery.customers.length) * 100;
   };
 
-  const trackDriverLocation = (delivery) => {
-    // Always use hardcoded customer coordinates
+  const openGoogleMapsRoute = (delivery) => {
     const customerLat = 19.248364;
     const customerLng = 72.850088;
     
-    // Try multiple sources for driver location
     let driverLocation = null;
     
-    // First try: driverLocation from tracking response
     if (delivery.driverLocation?.coordinates && 
         delivery.driverLocation.coordinates[0] !== 0 && 
         delivery.driverLocation.coordinates[1] !== 0) {
@@ -378,43 +376,23 @@ const CustomerTracking = () => {
         lat: delivery.driverLocation.coordinates[1],
         lng: delivery.driverLocation.coordinates[0]
       };
-    }
-    // Second try: driver.location from nested driver data
-    else if (delivery.driver?.location?.coordinates &&
-             delivery.driver.location.coordinates[0] !== 0 && 
-             delivery.driver.location.coordinates[1] !== 0) {
+    } else if (delivery.driver?.location?.coordinates &&
+               delivery.driver.location.coordinates[0] !== 0 && 
+               delivery.driver.location.coordinates[1] !== 0) {
       driverLocation = {
         lat: delivery.driver.location.coordinates[1],
         lng: delivery.driver.location.coordinates[0]
       };
     }
     
-    console.log('🔍 Tracking driver location:', {
-      deliveryId: delivery._id,
-      driverLocation,
-      driverLocationRaw: delivery.driverLocation,
-      driverNestedLocation: delivery.driver?.location,
-      customer: { lat: customerLat, lng: customerLng }
-    });
-    
     if (driverLocation) {
-      console.log('✅ Opening route from driver to customer:', {
-        driver: driverLocation,
-        customer: { lat: customerLat, lng: customerLng }
-      });
-      
       window.open(
         `https://www.google.com/maps/dir/${driverLocation.lat},${driverLocation.lng}/${customerLat},${customerLng}`,
         '_blank'
       );
     } else {
-      console.log('❌ Driver location not available, showing customer location only');
-      toast.error('Driver location not available. Showing your location instead.');
-      
-      window.open(
-        `https://www.google.com/maps?q=${customerLat},${customerLng}`,
-        '_blank'
-      );
+      toast.error('Driver location not available');
+      window.open(`https://www.google.com/maps?q=${customerLat},${customerLng}`, '_blank');
     }
   };
 
@@ -624,16 +602,10 @@ const CustomerTracking = () => {
                             variant="outline"
                             size="sm"
                             className="gap-2"
-                            onClick={() => trackDriverLocation(delivery)}
+                            onClick={() => openGoogleMapsRoute(delivery)}
                           >
                             <FaDirections className="w-3 h-3" />
-                            {(delivery.driverLocation?.coordinates && 
-                              delivery.driverLocation.coordinates[0] !== 0 && 
-                              delivery.driverLocation.coordinates[1] !== 0) ||
-                             (delivery.driver?.location?.coordinates &&
-                              delivery.driver.location.coordinates[0] !== 0 && 
-                              delivery.driver.location.coordinates[1] !== 0) 
-                              ? 'Track Driver' : 'View My Location'}
+                            Google Maps
                           </Button>
                           
                           {delivery.driver?.phone && (
@@ -655,39 +627,37 @@ const CustomerTracking = () => {
                             size="sm"
                             className="gap-2"
                             onClick={() => {
-                              // Always use hardcoded customer coordinates
                               const customerLat = 19.248364;
                               const customerLng = 72.850088;
                               
                               if (delivery.vendor?.address?.coordinates) {
-                                // Vendor coordinates are in [lng, lat] format (GeoJSON)
-                                const vendorLat = delivery.vendor.address.coordinates[1];
-                                const vendorLng = delivery.vendor.address.coordinates[0];
+                                let vendorLat, vendorLng;
                                 
-                                console.log('Opening route from vendor to customer:', {
-                                  vendor: { lat: vendorLat, lng: vendorLng },
-                                  customer: { lat: customerLat, lng: customerLng }
-                                });
+                                if (Array.isArray(delivery.vendor.address.coordinates)) {
+                                  // GeoJSON format [lng, lat]
+                                  vendorLat = delivery.vendor.address.coordinates[1];
+                                  vendorLng = delivery.vendor.address.coordinates[0];
+                                } else if (delivery.vendor.address.coordinates.lat) {
+                                  // Object format {lat, lng}
+                                  vendorLat = delivery.vendor.address.coordinates.lat;
+                                  vendorLng = delivery.vendor.address.coordinates.lng;
+                                }
                                 
-                                window.open(
-                                  `https://www.google.com/maps/dir/${vendorLat},${vendorLng}/${customerLat},${customerLng}`,
-                                  '_blank'
-                                );
+                                if (vendorLat && vendorLng) {
+                                  window.open(
+                                    `https://www.google.com/maps/dir/${vendorLat},${vendorLng}/${customerLat},${customerLng}`,
+                                    '_blank'
+                                  );
+                                } else {
+                                  window.open(`https://www.google.com/maps?q=${customerLat},${customerLng}`, '_blank');
+                                }
                               } else {
-                                // If vendor location not available, just show customer location
-                                console.log('Vendor location not available, showing customer location:', {
-                                  customer: { lat: customerLat, lng: customerLng }
-                                });
-                                
-                                window.open(
-                                  `https://www.google.com/maps?q=${customerLat},${customerLng}`,
-                                  '_blank'
-                                );
+                                window.open(`https://www.google.com/maps?q=${customerLat},${customerLng}`, '_blank');
                               }
                             }}
                           >
                             <FaMapMarkerAlt className="w-3 h-3" />
-                            View Route
+                            Vendor Route
                           </Button>
                         </div>
                       </div>
@@ -703,6 +673,21 @@ const CustomerTracking = () => {
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* Live Tracking Map */}
+          {activeDeliveries.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+            >
+              <LiveTrackingMap 
+                delivery={activeDeliveries[0]} 
+                customerLocation={customerLocation}
+                onRefresh={refreshData}
+              />
+            </motion.div>
+          )}
 
           {/* Delivery History */}
           <motion.div
