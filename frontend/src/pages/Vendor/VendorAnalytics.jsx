@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useUserContext } from '../../../context/UserContextSimplified';
 import { auth } from '../../../firebase.config';
-import { FaChartLine, FaRupeeSign, FaUsers, FaBrain, FaLightbulb, FaExclamationTriangle, FaRobot, FaCalculator } from 'react-icons/fa';
+import { FaChartLine, FaRupeeSign, FaUsers, FaBrain, FaLightbulb, FaExclamationTriangle, FaRobot, FaCalculator, FaSync } from 'react-icons/fa';
 import VendorSidebar from '../../components/Vendor/VendorSidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -17,18 +17,107 @@ const VendorAnalytics = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [planPrediction, setPlanPrediction] = useState(null);
   const [loadingPrediction, setLoadingPrediction] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
+
+  // Cache keys
+  const ANALYTICS_CACHE_KEY = `vendor_analytics_${user?.uid}`;
+  const PLAN_CACHE_KEY = `vendor_plan_prediction_${user?.uid}`;
+  const CACHE_EXPIRY_HOURS = 2; // Cache expires after 2 hours
 
   useEffect(() => {
     if (user) {
-      fetchAnalytics();
+      loadCachedAnalytics();
     }
   }, [user]);
 
-  const fetchAnalytics = async () => {
-    setLoading(true);
+  // Load cached analytics data
+  const loadCachedAnalytics = () => {
+    try {
+      const cachedData = localStorage.getItem(ANALYTICS_CACHE_KEY);
+      if (cachedData) {
+        const { data, timestamp } = JSON.parse(cachedData);
+        const isExpired = Date.now() - timestamp > CACHE_EXPIRY_HOURS * 60 * 60 * 1000;
+        
+        if (!isExpired) {
+          setAnalytics(data);
+          setLastUpdated(new Date(timestamp));
+          setLoading(false);
+          toast.success('Loaded cached analytics data');
+          return;
+        } else {
+          // Remove expired cache
+          localStorage.removeItem(ANALYTICS_CACHE_KEY);
+        }
+      }
+      
+      // No valid cache found, fetch fresh data
+      fetchAnalytics();
+    } catch (error) {
+      console.error('Error loading cached analytics:', error);
+      fetchAnalytics();
+    }
+  };
+
+  // Save analytics to cache
+  const saveAnalyticsToCache = (data) => {
+    try {
+      const cacheData = {
+        data,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(ANALYTICS_CACHE_KEY, JSON.stringify(cacheData));
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Error saving analytics to cache:', error);
+    }
+  };
+
+  // Load cached plan prediction
+  const loadCachedPlanPrediction = (planId) => {
+    try {
+      const cachedData = localStorage.getItem(`${PLAN_CACHE_KEY}_${planId}`);
+      if (cachedData) {
+        const { data, timestamp } = JSON.parse(cachedData);
+        const isExpired = Date.now() - timestamp > CACHE_EXPIRY_HOURS * 60 * 60 * 1000;
+        
+        if (!isExpired) {
+          setPlanPrediction(data);
+          return true;
+        } else {
+          localStorage.removeItem(`${PLAN_CACHE_KEY}_${planId}`);
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error('Error loading cached plan prediction:', error);
+      return false;
+    }
+  };
+
+  // Save plan prediction to cache
+  const savePlanPredictionToCache = (planId, data) => {
+    try {
+      const cacheData = {
+        data,
+        timestamp: Date.now()
+      };
+      localStorage.setItem(`${PLAN_CACHE_KEY}_${planId}`, JSON.stringify(cacheData));
+    } catch (error) {
+      console.error('Error saving plan prediction to cache:', error);
+    }
+  };
+
+  const fetchAnalytics = async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+
     try {
       const idToken = await auth.currentUser.getIdToken();
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/predictions/analytics`, {
@@ -41,6 +130,8 @@ const VendorAnalytics = () => {
       if (response.ok) {
         const data = await response.json();
         setAnalytics(data.data);
+        saveAnalyticsToCache(data.data);
+        toast.success(isRefresh ? 'Analytics refreshed successfully' : 'Analytics loaded successfully');
       } else {
         toast.error('Failed to fetch analytics');
       }
@@ -48,11 +139,21 @@ const VendorAnalytics = () => {
       console.error('Error fetching analytics:', error);
       toast.error('Error loading analytics');
     } finally {
-      setLoading(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
-  const fetchPlanPrediction = async (planId) => {
+  const fetchPlanPrediction = async (planId, isRefresh = false) => {
+    // Check cache first unless it's a refresh
+    if (!isRefresh && loadCachedPlanPrediction(planId)) {
+      toast.success('Loaded cached prediction data');
+      return;
+    }
+
     setLoadingPrediction(true);
     try {
       const idToken = await auth.currentUser.getIdToken();
@@ -66,6 +167,8 @@ const VendorAnalytics = () => {
       if (response.ok) {
         const data = await response.json();
         setPlanPrediction(data.data);
+        savePlanPredictionToCache(planId, data.data);
+        toast.success('Plan prediction loaded successfully');
       } else {
         toast.error('Failed to fetch plan prediction');
       }
@@ -82,6 +185,28 @@ const VendorAnalytics = () => {
     fetchPlanPrediction(plan.planId);
   };
 
+  const handleRefreshAnalytics = () => {
+    // Clear all related cache
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith(ANALYTICS_CACHE_KEY) || key.startsWith(PLAN_CACHE_KEY)) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Clear current plan prediction
+    setPlanPrediction(null);
+    setSelectedPlan(null);
+    
+    // Fetch fresh data
+    fetchAnalytics(true);
+  };
+
+  const handleRefreshPlanPrediction = () => {
+    if (selectedPlan) {
+      fetchPlanPrediction(selectedPlan.planId, true);
+    }
+  };
+
   const getProfitColor = (margin) => {
     if (margin >= 30) return 'text-green-600';
     if (margin >= 15) return 'text-yellow-600';
@@ -92,6 +217,11 @@ const VendorAnalytics = () => {
     if (margin >= 30) return { variant: 'default', text: 'Excellent' };
     if (margin >= 15) return { variant: 'secondary', text: 'Good' };
     return { variant: 'destructive', text: 'Needs Improvement' };
+  };
+
+  const formatLastUpdated = (date) => {
+    if (!date) return '';
+    return date.toLocaleString();
   };
 
   if (loading) {
@@ -127,15 +257,33 @@ const VendorAnalytics = () => {
       
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
         <div className="p-6 space-y-6">
-          {/* Header */}
+          {/* Header with Refresh Button */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
           >
-            <div className="flex items-center gap-3 mb-4">
-              <FaBrain className="w-8 h-8 text-primary" />
-              <h1 className="text-3xl font-bold text-foreground">AI-Powered Business Analytics</h1>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <FaBrain className="w-8 h-8 text-primary" />
+                <h1 className="text-3xl font-bold text-foreground">AI-Powered Business Analytics</h1>
+              </div>
+              <div className="flex items-center gap-3">
+                {lastUpdated && (
+                  <div className="text-sm text-muted-foreground">
+                    Last updated: {formatLastUpdated(lastUpdated)}
+                  </div>
+                )}
+                <Button
+                  onClick={handleRefreshAnalytics}
+                  disabled={refreshing}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <FaSync className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                  {refreshing ? 'Refreshing...' : 'Refresh Analytics'}
+                </Button>
+              </div>
             </div>
             <p className="text-muted-foreground">
               Maximize your profits with machine learning predictions and AI insights
@@ -274,10 +422,22 @@ const VendorAnalytics = () => {
                 >
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <FaCalculator className="w-5 h-5 text-primary" />
-                        Detailed Analysis: {selectedPlan.planName}
-                      </CardTitle>
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="flex items-center gap-2">
+                          <FaCalculator className="w-5 h-5 text-primary" />
+                          Detailed Analysis: {selectedPlan.planName}
+                        </CardTitle>
+                        <Button
+                          onClick={handleRefreshPlanPrediction}
+                          disabled={loadingPrediction}
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2"
+                        >
+                          <FaSync className={`w-3 h-3 ${loadingPrediction ? 'animate-spin' : ''}`} />
+                          Refresh
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       {loadingPrediction ? (
