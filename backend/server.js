@@ -11,7 +11,7 @@ const vendorRoutes = require('./routes/vendorRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
-const driverRoutes = require('./routes/driverRoutes');
+const driverRoutes = require('./Routes/driverRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 8000;

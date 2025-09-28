@@ -1,32 +1,16 @@
-// React Native will automatically resolve the correct platform file:// React Native will automatically resolve the correct platform file:
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, ScrollView, Dimensions, Alert } from 'react-native';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import { Ionicons } from '@expo/vector-icons';
 
-// - DriverDeliveryMap.native.jsx for iOS/Android// - DriverDeliveryMap.native.jsx for iOS/Android
-
-// - DriverDeliveryMap.web.jsx for web// - DriverDeliveryMap.web.jsx for web
-
-// This prevents the react-native-maps import error on web// This prevents the react-native-maps import error on web
-
-
-
-import DriverDeliveryMapImplementation from './DriverDeliveryMap.native';import DriverDeliveryMapImplementation from './DriverDeliveryMap.native';
-
-
-
-const DriverDeliveryMap = (props) => {const DriverDeliveryMap = (props) => {
-
-  return <DriverDeliveryMapImplementation {...props} />;  return <DriverDeliveryMapImplementation {...props} />;
-
-};};
-
-
-
-export default DriverDeliveryMap;  const [routeInfo, setRouteInfo] = useState(null);
+const DriverDeliveryMap = ({ delivery, driverLocation }) => {
+  const mapRef = useRef(null);
+  const [routeInfo, setRouteInfo] = useState(null);
   const [optimizedRoute, setOptimizedRoute] = useState([]);
   const [polylineCoords, setPolylineCoords] = useState([]);
   const [mapError, setMapError] = useState(null);
-  const mapRef = useRef(null);
 
-  // TSP Solver and all existing logic...
+  // TSP Solver for route optimization
   const solveTSP = (startPoint, points) => {
     if (!points || points.length === 0) return { route: [], totalDistance: 0 };
     
