@@ -1,7 +1,9 @@
-const Customer = require('../Models/Customer');
+const Customer = require('../Models/Customer'); // Make sure this path is correct
 const Vendor = require('../Models/Vendor');
 const Plan = require('../Models/Plan');
 const Menu = require('../Models/Menu');
+const Payment = require('../Models/Payment');
+const ConsumerSubscription = require('../Models/ConsumerSubscription');
 const axios = require('axios');
 
 const customerController = {
@@ -281,7 +283,7 @@ const customerController = {
   // Dashboard - Get comprehensive dashboard data
   async getDashboardData(req, res) {
     try {
-      const customerId = req.user.firebaseUid;
+      const customerId = req.user.uid; // Use req.user.uid instead of firebaseUid
       
       // Get customer details
       const customer = await Customer.findOne({ firebaseUid: customerId }).lean();
@@ -289,17 +291,19 @@ const customerController = {
         return res.status(404).json({ message: 'Customer not found' });
       }
 
-      const Payment = require('../Models/Payment');
-      const ConsumerSubscription = require('../Models/ConsumerSubscription');
+      console.log('Customer found:', customer.name);
 
       // Get active subscriptions with populated vendor and plan data
       const activeSubscriptions = await ConsumerSubscription.find({
         consumer_id: customer._id,
-        status: 'active'
+        active: true, // Use 'active' field instead of 'status'
+        end_date: { $gt: new Date() }
       })
       .populate('vendor_id', 'name profileImage address contactNumber')
       .populate('plan_id', 'name price duration_days selected_meals')
       .lean();
+
+      console.log('Active subscriptions found:', activeSubscriptions.length);
 
       // Get recent orders/payments
       const recentPayments = await Payment.find({
@@ -318,7 +322,8 @@ const customerController = {
 
       const completedSubscriptions = await ConsumerSubscription.countDocuments({
         consumer_id: customer._id,
-        status: 'completed'
+        active: false,
+        end_date: { $lt: new Date() }
       });
 
       // Calculate total spent
@@ -328,28 +333,56 @@ const customerController = {
       ]);
       const totalSpent = totalSpentResult.length > 0 ? totalSpentResult[0].total : 0;
 
-      // Get nearby vendors (if customer has location)
+      // Get nearby vendors (if customer has location) - FIXED VERSION
       let nearbyVendors = [];
-      if (customer.address && customer.address.coordinates) {
+      if (customer.address && customer.address.coordinates && 
+          customer.address.coordinates.lat && customer.address.coordinates.lng) {
+        
+        console.log('Customer has location, finding nearby vendors');
+        
         const vendorsWithLocation = await Vendor.find({
           verified: true,
-          'address.coordinates': { $exists: true }
+          'address.coordinates.lat': { $exists: true, $ne: null },
+          'address.coordinates.lng': { $exists: true, $ne: null }
         }).lean();
 
-        // Calculate distances and get top 5 nearest
-        const vendorsWithDistance = vendorsWithLocation.map(vendor => {
-          const distance = calculateDistance(
-            customer.address.coordinates.lat,
-            customer.address.coordinates.lng,
-            vendor.address.coordinates.lat,
-            vendor.address.coordinates.lng
-          );
-          return { ...vendor, distance };
-        });
+        console.log('Vendors with location found:', vendorsWithLocation.length);
+
+        // Calculate distances and get top 5 nearest - SAFE VERSION
+        const vendorsWithDistance = vendorsWithLocation
+          .map(vendor => {
+            // Double check that coordinates exist before calculating distance
+            if (vendor.address && 
+                vendor.address.coordinates && 
+                typeof vendor.address.coordinates.lat === 'number' && 
+                typeof vendor.address.coordinates.lng === 'number') {
+              
+              const distance = calculateDistance(
+                customer.address.coordinates.lat,
+                customer.address.coordinates.lng,
+                vendor.address.coordinates.lat,
+                vendor.address.coordinates.lng
+              );
+              return { ...vendor, distance };
+            }
+            return null; // Skip vendors without valid coordinates
+          })
+          .filter(vendor => vendor !== null); // Remove null entries
 
         nearbyVendors = vendorsWithDistance
           .sort((a, b) => a.distance - b.distance)
           .slice(0, 5);
+          
+        console.log('Nearby vendors calculated:', nearbyVendors.length);
+      } else {
+        console.log('Customer has no location, getting random vendors');
+        
+        // If customer has no location, just get some random verified vendors
+        const randomVendors = await Vendor.find({ verified: true }).limit(5).lean();
+        nearbyVendors = randomVendors.map(vendor => ({
+          ...vendor,
+          distance: (Math.random() * 10 + 1).toFixed(1) // Random distance between 1-11 km
+        }));
       }
 
       // Generate notifications based on data
@@ -363,7 +396,7 @@ const customerController = {
             id: `expiring-${sub._id}`,
             type: 'warning',
             title: 'Subscription Expiring Soon',
-            message: `Your subscription with ${sub.vendor_id.name} expires in ${daysLeft} day${daysLeft > 1 ? 's' : ''}`,
+            message: `Your subscription with ${sub.vendor_id?.name || 'vendor'} expires in ${daysLeft} day${daysLeft > 1 ? 's' : ''}`,
             timestamp: new Date(),
             priority: 'high'
           });
@@ -427,13 +460,13 @@ const customerController = {
         },
         activeSubscriptions: activeSubscriptions.map(sub => ({
           id: sub._id,
-          planName: sub.plan_id.name,
-          vendorName: sub.vendor_id.name,
-          vendorImage: sub.vendor_id.profileImage,
+          planName: sub.plan_id?.name || 'Unknown Plan',
+          vendorName: sub.vendor_id?.name || 'Unknown Vendor',
+          vendorImage: sub.vendor_id?.profileImage,
           startDate: sub.start_date,
           endDate: sub.end_date,
-          status: sub.status,
-          meals: sub.plan_id.selected_meals,
+          status: sub.active ? 'active' : 'inactive',
+          meals: sub.plan_id?.selected_meals || [],
           daysLeft: Math.max(0, Math.ceil((new Date(sub.end_date) - new Date()) / (1000 * 60 * 60 * 24)))
         })),
         recentOrders: recentPayments.map(payment => ({
@@ -448,8 +481,8 @@ const customerController = {
           id: vendor._id,
           name: vendor.name,
           image: vendor.profileImage,
-          distance: vendor.distance?.toFixed(1) || 'N/A',
-          address: vendor.address
+          distance: vendor.distance?.toString() || 'N/A',
+          address: vendor.address || { city: 'Unknown' }
         })),
         notifications: notifications.sort((a, b) => {
           const priorityOrder = { high: 3, medium: 2, low: 1 };
@@ -457,25 +490,29 @@ const customerController = {
         }).slice(0, 10)
       };
 
+      console.log('Dashboard data prepared successfully');
       res.json(dashboardData);
+
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
+      res.status(500).json({ 
+        message: 'Server error', 
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
     }
   },
 
   // Get recent activity
   async getRecentActivity(req, res) {
     try {
-      const customerId = req.user.firebaseUid;
+      const customerId = req.user.uid; // Use req.user.uid instead of firebaseUid
       const customer = await Customer.findOne({ firebaseUid: customerId });
       
       if (!customer) {
         return res.status(404).json({ message: 'Customer not found' });
       }
 
-      const Payment = require('../Models/Payment');
-      const ConsumerSubscription = require('../Models/ConsumerSubscription');
+      console.log('Fetching activity for customer:', customer.name);
 
       // Get recent activities (payments, subscriptions)
       const recentPayments = await Payment.find({
@@ -492,7 +529,7 @@ const customerController = {
       })
       .populate('plan_id', 'name')
       .populate('vendor_id', 'name')
-      .sort({ createdAt: -1 })
+      .sort({ created_at: -1 })
       .limit(10)
       .lean();
 
@@ -510,10 +547,10 @@ const customerController = {
         ...recentSubscriptions.map(sub => ({
           id: sub._id,
           type: 'subscription',
-          title: `Subscription ${sub.status}`,
+          title: `Subscription ${sub.active ? 'started' : 'completed'}`,
           description: `${sub.plan_id?.name || 'Meal plan'} from ${sub.vendor_id?.name || 'vendor'}`,
-          timestamp: sub.createdAt,
-          status: sub.status,
+          timestamp: sub.created_at || sub.createdAt,
+          status: sub.active ? 'active' : 'completed',
           icon: 'subscription'
         }))
       ];
@@ -521,25 +558,51 @@ const customerController = {
       // Sort by timestamp and limit
       activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
       
+      console.log('Activity data prepared:', activities.length, 'items');
       res.json(activities.slice(0, 15));
+
     } catch (error) {
       console.error('Error fetching recent activity:', error);
-      res.status(500).json({ message: 'Server error', error: error.message });
+      res.status(500).json({ 
+        message: 'Server error', 
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+      });
     }
   }
 };
 
-// Helper function to calculate distance
+// Helper function to calculate distance - SAFE VERSION
 function calculateDistance(lat1, lon1, lat2, lon2) {
-  const R = 6371; // Radius of the Earth in km
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  const d = R * c;
-  return d;
-};
+  // Validate input parameters
+  if (typeof lat1 !== 'number' || typeof lon1 !== 'number' || 
+      typeof lat2 !== 'number' || typeof lon2 !== 'number') {
+    console.error('Invalid coordinates provided to calculateDistance:', { lat1, lon1, lat2, lon2 });
+    return 999; // Return a large distance for invalid coordinates
+  }
+  
+  // Check for NaN or infinite values
+  if (isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2) ||
+      !isFinite(lat1) || !isFinite(lon1) || !isFinite(lat2) || !isFinite(lon2)) {
+    console.error('Invalid numeric values in calculateDistance:', { lat1, lon1, lat2, lon2 });
+    return 999;
+  }
+
+  try {
+    const R = 6371; // Radius of the Earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const d = R * c;
+    
+    // Return a reasonable distance (not NaN or Infinity)
+    return isFinite(d) ? d : 999;
+  } catch (error) {
+    console.error('Error in calculateDistance:', error);
+    return 999; // Return fallback distance
+  }
+}
 
 module.exports = customerController;

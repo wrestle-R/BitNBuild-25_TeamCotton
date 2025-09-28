@@ -1,9 +1,9 @@
 const express = require('express');
 const multer = require('multer');
-const customerController = require('../Controllers/customerController');
+const customerController = require('../controllers/customerController'); // Note: lowercase 'controllers'
 
 const authMiddleware = require('../middleware/authMiddleware');
-const uploadController = require('../controllers/uploadController');
+const uploadController = require('../controllers/uploadController'); // Note: lowercase 'controllers'
 
 const router = express.Router();
 
@@ -40,13 +40,13 @@ router.get('/preferences', authMiddleware, customerController.getPreferences);
 // Upload customer profile image
 router.post('/upload/image', authMiddleware, upload.single('image'), uploadController.uploadImage);
 
-// Get single vendor details
-router.get('/vendor/:vendorId', authMiddleware, customerController.getVendorById);
+// Get single vendor details (duplicate route - you can remove this)
+// router.get('/vendor/:vendorId', authMiddleware, customerController.getVendorById);
 
-// Get vendor plans
-router.get('/vendor/:vendorId/plans', authMiddleware, customerController.getVendorPlans);
+// Get vendor plans (duplicate route - you can remove this)
+// router.get('/vendor/:vendorId/plans', authMiddleware, customerController.getVendorPlans);
 
-// Dashboard routes
+// Dashboard routes - Fix the function names to match what exists in customerController.js
 router.get('/dashboard', authMiddleware, customerController.getDashboardData);
 router.get('/dashboard/activity', authMiddleware, customerController.getRecentActivity);
 
