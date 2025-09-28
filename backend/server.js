@@ -5,13 +5,13 @@ const jwt = require('jsonwebtoken');
 const admin = require('firebase-admin');
 require('dotenv').config();
 
-const authRoutes = require('./Routes/authRoutes');
-const adminRoutes = require('./Routes/adminRoutes');
-const vendorRoutes = require('./Routes/vendorRoutes');
-const uploadRoutes = require('./Routes/uploadRoutes');
-const customerRoutes = require('./Routes/customerRoutes');
-const paymentRoutes = require('./Routes/paymentRoutes');
-const driverRoutes = require('./Routes/driverRoutes');
+const authRoutes = require('./routes/authRoutes'); // Fix path casing
+const adminRoutes = require('./routes/adminRoutes');
+const vendorRoutes = require('./routes/vendorRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
+const customerRoutes = require('./routes/customerRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const driverRoutes = require('./routes/driverRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -26,13 +26,30 @@ mongoose.connect(process.env.MONGO_URL)
   .then(() => console.log('MongoDB connected successfully'))
   .catch(err => console.error('MongoDB connection error:', err));
 
-admin.initializeApp({
-  credential: admin.credential.cert({
+// Fix Firebase initialization with proper error handling
+try {
+  const firebaseConfig = {
     projectId: process.env.FIREBASE_PROJECT_ID,
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-  }),
-});
+    privateKey: process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined
+  };
+
+  // Check if all required Firebase config is present
+  if (!firebaseConfig.projectId || !firebaseConfig.clientEmail || !firebaseConfig.privateKey) {
+    console.error('Missing Firebase configuration. Please check your .env file.');
+    console.error('Required variables: FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY');
+    process.exit(1);
+  }
+
+  admin.initializeApp({
+    credential: admin.credential.cert(firebaseConfig)
+  });
+
+  console.log('Firebase Admin initialized successfully');
+} catch (error) {
+  console.error('Firebase initialization error:', error);
+  process.exit(1);
+}
 
 // Use routes
 app.use('/api/auth', authRoutes);
