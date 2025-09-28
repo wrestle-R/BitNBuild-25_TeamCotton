@@ -776,20 +776,20 @@ const getDeliveryTracking = async (req, res) => {
   try {
     const { customerId } = req.params; // This is actually the Firebase UID
 
-    console.log('Fetching delivery tracking for customerId (Firebase UID):', customerId);
+    console.log('🔍 Fetching delivery tracking for customerId (Firebase UID):', customerId);
 
     // First, find the customer by Firebase UID to get their MongoDB _id
     const customer = await Customer.findOne({ firebaseUid: customerId });
     
     if (!customer) {
-      console.log('Customer not found with Firebase UID:', customerId);
+      console.log('❌ Customer not found with Firebase UID:', customerId);
       return res.status(404).json({
         success: false,
         message: 'Customer not found'
       });
     }
 
-    console.log('Found customer:', {
+    console.log('✅ Found customer:', {
       mongoId: customer._id,
       firebaseUid: customer.firebaseUid,
       name: customer.name
@@ -798,12 +798,12 @@ const getDeliveryTracking = async (req, res) => {
     // Now use the customer's MongoDB _id to find deliveries
     const delivery = await Delivery.findOne({
       'customers.customerId': customer._id, // Use MongoDB _id instead of Firebase UID
-      status: { $in: ['started', 'in_progress'] }
-    }).populate('driverId', 'name contactNumber vehicleType vehicleNumber rating')
-      .populate('vendorId', 'name address');
+      status: { $in: ['assigned', 'started', 'in_progress'] } // Include 'assigned' status too
+    }).populate('driverId', 'name contactNumber vehicleType vehicleNumber rating location')
+      .populate('vendorId', 'name address firebaseUid');
 
     if (!delivery) {
-      console.log('No active delivery found for customer MongoDB _id:', customer._id);
+      console.log('❌ No active delivery found for customer MongoDB _id:', customer._id);
       return res.status(404).json({
         success: false,
         message: 'No active delivery found for this customer'
@@ -814,29 +814,200 @@ const getDeliveryTracking = async (req, res) => {
       c => c.customerId.toString() === customer._id.toString() // Compare MongoDB _ids
     );
 
-    console.log('Found delivery tracking:', {
+    console.log('✅ Found delivery tracking:', {
       deliveryId: delivery._id,
-      customerDelivery: customerDelivery ? 'Found' : 'Not found'
+      status: delivery.status,
+      customerDelivery: customerDelivery ? 'Found' : 'Not found',
+      driverLocation: delivery.driverLocation,
+      driverHasLocation: !!(delivery.driverId?.location?.coordinates),
+      driverCoords: delivery.driverId?.location?.coordinates
+    });
+
+    // Format driver location data properly
+    let formattedDriverLocation = null;
+    if (delivery.driverLocation?.coordinates && 
+        delivery.driverLocation.coordinates[0] !== 0 && 
+        delivery.driverLocation.coordinates[1] !== 0) {
+      formattedDriverLocation = {
+        type: 'Point',
+        coordinates: delivery.driverLocation.coordinates,
+        lastUpdated: delivery.driverLocation.lastUpdated
+      };
+    } else if (delivery.driverId?.location?.coordinates &&
+               delivery.driverId.location.coordinates[0] !== 0 && 
+               delivery.driverId.location.coordinates[1] !== 0) {
+      formattedDriverLocation = {
+        type: 'Point',
+        coordinates: delivery.driverId.location.coordinates,
+        lastUpdated: delivery.driverId.location.lastUpdated
+      };
+    }
+
+    // Format vendor address
+    let vendorAddress = 'Address not available';
+    if (delivery.vendorId?.address) {
+      if (typeof delivery.vendorId.address === 'string') {
+        vendorAddress = delivery.vendorId.address;
+      } else if (typeof delivery.vendorId.address === 'object') {
+        const addr = delivery.vendorId.address;
+        const parts = [];
+        if (addr.street) parts.push(addr.street);
+        if (addr.city) parts.push(addr.city);
+        if (addr.state) parts.push(addr.state);
+        if (addr.pincode) parts.push(addr.pincode);
+        vendorAddress = parts.join(', ') || 'Address not available';
+      }
+    }
+
+    const trackingData = {
+      deliveryId: delivery._id,
+      driver: {
+        ...delivery.driverId.toObject(),
+        location: formattedDriverLocation // Override with formatted location
+      },
+      vendor: {
+        ...delivery.vendorId.toObject(),
+        address: vendorAddress
+      },
+      driverLocation: formattedDriverLocation,
+      estimatedArrival: customerDelivery?.estimatedArrival,
+      deliveryOrder: customerDelivery?.deliveryOrder,
+      status: customerDelivery?.status || delivery.status,
+      totalCustomers: delivery.customers.length,
+      deliveryStatus: delivery.status,
+      startedAt: delivery.startedAt,
+      customerInfo: {
+        name: customer.name,
+        mongoId: customer._id,
+        firebaseUid: customer.firebaseUid
+      }
+    };
+
+    console.log('📦 Returning tracking data:', {
+      deliveryId: trackingData.deliveryId,
+      driverName: trackingData.driver?.name,
+      vendorName: trackingData.vendor?.name,
+      hasDriverLocation: !!trackingData.driverLocation,
+      deliveryOrder: trackingData.deliveryOrder,
+      totalCustomers: trackingData.totalCustomers
     });
 
     res.status(200).json({
       success: true,
-      tracking: {
-        deliveryId: delivery._id,
+      tracking: trackingData
+    });
+  } catch (error) {
+    console.error('❌ Error fetching delivery tracking:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch delivery tracking',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Get all deliveries for a customer (both active and historical)
+const getCustomerDeliveries = async (req, res) => {
+  try {
+    const { customerId } = req.params; // Firebase UID
+
+    console.log('🔍 Fetching all deliveries for customerId (Firebase UID):', customerId);
+
+    // First, find the customer by Firebase UID
+    const customer = await Customer.findOne({ firebaseUid: customerId });
+    
+    if (!customer) {
+      console.log('❌ Customer not found with Firebase UID:', customerId);
+      return res.status(404).json({
+        success: false,
+        message: 'Customer not found'
+      });
+    }
+
+    console.log('✅ Found customer:', customer.name);
+
+    // Find all deliveries that include this customer
+    const deliveries = await Delivery.find({
+      'customers.customerId': customer._id
+    })
+      .populate('driverId', 'name contactNumber vehicleType vehicleNumber rating location')
+      .populate('vendorId', 'name address')
+      .sort({ createdAt: -1 });
+
+    console.log('📦 Found', deliveries.length, 'deliveries for customer');
+
+    // Format the deliveries
+    const formattedDeliveries = deliveries.map(delivery => {
+      const customerDelivery = delivery.customers.find(
+        c => c.customerId.toString() === customer._id.toString()
+      );
+
+      // Format vendor address
+      let vendorAddress = 'Address not available';
+      if (delivery.vendorId?.address) {
+        if (typeof delivery.vendorId.address === 'string') {
+          vendorAddress = delivery.vendorId.address;
+        } else if (typeof delivery.vendorId.address === 'object') {
+          const addr = delivery.vendorId.address;
+          const parts = [];
+          if (addr.street) parts.push(addr.street);
+          if (addr.city) parts.push(addr.city);
+          if (addr.state) parts.push(addr.state);
+          if (addr.pincode) parts.push(addr.pincode);
+          vendorAddress = parts.join(', ') || 'Address not available';
+        }
+      }
+
+      return {
+        _id: delivery._id,
+        status: delivery.status,
+        customerStatus: customerDelivery?.status,
         driver: delivery.driverId,
-        vendor: delivery.vendorId,
+        vendor: {
+          ...delivery.vendorId?.toObject(),
+          businessName: delivery.vendorId?.name,
+          address: vendorAddress
+        },
         driverLocation: delivery.driverLocation,
-        estimatedArrival: customerDelivery.estimatedArrival,
-        deliveryOrder: customerDelivery.deliveryOrder,
-        status: customerDelivery.status,
-        totalCustomers: delivery.customers.length
+        estimatedArrival: customerDelivery?.estimatedArrival,
+        deliveryOrder: customerDelivery?.deliveryOrder,
+        totalCustomers: delivery.customers.length,
+        completedDeliveries: delivery.customers.filter(c => c.status === 'delivered').length,
+        createdAt: delivery.createdAt,
+        startedAt: delivery.startedAt,
+        completedAt: delivery.completedAt,
+        customers: delivery.customers
+      };
+    });
+
+    // Separate active and historical deliveries
+    const activeDeliveries = formattedDeliveries.filter(d => 
+      ['assigned', 'started', 'in_progress'].includes(d.status)
+    );
+    const historicalDeliveries = formattedDeliveries.filter(d => 
+      ['completed', 'cancelled'].includes(d.status)
+    );
+
+    console.log('📊 Active deliveries:', activeDeliveries.length);
+    console.log('📊 Historical deliveries:', historicalDeliveries.length);
+
+    res.status(200).json({
+      success: true,
+      activeDeliveries,
+      historicalDeliveries,
+      totalDeliveries: formattedDeliveries.length,
+      customer: {
+        name: customer.name,
+        id: customer._id,
+        firebaseUid: customer.firebaseUid
       }
     });
   } catch (error) {
-    console.error('Error fetching delivery tracking:', error);
+    console.error('❌ Error fetching customer deliveries:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch delivery tracking'
+      message: 'Failed to fetch customer deliveries',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -853,5 +1024,6 @@ module.exports = {
   updateDriverLocationInDelivery,
   getActiveDelivery,
   getAllDriverDeliveries,
-  getDeliveryTracking
+  getDeliveryTracking,
+  getCustomerDeliveries
 };
