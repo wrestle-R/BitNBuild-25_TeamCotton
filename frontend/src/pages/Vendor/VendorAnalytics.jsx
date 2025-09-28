@@ -66,8 +66,6 @@ const VendorAnalytics = () => {
     }
   }, [user]);
 
-  // ... (keep all existing cache and fetch functions) ...
-  
   // Load cached analytics data
   const loadCachedAnalytics = () => {
     try {
@@ -252,50 +250,55 @@ const VendorAnalytics = () => {
   };
 
   // Parse AI insights into structured format
-  const parseAIInsights = (insights) => {
-    if (!insights) return { sections: [], recommendations: [] };
+const parseAIInsights = (insights) => {
+  if (!insights) return { sections: [], recommendations: [], summary: '' };
 
-    const sections = [];
-    const recommendations = [];
+  const sections = [];
+  const recommendations = [];
+  
+  // Split by paragraphs
+  const paragraphs = insights.split('\n\n').filter(p => p.trim());
+  
+  let summary = '';
+  
+  paragraphs.forEach((paragraph, index) => {
+    const trimmed = paragraph.trim();
     
-    const lines = insights.split('\n').filter(line => line.trim());
-    let currentSection = '';
-    let currentContent = [];
-
-    lines.forEach(line => {
-      const trimmed = line.trim();
-      
-      // Check if it's a section header (starts with number or bullet)
-      if (trimmed.match(/^\d+\.\s*\*\*.*\*\*/) || trimmed.match(/^\*\s*\*\*.*\*\*/)) {
-        // Save previous section
-        if (currentSection && currentContent.length > 0) {
-          sections.push({
-            title: currentSection,
-            content: currentContent.join(' ')
+    // First paragraph is usually the summary
+    if (index === 0) {
+      summary = trimmed;
+      return;
+    }
+    
+    // Check if it's a numbered section (1., 2., etc.)
+    const sectionMatch = trimmed.match(/^(\d+)\.\s*\*\*(.*?)\*\*:?\s*(.*)/s);
+    if (sectionMatch) {
+      const [, number, title, content] = sectionMatch;
+      sections.push({
+        number: parseInt(number),
+        title: title.trim(),
+        content: content.trim()
+      });
+      return;
+    }
+    
+    // Extract bullet points for recommendations
+    if (trimmed.includes('**') && (trimmed.includes('*') || trimmed.includes('-'))) {
+      const lines = trimmed.split('\n');
+      lines.forEach(line => {
+        const bulletMatch = line.match(/\*\s*\*\*(.*?)\*\*:?\s*(.*)/);
+        if (bulletMatch) {
+          recommendations.push({
+            title: bulletMatch[1].trim(),
+            description: bulletMatch[2] ? bulletMatch[2].trim() : ''
           });
         }
-        
-        // Start new section
-        currentSection = trimmed.replace(/^\d+\.\s*\*\*/, '').replace(/^\*\s*\*\*/, '').replace(/\*\*/g, '');
-        currentContent = [];
-      } else if (trimmed.match(/^\*.*:/)) {
-        // This is a recommendation
-        recommendations.push(trimmed.replace(/^\*\s*/, ''));
-      } else if (trimmed && currentSection) {
-        currentContent.push(trimmed);
-      }
-    });
-
-    // Add last section
-    if (currentSection && currentContent.length > 0) {
-      sections.push({
-        title: currentSection,
-        content: currentContent.join(' ')
       });
     }
+  });
 
-    return { sections, recommendations };
-  };
+  return { sections, recommendations, summary };
+};
 
   // Prepare chart data
   const prepareOverviewChartData = () => {
@@ -443,10 +446,11 @@ const VendorAnalytics = () => {
                   </CardHeader>
                   <CardContent>
                     <Tabs defaultValue="metrics" className="w-full">
-                      <TabsList className="grid w-full grid-cols-3">
+                      <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="metrics">Key Metrics</TabsTrigger>
                         <TabsTrigger value="revenue">Revenue Split</TabsTrigger>
                         <TabsTrigger value="comparison">Plan Comparison</TabsTrigger>
+                        <TabsTrigger value="insights">AI Strategic Report</TabsTrigger>
                       </TabsList>
                       
                       <TabsContent value="metrics" className="space-y-4">
@@ -470,40 +474,6 @@ const VendorAnalytics = () => {
                               </p>
                               <p className="text-sm text-muted-foreground">Average Margin</p>
                             </div>
-                          </div>
-                        )}
-                        
-                        {/* AI Insights - Parsed */}
-                        {analytics.overallInsights?.insights && (
-                          <div className="space-y-4">
-                            {(() => {
-                              const { sections, recommendations } = parseAIInsights(analytics.overallInsights.insights);
-                              return (
-                                <>
-                                  {sections.map((section, index) => (
-                                    <Alert key={index} className="bg-background/50">
-                                      <FaLightbulb className="h-4 w-4" />
-                                      <AlertDescription>
-                                        <strong>{section.title}:</strong> {section.content}
-                                      </AlertDescription>
-                                    </Alert>
-                                  ))}
-                                  
-                                  {recommendations.length > 0 && (
-                                    <div className="mt-4">
-                                      <h4 className="font-semibold mb-2">Key Recommendations:</h4>
-                                      <div className="space-y-1">
-                                        {recommendations.map((rec, index) => (
-                                          <div key={index} className="text-sm text-muted-foreground pl-4 border-l-2 border-primary/30">
-                                            {rec}
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-                                </>
-                              );
-                            })()}
                           </div>
                         )}
                       </TabsContent>
@@ -550,6 +520,81 @@ const VendorAnalytics = () => {
                           </ResponsiveContainer>
                         </div>
                       </TabsContent>
+
+                      <TabsContent value="insights" className="space-y-6">
+  {analytics.overallInsights?.insights ? (
+    <div className="space-y-6">
+      {(() => {
+        const { summary, sections, recommendations } = parseAIInsights(analytics.overallInsights.insights);
+        return (
+          <>
+            {/* Executive Summary */}
+            {summary && (
+              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FaBrain className="w-5 h-5" />
+                    Executive Summary
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm leading-relaxed">{summary}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Strategic Sections */}
+            {sections.length > 0 && (
+              <div className="grid gap-4">
+                <h3 className="text-xl font-semibold">Strategic Recommendations</h3>
+                {sections.map((section, index) => (
+                  <Card key={index}>
+                    <CardHeader>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <span className="flex items-center justify-center w-6 h-6 bg-primary text-primary-foreground rounded-full text-sm">
+                          {section.number}
+                        </span>
+                        {section.title}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm leading-relaxed">{section.content}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Show raw insights as fallback */}
+            {sections.length === 0 && (
+              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FaBrain className="w-5 h-5" />
+                    AI Strategic Insights
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="whitespace-pre-line text-sm leading-relaxed">
+                    {analytics.overallInsights.insights}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        );
+      })()}
+      <p className="text-xs text-muted-foreground text-center">
+        Generated by Gemini AI • {new Date(analytics.overallInsights.generatedAt).toLocaleString()}
+      </p>
+    </div>
+  ) : (
+    <div className="text-center py-8">
+      <FaBrain className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+      <p className="text-muted-foreground">AI insights not available</p>
+    </div>
+  )}
+</TabsContent>
                     </Tabs>
                   </CardContent>
                 </Card>
@@ -855,52 +900,80 @@ const VendorAnalytics = () => {
                             )}
                           </TabsContent>
                           
-                          <TabsContent value="insights" className="space-y-4">
-                            {planPrediction.aiInsights ? (
-                              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
-                                <CardHeader>
-                                  <CardTitle className="flex items-center gap-2">
-                                    <FaBrain className="w-5 h-5" />
-                                    Gemini AI Strategic Insights
-                                  </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="space-y-4">
-                                    {(() => {
-                                      const { sections, recommendations } = parseAIInsights(planPrediction.aiInsights.insights);
-                                      return (
-                                        <>
+                          <TabsContent value="insights" className="space-y-6">
+                            {analytics.overallInsights?.insights ? (
+                              <div className="space-y-6">
+                                {(() => {
+                                  const { summary, sections, recommendations } = parseAIInsights(analytics.overallInsights.insights);
+                                  return (
+                                    <>
+                                      {/* Executive Summary */}
+                                      {summary && (
+                                        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                                          <CardHeader>
+                                            <CardTitle className="flex items-center gap-2">
+                                              <FaBrain className="w-5 h-5" />
+                                              Executive Summary
+                                            </CardTitle>
+                                          </CardHeader>
+                                          <CardContent>
+                                            <p className="text-sm leading-relaxed">{summary}</p>
+                                          </CardContent>
+                                        </Card>
+                                      )}
+
+                                      {/* Strategic Sections */}
+                                      {sections.length > 0 && (
+                                        <div className="grid gap-4">
+                                          <h3 className="text-xl font-semibold">Strategic Recommendations</h3>
                                           {sections.map((section, index) => (
-                                            <div key={index} className="border-l-4 border-primary/30 pl-4">
-                                              <h5 className="font-semibold mb-2">{section.title}</h5>
-                                              <p className="text-sm leading-relaxed text-muted-foreground">
-                                                {section.content}
-                                              </p>
-                                            </div>
+                                            <Card key={index}>
+                                              <CardHeader>
+                                                <CardTitle className="text-lg flex items-center gap-2">
+                                                  <span className="flex items-center justify-center w-6 h-6 bg-primary text-primary-foreground rounded-full text-sm">
+                                                    {section.number}
+                                                  </span>
+                                                  {section.title}
+                                                </CardTitle>
+                                              </CardHeader>
+                                              <CardContent>
+                                                <p className="text-sm leading-relaxed">{section.content}</p>
+                                              </CardContent>
+                                            </Card>
                                           ))}
-                                          
-                                          {recommendations.length > 0 && (
-                                            <div className="mt-6">
-                                              <h5 className="font-semibold mb-3">Strategic Actions:</h5>
-                                              <div className="space-y-2">
-                                                {recommendations.map((rec, index) => (
-                                                  <div key={index} className="flex items-start gap-2 text-sm">
-                                                    <FaLightbulb className="w-3 h-3 text-yellow-500 mt-1 flex-shrink-0" />
-                                                    <span>{rec}</span>
-                                                  </div>
-                                                ))}
-                                              </div>
+                                        </div>
+                                      )}
+
+                                      {/* Key Action Items */}
+                                      {recommendations.length > 0 && (
+                                        <Card>
+                                          <CardHeader>
+                                            <CardTitle className="flex items-center gap-2">
+                                              <FaLightbulb className="w-5 h-5" />
+                                              Key Action Items
+                                            </CardTitle>
+                                          </CardHeader>
+                                          <CardContent>
+                                            <div className="space-y-3">
+                                              {recommendations.map((rec, index) => (
+                                                <Alert key={index}>
+                                                  <FaExclamationTriangle className="h-4 w-4" />
+                                                  <AlertDescription>
+                                                    <strong>{rec.title}:</strong> {rec.description}
+                                                  </AlertDescription>
+                                                </Alert>
+                                              ))}
                                             </div>
-                                          )}
-                                        </>
-                                      );
-                                    })()}
-                                  </div>
-                                  <p className="text-xs text-muted-foreground mt-4 pt-4 border-t">
-                                    Generated by Gemini AI • {new Date(planPrediction.aiInsights.generatedAt).toLocaleString()}
-                                  </p>
-                                </CardContent>
-                              </Card>
+                                          </CardContent>
+                                        </Card>
+                                      )}
+                                    </>
+                                  );
+                                })()}
+                                <p className="text-xs text-muted-foreground text-center">
+                                  Generated by Gemini AI • {new Date(analytics.overallInsights.generatedAt).toLocaleString()}
+                                </p>
+                              </div>
                             ) : (
                               <div className="text-center py-8">
                                 <FaBrain className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
