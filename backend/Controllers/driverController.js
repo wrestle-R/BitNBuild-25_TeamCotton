@@ -697,32 +697,56 @@ const getAllDriverDeliveries = async (req, res) => {
       .populate('customers.customerId', 'name address contactNumber email')
       .sort({ createdAt: -1 }); // Most recent first
 
-    // Format the deliveries to ensure address objects are converted to strings
+    // Format the deliveries to ensure address objects are converted to strings for display
+    // while preserving the original coordinate data
     const formattedDeliveries = deliveries.map(delivery => {
       const deliveryObj = delivery.toObject();
       
-      // Format vendor address if it's an object
-      if (deliveryObj.vendorId && deliveryObj.vendorId.address && typeof deliveryObj.vendorId.address === 'object') {
-        const addr = deliveryObj.vendorId.address;
-        const parts = [];
-        if (addr.street) parts.push(addr.street);
-        if (addr.city) parts.push(addr.city);
-        if (addr.state) parts.push(addr.state);
-        if (addr.pincode) parts.push(addr.pincode);
-        deliveryObj.vendorId.address = parts.length > 0 ? parts.join(', ') : 'Address not available';
+      // Preserve vendor coordinates before formatting address
+      if (deliveryObj.vendorId && deliveryObj.vendorId.address) {
+        const originalCoords = deliveryObj.vendorId.address.coordinates;
+        
+        // Format vendor address string for display
+        if (typeof deliveryObj.vendorId.address === 'object') {
+          const addr = deliveryObj.vendorId.address;
+          const parts = [];
+          if (addr.street) parts.push(addr.street);
+          if (addr.city) parts.push(addr.city);
+          if (addr.state) parts.push(addr.state);
+          if (addr.pincode) parts.push(addr.pincode);
+          
+          // Create both formatted string and preserve original structure
+          deliveryObj.vendorId.addressString = parts.length > 0 ? parts.join(', ') : 'Address not available';
+          // Keep original address object with coordinates
+          deliveryObj.vendorId.address = {
+            ...addr,
+            coordinates: originalCoords,
+            formatted: deliveryObj.vendorId.addressString
+          };
+        }
       }
 
-      // Format customer addresses if they're objects
+      // Format customer addresses while preserving coordinates
       if (deliveryObj.customers) {
         deliveryObj.customers = deliveryObj.customers.map(customer => {
           if (customer.customerId && customer.customerId.address && typeof customer.customerId.address === 'object') {
             const addr = customer.customerId.address;
+            const originalCoords = addr.coordinates;
             const parts = [];
             if (addr.street) parts.push(addr.street);
             if (addr.city) parts.push(addr.city);
             if (addr.state) parts.push(addr.state);
             if (addr.pincode) parts.push(addr.pincode);
-            customer.customerId.address = parts.length > 0 ? parts.join(', ') : 'Address not available';
+            
+            // Create both formatted string and preserve original structure
+            const addressString = parts.length > 0 ? parts.join(', ') : 'Address not available';
+            customer.customerId.addressString = addressString;
+            // Keep original address object with coordinates
+            customer.customerId.address = {
+              ...addr,
+              coordinates: originalCoords,
+              formatted: addressString
+            };
           }
           return customer;
         });
