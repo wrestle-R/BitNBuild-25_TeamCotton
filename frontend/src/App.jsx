@@ -7,6 +7,7 @@ import VendorDashboard from './pages/Vendor/VendorDashboard'
 import VendorProfile from './pages/Vendor/VendorProfile'
 import VendorMenus from './pages/Vendor/VendorMenus'
 import VendorPlans from './pages/Vendor/VendorPlans'
+import VendorTracking from './pages/Vendor/VendorTracking'
 import CustomerAuth from './pages/Customer/CustomerAuth'
 import CustomerDashboard from './pages/Customer/CustomerDashboard'
 import CustomerProfile from './pages/Customer/CustomerProfile'
@@ -227,6 +228,7 @@ const App = () => {
           <Route path="/vendor/profile" element={<VendorProfile />} />
           <Route path="/vendor/menus" element={<VendorMenus />} />
           <Route path="/vendor/plans" element={<VendorPlans />} />
+          <Route path="/vendor/tracking" element={<VendorTracking />} />
           <Route path="/customer/dashboard" element={<CustomerRoute />} />
           <Route path="/customer/market" element={<CustomerMarketRoute />} />
           <Route path="/customer/vendor/:vendorId" element={<VendorDetailsRoute />} />
