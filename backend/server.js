@@ -10,6 +10,7 @@ const vendorRoutes = require('./Routes/vendorRoutes');
 const uploadRoutes = require('./Routes/uploadRoutes');
 const customerRoutes = require('./Routes/customerRoutes');
 const paymentRoutes = require('./Routes/paymentRoutes'); // Added paymentRoutes
+const driverRoutes = require('./Routes/driverRoutes'); // Import driver routes
 
 require('dotenv').config();
 
@@ -37,6 +38,7 @@ app.use('/api/vendor', vendorRoutes); // Vendor routes
 app.use('/api/vendor/upload', uploadRoutes); // Upload routes
 app.use('/api/customer', customerRoutes); // Customer routes
 app.use('/api/payment', paymentRoutes); // Payment routes
+app.use('/api/drivers', driverRoutes); // Driver routes
 
 // Health check
 app.get('/', (req, res) => {

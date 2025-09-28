@@ -3,25 +3,36 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
 import { auth } from '../../../firebase.config';
-import { FaStore, FaUsers, FaUser, FaClipboardList, FaUtensils, FaStar, FaBars, FaPlus, FaEye, FaChartLine, FaSignOutAlt, FaTruck } from 'react-icons/fa';
+import { FaStore, FaUsers, FaUser, FaClipboardList, FaUtensils, FaStar, FaBars, FaPlus, FaEye, FaChartLine, FaSignOutAlt, FaTruck, FaRoute } from 'react-icons/fa';
 import VendorSidebar from '../../components/Vendor/VendorSidebar';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { toast } from 'sonner';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import DeliveryMapView from '@/components/Vendor/DeliveryMapView';
 
 const VendorDashboard = () => {
   const { user, userType, loading, logout, vendorProfile } = useUserContext();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [stats, setStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [selectedDriver, setSelectedDriver] = useState(null);
+  const [availableDrivers, setAvailableDrivers] = useState([]);
+  const [subscribersWithLocations, setSubscribersWithLocations] = useState([]);
+  const [vendorLocationData, setVendorLocationData] = useState(null); // Add this state
+  const [isLoadingDrivers, setIsLoadingDrivers] = useState(false);
+  const [isLoadingSubscribers, setIsLoadingSubscribers] = useState(false); // Add this state
+  const [activeDelivery, setActiveDelivery] = useState(null);
   const navigate = useNavigate();
 
   console.log('VendorDashboard - Render State:', {
     userType,
     loading,
     sidebarOpen,
+    subscribersCount: subscribersWithLocations.length,
+    vendorLocation: vendorLocationData ? 'Has location' : 'No location',
     user: user ? {
       id: user.id,
       displayName: user.displayName,
@@ -44,13 +55,23 @@ const VendorDashboard = () => {
   useEffect(() => {
     if (user && userType === 'vendor') {
       fetchStats();
+      fetchAvailableDrivers();
+      fetchSubscribersWithLocations();
+      
+      // Poll for location updates every 15 seconds
+      const interval = setInterval(() => {
+        fetchAvailableDrivers();
+        fetchSubscribersWithLocations();
+      }, 15000);
+
+      return () => clearInterval(interval);
     }
   }, [user, userType]);
 
   const fetchStats = async () => {
     try {
       const idToken = await auth.currentUser.getIdToken();
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/vendor/stats`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/vendor/stats`, {
         headers: {
           'Authorization': `Bearer ${idToken}`,
           'Content-Type': 'application/json'
@@ -67,6 +88,178 @@ const VendorDashboard = () => {
       console.error('Error fetching stats:', error);
     } finally {
       setLoadingStats(false);
+    }
+  };
+
+  const fetchAvailableDrivers = async () => {
+    setIsLoadingDrivers(true);
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      console.log('Fetching drivers with token:', idToken ? 'Token exists' : 'No token');
+      
+      // Fix: Use VITE_BACKEND_URL instead of VITE_API_URL
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/drivers/available`, {
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Drivers API response:', data);
+      
+      if (data.success) {
+        setAvailableDrivers(data.drivers);
+        console.log('Set available drivers:', data.drivers.length);
+      } else {
+        console.error('API returned error:', data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching drivers:', error);
+    } finally {
+      setIsLoadingDrivers(false);
+    }
+  };
+
+  // Fetch subscribers with locations - Updated function
+  const fetchSubscribersWithLocations = async () => {
+    if (!user?.id) {
+      console.log('No user ID available');
+      return;
+    }
+
+    setIsLoadingSubscribers(true);
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      console.log('Fetching subscribers for vendor ID:', user.id);
+      
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/drivers/vendor/${user.id}/subscribers`, {
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+      console.log('Subscribers API response:', data);
+      
+      if (data.success) {
+        setSubscribersWithLocations(data.subscribers || []);
+        setVendorLocationData(data.vendorLocation); // Set vendor location from API
+        console.log('Set subscribers:', data.subscribers?.length || 0);
+        console.log('Set vendor location:', data.vendorLocation ? 'Yes' : 'No');
+      } else {
+        console.error('API returned error:', data.message);
+        toast.error(data.message || 'Failed to fetch subscribers');
+      }
+    } catch (error) {
+      console.error('Error fetching subscribers:', error);
+      toast.error('Failed to fetch subscribers with locations');
+    } finally {
+      setIsLoadingSubscribers(false);
+    }
+  };
+
+  // Update useEffect to fetch subscribers
+  useEffect(() => {
+    if (user && user.id) {
+      fetchAvailableDrivers();
+      fetchSubscribersWithLocations();
+      
+      // Poll for updates every 30 seconds
+      const interval = setInterval(() => {
+        fetchAvailableDrivers();
+        fetchSubscribersWithLocations();
+      }, 30000);
+
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
+  const createDeliveryAssignment = async () => {
+    if (!selectedDriver) {
+      toast.error('Please select a driver first');
+      return;
+    }
+
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/drivers/delivery/create`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          vendorId: user.id,
+          driverId: selectedDriver._id
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Delivery assignment created successfully!');
+        setActiveDelivery(data.delivery);
+        fetchAvailableDrivers(); // Refresh driver list
+      } else {
+        toast.error(data.message || 'Failed to create delivery assignment');
+      }
+    } catch (error) {
+      console.error('Error creating delivery:', error);
+      toast.error('Failed to create delivery assignment');
+    }
+  };
+
+  const assignDriverForDelivery = async () => {
+    if (!selectedDriver) {
+      toast.error('Please select a driver first');
+      return;
+    }
+
+    if (subscribersWithLocations.length === 0) {
+      toast.error('No subscribers with locations found');
+      return;
+    }
+
+    if (!vendorLocationData) {
+      toast.error('Vendor location is required for delivery assignment');
+      return;
+    }
+
+    try {
+      const idToken = await auth.currentUser?.getIdToken();
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/drivers/delivery/create`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          vendorId: user.id,
+          driverId: selectedDriver._id,
+          customers: subscribersWithLocations.map(sub => ({
+            customerId: sub.id,
+            address: sub.address,
+            location: {
+              type: 'Point',
+              coordinates: sub.coordinates
+            }
+          }))
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success(`Delivery assignment created! Driver ${selectedDriver.name} has been notified.`);
+        setActiveDelivery(data.delivery);
+        fetchAvailableDrivers(); // Refresh driver list
+      } else {
+        toast.error(data.message || 'Failed to create delivery assignment');
+      }
+    } catch (error) {
+      console.error('Error creating delivery:', error);
+      toast.error('Failed to create delivery assignment');
     }
   };
 
@@ -343,6 +536,143 @@ const VendorDashboard = () => {
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* Delivery Management - Add margin-top */}
+          <Card className="mb-6 mt-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FaTruck className="w-5 h-5" />
+                Delivery Management
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Debug Info */}
+                <div className="bg-gray-100 p-3 rounded-lg text-sm">
+                  <p><strong>Debug Info:</strong></p>
+                  <p>Vendor Location: {vendorLocationData ? '✅ Available' : '❌ Missing'}</p>
+                  <p>Subscribers: {subscribersWithLocations.length} found</p>
+                  <p>Selected Driver: {selectedDriver ? selectedDriver.name : 'None'}</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Select Driver for Delivery</label>
+                  <Select 
+                    value={selectedDriver?._id || ""} 
+                    onValueChange={(value) => {
+                      const driver = availableDrivers.find(d => d._id === value);
+                      console.log('Selected driver:', driver);
+                      setSelectedDriver(driver);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={
+                        isLoadingDrivers 
+                          ? "Loading drivers..." 
+                          : availableDrivers.length === 0 
+                            ? "No drivers available" 
+                            : `Select from ${availableDrivers.length} drivers`
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableDrivers.map((driver) => (
+                        <SelectItem key={driver._id} value={driver._id}>
+                          {driver.name} - {driver.vehicleType} ({driver.vehicleNumber}) - {driver.rating} stars
+                          {!driver.verified && ' (Unverified)'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {availableDrivers.length === 0 && !isLoadingDrivers && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      No drivers are currently available. Make sure drivers have set their locations and are marked as available.
+                    </p>
+                  )}
+                </div>
+                
+                {selectedDriver && (
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <h4 className="font-medium flex items-center gap-2">
+                      <FaUser className="w-4 h-4" />
+                      Selected Driver Details:
+                    </h4>
+                    <p>Name: {selectedDriver.name}</p>
+                    <p>Vehicle: {selectedDriver.vehicleType} - {selectedDriver.vehicleNumber}</p>
+                    <p>Rating: {selectedDriver.rating} stars</p>
+                    <p>Status: {selectedDriver.available ? 'Available' : 'Busy'}</p>
+                  </div>
+                )}
+
+                {selectedDriver && subscribersWithLocations.length > 0 && vendorLocationData && (
+                  <div className="mt-4 space-y-2">
+                    <Button 
+                      onClick={assignDriverForDelivery}
+                      className="w-full bg-green-600 hover:bg-green-700"
+                    >
+                      <FaTruck className="w-4 h-4 mr-2" />
+                      Create Delivery Route ({subscribersWithLocations.length} customers)
+                    </Button>
+                    
+                    <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded">
+                      <p><strong>Next Steps:</strong></p>
+                      <p>1. Driver will receive delivery assignment notification</p>
+                      <p>2. Driver must be within 500m of your location to start</p>
+                      <p>3. TSP optimized route will guide efficient delivery</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Show loading state */}
+                {isLoadingSubscribers && (
+                  <div className="text-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                    <p className="text-sm text-muted-foreground mt-2">Loading subscribers...</p>
+                  </div>
+                )}
+
+                {/* Show missing data warnings */}
+                {!vendorLocationData && !isLoadingSubscribers && (
+                  <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
+                    <p className="text-yellow-800 text-sm">
+                      <strong>Warning:</strong> Vendor location is missing. Please update your profile with a complete address to enable delivery routing.
+                    </p>
+                    <Button variant="outline" size="sm" className="mt-2" onClick={() => navigate('/vendor/profile')}>
+                      Update Profile
+                    </Button>
+                  </div>
+                )}
+
+                {subscribersWithLocations.length === 0 && !isLoadingSubscribers && (
+                  <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-lg">
+                    <p className="text-yellow-800 text-sm">
+                      <strong>Info:</strong> No subscribers with valid locations found. Customers need to update their addresses with coordinates.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Delivery Route Map */}
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FaRoute className="w-5 h-5" />
+                Delivery Route Map
+              </CardTitle>
+              <CardDescription>
+                TSP optimized route visualization for efficient delivery
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DeliveryMapView 
+                selectedDriver={selectedDriver}
+                subscribers={subscribersWithLocations}
+                vendorLocation={vendorLocationData} // Use the fetched vendor location
+                activeDelivery={activeDelivery}
+              />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
