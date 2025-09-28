@@ -7,7 +7,8 @@ const {
   deleteVendor,
   toggleVendorVerification,
   getVendorDetails,
-  createTestVendors
+  createTestVendors,
+  getDashboardStats
 } = require('../Controllers/adminControllers');
 
 // Admin middleware (simple check for now)
@@ -15,6 +16,9 @@ const adminAuth = (req, res, next) => {
   // For now, just pass through - in production you'd verify admin token
   next();
 };
+
+// Get dashboard statistics
+router.get('/dashboard-stats', adminAuth, getDashboardStats);
 
 // Get all users
 router.get('/users', adminAuth, getAllUsers);
