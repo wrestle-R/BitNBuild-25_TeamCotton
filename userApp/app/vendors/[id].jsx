@@ -9,7 +9,9 @@ import {
   Platform,
   Linking,
   Alert,
-  RefreshControl
+  RefreshControl,
+  Modal,
+  Dimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -17,7 +19,8 @@ import { useColorScheme } from 'react-native';
 import { ThemedText } from '../../components/ThemedText';
 import { ThemedView } from '../../components/ThemedView';
 import { Colors, lightColors, darkColors, shadows, borderRadius } from '../../constants/Colors';
-import { getVendorById, getVendorPlans, getProfile } from '../../api/customerApi';
+import { getVendorById, getVendorPlans, getProfile, getPlanMenus, createOrder, verifyPayment } from '../../api/customerApi';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function VendorDetails() {
   const { id } = useLocalSearchParams();
@@ -27,12 +30,16 @@ export default function VendorDetails() {
   
   const [vendor, setVendor] = useState(null);
   const [mealPlans, setMealPlans] = useState([]);
+  const [planMenus, setPlanMenus] = useState([]);
   const [loading, setLoading] = useState(true);
   const [plansLoading, setPlansLoading] = useState(false);
+  const [loadingMenus, setLoadingMenus] = useState(false);
   const [error, setError] = useState(null);
   const [profile, setProfile] = useState(null);
   const [distance, setDistance] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [showPlanModal, setShowPlanModal] = useState(false);
 
   // Helper function to calculate distance between two points (in km)
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -140,19 +147,20 @@ export default function VendorDetails() {
         setProfile(profileData);
         setVendor(vendorData);
 
-        // Fetch meal plans if vendor has plans count
-        if (vendorData && typeof vendorData.plans === 'number' && vendorData.plans > 0) {
-          setPlansLoading(true);
-          try {
-            const plansData = await getVendorPlans(id);
-            console.log('Fetched meal plans:', plansData);
-            setMealPlans(Array.isArray(plansData) ? plansData : []);
-          } catch (planError) {
-            console.error('Error fetching meal plans:', planError);
-            // Don't set error state for plans - just show empty state
-          } finally {
-            setPlansLoading(false);
-          }
+        // Always try to fetch meal plans and menus, even if vendor.plans count is 0 or undefined
+        setPlansLoading(true);
+        try {
+          const plansData = await getVendorPlans(id);
+          console.log('Fetched meal plans:', plansData);
+          console.log('Plans data type:', typeof plansData);
+          console.log('Is array?', Array.isArray(plansData));
+          console.log('Length:', plansData ? (Array.isArray(plansData) ? plansData.length : 'Not an array') : 'No data');
+          setMealPlans(Array.isArray(plansData) ? plansData : []);
+        } catch (planError) {
+          console.error('Error fetching meal plans:', planError);
+          // Don't set error state for plans - just show empty state
+        } finally {
+          setPlansLoading(false);
         }
 
         // Calculate distance if both vendor and user coordinates are available
@@ -289,13 +297,61 @@ export default function VendorDetails() {
     }
   };
   
+  // Function to fetch menus for a specific plan
+  const fetchPlanMenus = async (planId) => {
+    try {
+      setLoadingMenus(true);
+      const menusData = await getPlanMenus(planId, id);
+      setPlanMenus(Array.isArray(menusData) ? menusData : []);
+    } catch (menuError) {
+      console.error('Error fetching plan menus:', menuError);
+      setPlanMenus([]); // Set empty array if menu fetch fails
+    } finally {
+      setLoadingMenus(false);
+    }
+  };
+  
   // Helper function to handle subscribe action
-  const handleSubscribe = (planId) => {
-    Alert.alert(
-      'Subscribe to Plan',
-      'Subscription feature coming soon!',
-      [{ text: 'OK' }]
-    );
+  const handleSubscribe = async (plan) => {
+    // Simply redirect to vendor plans page for payment
+    handleCloseModal();
+    router.push(`/vendor-plans/${id}`);
+  };
+  
+  // Function to handle phone call
+  const handleCallVendor = (phoneNumber) => {
+    if (!phoneNumber) {
+      Alert.alert('Error', 'Phone number not available');
+      return;
+    }
+    
+    const phoneUrl = `tel:${phoneNumber}`;
+    Linking.canOpenURL(phoneUrl)
+      .then((supported) => {
+        if (!supported) {
+          Alert.alert('Error', 'Phone calls are not supported on this device');
+          return;
+        }
+        return Linking.openURL(phoneUrl);
+      })
+      .catch(err => console.error('Error making phone call:', err));
+  };
+
+  // Function to handle showing plan details
+  const handleViewPlanDetails = (plan) => {
+    setSelectedPlan(plan);
+    setShowPlanModal(true);
+    // Fetch menus for this specific plan
+    if (plan._id) {
+      fetchPlanMenus(plan._id);
+    }
+  };
+
+  // Function to close plan details modal
+  const handleCloseModal = () => {
+    setShowPlanModal(false);
+    setSelectedPlan(null);
+    setPlanMenus([]); // Clear plan-specific menus
   };
   
   if (loading) {
@@ -340,17 +396,22 @@ export default function VendorDetails() {
               uri: vendor.profileImage || vendor.imageUrl || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=2070&auto=format&fit=crop' 
             }}
             style={styles.vendorImage}
+            resizeMode="cover"
           />
-          <TouchableOpacity 
+          {/* <TouchableOpacity 
             style={styles.backButton} 
             onPress={() => router.back()}
           >
             <Ionicons name="arrow-back" size={24} color="white" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           
           <View style={[
             styles.headerOverlay, 
-            { backgroundColor: 'rgba(0,0,0,0.3)' }
+            { 
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              borderTopRightRadius: 12,
+              borderTopLeftRadius: 12,
+            }
           ]}>
             <View>
               <ThemedText style={styles.vendorName}>
@@ -360,23 +421,36 @@ export default function VendorDetails() {
               <View style={styles.ratingContainer}>
                 <View style={[
                   styles.ratingBadge, 
-                  { backgroundColor: vendor.rating >= 4.0 ? '#388E3C' : '#F57C00' }
+                  { backgroundColor: vendor.rating >= 4.0 ? '#388E3C' : vendor.rating >= 3.0 ? '#F57C00' : '#D32F2F' }
                 ]}>
                   <Ionicons name="star" size={16} color="white" />
                   <ThemedText style={styles.ratingText}>
-                    {vendor.rating}
+                    {vendor.rating || '4.2'}
                   </ThemedText>
                 </View>
-                {vendor.reviewCount !== undefined && (
-                  <ThemedText style={styles.reviewCount}>
-                    {vendor.reviewCount} reviews
-                  </ThemedText>
-                )}
+                <ThemedText style={styles.reviewCount}>
+                  {vendor.reviewCount || '200+'} reviews
+                </ThemedText>
               </View>
               
-              <ThemedText style={styles.cuisineText}>
-                {vendor.specialty === 'veg' ? 'Vegetarian • Pure Veg' : 'Non-Vegetarian • Multi Cuisine'}
-              </ThemedText>
+              <View style={styles.tagContainer}>
+                {vendor.specialty === 'veg' ? (
+                  <View style={styles.tagBadge}>
+                    <Ionicons name="leaf" size={14} color="#4CAF50" />
+                    <ThemedText style={[styles.tagText, {color: '#4CAF50'}]}>Pure Veg</ThemedText>
+                  </View>
+                ) : (
+                  <View style={styles.tagBadge}>
+                    <Ionicons name="fast-food" size={14} color="#FF9800" />
+                    <ThemedText style={[styles.tagText, {color: '#FF9800'}]}>Multi Cuisine</ThemedText>
+                  </View>
+                )}
+                
+                <View style={styles.tagBadge}>
+                  <Ionicons name="time" size={14} color={colors.primary} />
+                  <ThemedText style={[styles.tagText, {color: colors.primary}]}>30-40 min</ThemedText>
+                </View>
+              </View>
             </View>
           </View>
         </View>
@@ -387,35 +461,48 @@ export default function VendorDetails() {
           <ThemedText style={styles.description}>{vendor.description || 'No description provided for this vendor.'}</ThemedText>
           
           <View style={styles.detailsGrid}>
-            {/* <View style={styles.detailItem}>
-              <Ionicons name="time-outline" size={20} color={colors.primary} />
-              <ThemedText style={styles.detailText}>
-                Delivery: {vendor.deliveryTime || '30-45'} mins
-              </ThemedText>
-            </View> */}
-            
-            <View style={styles.detailItem}>
-              <Ionicons name="time-outline" size={20} color={colors.primary} />
-              <ThemedText style={styles.detailText}>
-                Contact: {vendor.contactNumber || '1234567890'}
-              </ThemedText>
-            </View>
-            
-            <View style={styles.detailItem}>
-              <Ionicons name="location-outline" size={20} color={colors.primary} />
-              <ThemedText style={styles.detailText}>
-                {distance !== null && !isNaN(distance) ? `${distance.toFixed(1)} km away` : 'Distance not available'}
-              </ThemedText>
-            </View>
-            
-            {vendor.address && (
-              <View style={styles.detailItem}>
-                <Ionicons name="home-outline" size={20} color={colors.primary} />
-                <ThemedText style={styles.detailText} numberOfLines={2}>
-                  {[vendor.address.street, vendor.address.city, vendor.address.state, vendor.address.pincode]
-                    .filter(Boolean)
-                    .join(', ')}
+            {/* Distance info */}
+            <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
+              <Ionicons name="location-outline" size={22} color={colors.primary} />
+              <View style={styles.infoCardContent}>
+                <ThemedText style={styles.infoCardTitle}>Distance</ThemedText>
+                <ThemedText style={styles.infoCardValue}>
+                  {distance !== null && !isNaN(distance) ? `${distance.toFixed(1)} km away` : 'Not available'}
                 </ThemedText>
+              </View>
+            </View>
+            
+            {/* Contact info with call button */}
+            <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
+              <Ionicons name="call-outline" size={22} color={colors.primary} />
+              <View style={styles.infoCardContent}>
+                <ThemedText style={styles.infoCardTitle}>Contact</ThemedText>
+                <ThemedText style={styles.infoCardValue}>
+                  {vendor.contactNumber || 'Not available'}
+                </ThemedText>
+              </View>
+              {vendor.contactNumber && (
+                <TouchableOpacity 
+                  style={[styles.callButton, { backgroundColor: colors.primary }]}
+                  onPress={() => handleCallVendor(vendor.contactNumber)}
+                >
+                  <Ionicons name="call" size={18} color="white" />
+                </TouchableOpacity>
+              )}
+            </View>
+            
+            {/* Address info */}
+            {vendor.address && (
+              <View style={[styles.infoCard, { backgroundColor: colors.card, width: '100%' }]}>
+                <Ionicons name="home-outline" size={22} color={colors.primary} />
+                <View style={styles.infoCardContent}>
+                  <ThemedText style={styles.infoCardTitle}>Address</ThemedText>
+                  <ThemedText style={styles.infoCardValue} numberOfLines={2}>
+                    {[vendor.address.street, vendor.address.city, vendor.address.state, vendor.address.pincode]
+                      .filter(Boolean)
+                      .join(', ')}
+                  </ThemedText>
+                </View>
               </View>
             )}
             
@@ -424,9 +511,27 @@ export default function VendorDetails() {
         
         {/* Meal Plans */}
         <View style={styles.plansSection}>
-          <ThemedText style={styles.sectionTitle}>
-            Meal Plans {vendor.plans > 0 ? `(${vendor.plans})` : ''}
-          </ThemedText>
+          <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12}}>
+            <ThemedText style={styles.sectionTitle}>
+              Meal Plans {vendor.plans > 0 ? `(${vendor.plans})` : ''}
+            </ThemedText>
+            
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: 6,
+                paddingHorizontal: 12,
+                borderWidth: 1,
+                borderColor: colors.primary,
+                borderRadius: 16,
+              }}
+              onPress={() => router.push(`/vendor-plans/${id}`)}
+            >
+              <ThemedText style={{ color: colors.primary, fontWeight: '500' }}>View All Plans</ThemedText>
+              <Ionicons name="chevron-forward" size={16} color={colors.primary} style={{ marginLeft: 4 }} />
+            </TouchableOpacity>
+          </View>
           
           {plansLoading ? (
             <View style={styles.loadingContainer}>
@@ -434,24 +539,37 @@ export default function VendorDetails() {
               <ThemedText style={[styles.loadingText, {marginTop: 10}]}>Loading Plans...</ThemedText>
             </View>
           ) : (!Array.isArray(mealPlans) || mealPlans.length === 0) ? (
-            <ThemedText style={styles.noPlansText}>
-              No meal plans available at the moment.
-            </ThemedText>
+            <View>
+              <ThemedText style={styles.noPlansText}>
+                No meal plans available at the moment.
+              </ThemedText>
+              <TouchableOpacity
+                style={[styles.viewPlansButton, { backgroundColor: colors.primary }]}
+                onPress={() => router.push(`/vendor-plans/${id}`)}
+              >
+                <ThemedText style={{ color: 'white', fontWeight: '600' }}>Check Available Plans</ThemedText>
+              </TouchableOpacity>
+            </View>
           ) : (
             mealPlans.map((plan) => (
-              <View 
-                key={plan._id} 
+              <TouchableOpacity 
+                key={plan._id}
                 style={[
                   styles.planCard, 
-                  { backgroundColor: colors.card, ...shadows.sm }
+                  { backgroundColor: colors.card }
                 ]}
+                onPress={() => handleViewPlanDetails(plan)}
+                activeOpacity={0.7}
               >
+                {/* Plan Header with ribbon design */}
                 <View style={styles.planHeader}>
                   <View>
                     <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                      <ThemedText style={{fontSize: 22, marginRight: 8}}>
-                        {getMealPlanIcon(plan.selected_meals)}
-                      </ThemedText>
+                      <View style={[styles.mealIconContainer, {backgroundColor: colors.primary + '20'}]}>
+                        <ThemedText style={{fontSize: 20}}>
+                          {getMealPlanIcon(plan.selected_meals)}
+                        </ThemedText>
+                      </View>
                       <ThemedText style={styles.planName}>{plan.name}</ThemedText>
                     </View>
                     <ThemedText style={styles.planDuration}>
@@ -459,8 +577,11 @@ export default function VendorDetails() {
                     </ThemedText>
                   </View>
                   
-                  <View style={styles.priceContainer}>
-                    <ThemedText style={styles.price}>
+                  <View style={[
+                    styles.priceContainer,
+                    { backgroundColor: colors.primary + '15', borderRadius: 8, padding: 8 }
+                  ]}>
+                    <ThemedText style={[styles.price, {color: colors.primary}]}>
                       ₹{safeNumberConversion(plan.price)}
                     </ThemedText>
                     <ThemedText style={styles.perMeal}>
@@ -477,67 +598,348 @@ export default function VendorDetails() {
                   </View>
                 </View>
                 
+                {/* Plan details with better styling */}
                 <View style={styles.planDetails}>
-                  <View style={[styles.planDetailRow, {backgroundColor: colors.muted + '30', borderRadius: 8, padding: 8, marginBottom: 6}]}>
-                    <ThemedText style={{fontSize: 14, fontWeight: '500'}}>Duration</ThemedText>
-                    <View style={styles.planBadge}>
-                      <ThemedText style={{color: colors.card, fontWeight: '500'}}>
-                        {plan.duration || plan.duration_days} {(plan.duration || plan.duration_days) === 1 ? 'day' : 'days'}
-                      </ThemedText>
+                  {/* Duration */}
+                  <View style={styles.planDetailRow}>
+                    <View style={styles.planDetailIconContainer}>
+                      <Ionicons name="calendar-outline" size={18} color={colors.primary} />
                     </View>
+                    <ThemedText style={styles.planDetailLabel}>Duration</ThemedText>
+                    <ThemedText style={styles.planDetailValue}>
+                      {plan.duration || plan.duration_days} {(plan.duration || plan.duration_days) === 1 ? 'day' : 'days'}
+                    </ThemedText>
                   </View>
 
-                  <View style={[styles.planDetailRow, {backgroundColor: colors.muted + '30', borderRadius: 8, padding: 8, marginBottom: 6}]}>
-                    <ThemedText style={{fontSize: 14, fontWeight: '500'}}>Meals</ThemedText>
-                    <ThemedText style={{fontWeight: '500'}}>
+                  {/* Meals */}
+                  <View style={styles.planDetailRow}>
+                    <View style={styles.planDetailIconContainer}>
+                      <Ionicons name="restaurant-outline" size={18} color={colors.primary} />
+                    </View>
+                    <ThemedText style={styles.planDetailLabel}>Meals</ThemedText>
+                    <ThemedText style={styles.planDetailValue}>
                       {plan.selected_meals && plan.selected_meals.length > 0 ?
                         formatMealTypes(plan.selected_meals) : 
                         'Standard meals'}
                     </ThemedText>
                   </View>
 
-                  <View style={[styles.planDetailRow, {backgroundColor: colors.muted + '30', borderRadius: 8, padding: 8, marginBottom: 6}]}>
-                    <ThemedText style={{fontSize: 14, fontWeight: '500'}}>Per Day</ThemedText>
-                    <ThemedText style={{fontWeight: '500'}}>
+                  {/* Per Day */}
+                  <View style={styles.planDetailRow}>
+                    <View style={styles.planDetailIconContainer}>
+                      <Ionicons name="time-outline" size={18} color={colors.primary} />
+                    </View>
+                    <ThemedText style={styles.planDetailLabel}>Per Day</ThemedText>
+                    <ThemedText style={styles.planDetailValue}>
                       {plan.mealsPerDay || plan.meals_per_day || 2} meal{(plan.mealsPerDay || plan.meals_per_day || 2) > 1 ? 's' : ''}
                     </ThemedText>
                   </View>
                   
+                  {/* Food Type */}
                   {vendor.specialty && (
-                    <View style={styles.planDetailItem}>
-                      <Ionicons 
-                        name={vendor.specialty === 'veg' ? 'leaf-outline' : 'fast-food-outline'} 
-                        size={16} 
-                        color={colors.primary} 
-                      />
-                      <ThemedText style={styles.planDetailText}>
+                    <View style={styles.planDetailRow}>
+                      <View style={styles.planDetailIconContainer}>
+                        <Ionicons 
+                          name={vendor.specialty === 'veg' ? 'leaf' : 'fast-food'} 
+                          size={18} 
+                          color={vendor.specialty === 'veg' ? '#4CAF50' : '#FF9800'} 
+                        />
+                      </View>
+                      <ThemedText style={styles.planDetailLabel}>Type</ThemedText>
+                      <ThemedText style={[
+                        styles.planDetailValue,
+                        { color: vendor.specialty === 'veg' ? '#4CAF50' : '#FF9800' }
+                      ]}>
                         {vendor.specialty === 'veg' ? 'Vegetarian' : 'Non-veg options'}
                       </ThemedText>
                     </View>
                   )}
                 </View>
                 
+                {/* Subscribe button with gradient-like effect */}
                 <TouchableOpacity
                   style={[
                     styles.subscribeButton,
                     { backgroundColor: colors.primary }
                   ]}
-                  onPress={() => {
-                    Alert.alert(
-                      'Subscription',
-                      'Subscription feature coming soon!',
-                      [{ text: 'OK' }]
-                    );
-                  }}
+                  onPress={() => router.push(`/vendor-plans/${id}`)}
                 >
                   <Ionicons name="cart-outline" size={18} color="white" style={{marginRight: 8}} />
                   <ThemedText style={styles.subscribeButtonText}>Subscribe Now</ThemedText>
                 </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             ))
           )}
         </View>
       </ScrollView>
+
+      {/* Plan Details Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showPlanModal}
+        onRequestClose={handleCloseModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <View style={styles.modalHeader}>
+              <View>
+                <ThemedText style={styles.modalTitle}>
+                  {selectedPlan?.name || 'Plan Details'}
+                </ThemedText>
+                <ThemedText style={[styles.modalSubtitle, { color: colors.text + '80' }]}>
+                  Complete plan information
+                </ThemedText>
+              </View>
+              <TouchableOpacity onPress={handleCloseModal} style={styles.closeButton}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScrollView} showsVerticalScrollIndicator={false}>
+              {selectedPlan && (
+                <>
+                  {/* Plan Summary Card */}
+                  <View style={[styles.modalPlanCard, { backgroundColor: colors.primary + '10' }]}>
+                    <View style={styles.modalPlanHeader}>
+                      <View style={styles.modalPlanIcon}>
+                        <ThemedText style={styles.modalPlanIconText}>
+                          {getMealPlanIcon(selectedPlan.selected_meals)}
+                        </ThemedText>
+                      </View>
+                      <View style={styles.modalPlanInfo}>
+                        <ThemedText style={styles.modalPlanName}>{selectedPlan.name}</ThemedText>
+                        <ThemedText style={[styles.modalPlanDuration, { color: colors.text + '80' }]}>
+                          {getPlanDurationText(selectedPlan.duration || selectedPlan.duration_days)}
+                        </ThemedText>
+                      </View>
+                      <View style={styles.modalPriceContainer}>
+                        <ThemedText style={[styles.modalPrice, { color: colors.primary }]}>
+                          ₹{safeNumberConversion(selectedPlan.price)}
+                        </ThemedText>
+                        <ThemedText style={[styles.modalPriceLabel, { color: colors.text + '60' }]}>
+                          Total
+                        </ThemedText>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Detailed Information */}
+                  <View style={styles.modalDetailsSection}>
+                    <ThemedText style={[styles.modalSectionTitle, { color: colors.primary }]}>
+                      Plan Details
+                    </ThemedText>
+                    
+                    {/* Duration */}
+                    <View style={styles.modalDetailRow}>
+                      <View style={[styles.modalDetailIcon, { backgroundColor: colors.primary + '15' }]}>
+                        <Ionicons name="calendar-outline" size={20} color={colors.primary} />
+                      </View>
+                      <View style={styles.modalDetailInfo}>
+                        <ThemedText style={styles.modalDetailLabel}>Duration</ThemedText>
+                        <ThemedText style={[styles.modalDetailValue, { color: colors.text }]}>
+                          {selectedPlan.duration || selectedPlan.duration_days} {(selectedPlan.duration || selectedPlan.duration_days) === 1 ? 'day' : 'days'}
+                        </ThemedText>
+                      </View>
+                    </View>
+
+                    {/* Meals per day */}
+                    <View style={styles.modalDetailRow}>
+                      <View style={[styles.modalDetailIcon, { backgroundColor: colors.primary + '15' }]}>
+                        <Ionicons name="restaurant-outline" size={20} color={colors.primary} />
+                      </View>
+                      <View style={styles.modalDetailInfo}>
+                        <ThemedText style={styles.modalDetailLabel}>Meals per day</ThemedText>
+                        <ThemedText style={[styles.modalDetailValue, { color: colors.text }]}>
+                          {selectedPlan.mealsPerDay || selectedPlan.meals_per_day || 2} meal{(selectedPlan.mealsPerDay || selectedPlan.meals_per_day || 2) > 1 ? 's' : ''}
+                        </ThemedText>
+                      </View>
+                    </View>
+
+                    {/* Meal types */}
+                    <View style={styles.modalDetailRow}>
+                      <View style={[styles.modalDetailIcon, { backgroundColor: colors.primary + '15' }]}>
+                        <Ionicons name="time-outline" size={20} color={colors.primary} />
+                      </View>
+                      <View style={styles.modalDetailInfo}>
+                        <ThemedText style={styles.modalDetailLabel}>Meal types</ThemedText>
+                        <ThemedText style={[styles.modalDetailValue, { color: colors.text }]}>
+                          {selectedPlan.selected_meals && selectedPlan.selected_meals.length > 0 ?
+                            formatMealTypes(selectedPlan.selected_meals) : 
+                            'Standard meals'}
+                        </ThemedText>
+                      </View>
+                    </View>
+
+                    {/* Food type */}
+                    {vendor.specialty && (
+                      <View style={styles.modalDetailRow}>
+                        <View style={[styles.modalDetailIcon, { 
+                          backgroundColor: vendor.specialty === 'veg' ? '#4CAF5015' : '#FF980015'
+                        }]}>
+                          <Ionicons 
+                            name={vendor.specialty === 'veg' ? 'leaf' : 'fast-food'} 
+                            size={20} 
+                            color={vendor.specialty === 'veg' ? '#4CAF50' : '#FF9800'} 
+                          />
+                        </View>
+                        <View style={styles.modalDetailInfo}>
+                          <ThemedText style={styles.modalDetailLabel}>Food type</ThemedText>
+                          <ThemedText style={[
+                            styles.modalDetailValue,
+                            { color: vendor.specialty === 'veg' ? '#4CAF50' : '#FF9800' }
+                          ]}>
+                            {vendor.specialty === 'veg' ? 'Vegetarian' : 'Non-vegetarian options available'}
+                          </ThemedText>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Menu Items */}
+                  <View style={styles.modalDetailsSection}>
+                    <ThemedText style={[styles.modalSectionTitle, { color: colors.primary }]}>
+                      Available Food Items
+                    </ThemedText>
+                    
+                    <View style={styles.menuContainer}>
+                      {loadingMenus ? (
+                        <View style={[styles.noMenuCard, { backgroundColor: colors.card }]}>
+                          <ActivityIndicator size="small" color={colors.primary} />
+                          <ThemedText style={styles.noDataText}>Loading menu items...</ThemedText>
+                        </View>
+                      ) : planMenus && planMenus.length > 0 ? (
+                        <View style={styles.mealGroupContainer}>
+                          {planMenus.map((menu) => (
+                            <View key={menu._id} style={[styles.mealTypeBox, { backgroundColor: colors.card }]}>
+                              {/* Meal Type Header */}
+                              <View style={[styles.mealTypeHeader, { backgroundColor: colors.primary + '15' }]}>
+                                <Ionicons 
+                                  name={
+                                    menu.meal_type === 'breakfast' ? 'sunny-outline' :
+                                    menu.meal_type === 'lunch' ? 'restaurant-outline' :
+                                    menu.meal_type === 'dinner' ? 'moon-outline' : 'time-outline'
+                                  } 
+                                  size={20} 
+                                  color={colors.primary} 
+                                />
+                                <ThemedText style={[styles.mealTypeTitle, { color: colors.primary }]}>
+                                  {menu.meal_type.charAt(0).toUpperCase() + menu.meal_type.slice(1)}
+                                </ThemedText>
+                                <View style={[styles.vegIndicator, { 
+                                  backgroundColor: menu.non_veg ? '#FF9800' : '#4CAF50' 
+                                }]}>
+                                  <Ionicons 
+                                    name={menu.non_veg ? "restaurant" : "leaf"} 
+                                    size={12} 
+                                    color="white" 
+                                  />
+                                </View>
+                              </View>
+                              
+                              {/* Food Items List */}
+                              <View style={styles.foodItemsList}>
+                                {menu.items && Array.isArray(menu.items) && menu.items.length > 0 ? (
+                                  menu.items.map((item, itemIndex) => (
+                                    <View key={itemIndex} style={styles.foodItemRow}>
+                                      <View style={styles.bulletPoint} />
+                                      <View style={styles.foodItemContent}>
+                                        <ThemedText style={styles.foodItemName}>
+                                          {item.name || item.dish_name || item.itemName || 'Food Item'}
+                                        </ThemedText>
+                                        {item.description && (
+                                          <ThemedText style={styles.foodItemDescription} numberOfLines={1}>
+                                            {item.description}
+                                          </ThemedText>
+                                        )}
+                                      </View>
+                                    </View>
+                                  ))
+                                ) : (
+                                  <ThemedText style={styles.noItemsText}>No items available</ThemedText>
+                                )}
+                              </View>
+                            </View>
+                          ))}
+                        </View>
+                      ) : (
+                        <View style={[styles.noMenuCard, { backgroundColor: colors.card }]}>
+                          <Ionicons name="restaurant-outline" size={32} color={colors.primary + '60'} />
+                          <ThemedText style={styles.noDataText}>
+                            Menu items will be provided by the vendor
+                          </ThemedText>
+                          <ThemedText style={[styles.noDataSubtext, { color: colors.text + '60' }]}>
+                            Contact the vendor for specific meal details
+                          </ThemedText>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+
+                  {/* Price Breakdown */}
+                  <View style={styles.modalDetailsSection}>
+                    <ThemedText style={[styles.modalSectionTitle, { color: colors.primary }]}>
+                      Price Breakdown
+                    </ThemedText>
+                    
+                    <View style={[styles.modalPriceBreakdown, { backgroundColor: colors.background }]}>
+                      <View style={styles.modalPriceRow}>
+                        <ThemedText style={styles.modalPriceRowLabel}>Total price</ThemedText>
+                        <ThemedText style={[styles.modalPriceRowValue, { color: colors.primary }]}>
+                          ₹{safeNumberConversion(selectedPlan.price)}
+                        </ThemedText>
+                      </View>
+                      
+                      {(selectedPlan.duration || selectedPlan.duration_days) > 1 && (
+                        <View style={styles.modalPriceRow}>
+                          <ThemedText style={styles.modalPriceRowLabel}>Per day</ThemedText>
+                          <ThemedText style={styles.modalPriceRowValue}>
+                            ₹{Math.round(safeNumberConversion(selectedPlan.price) / (selectedPlan.duration || selectedPlan.duration_days))}
+                          </ThemedText>
+                        </View>
+                      )}
+                      
+                      <View style={styles.modalPriceRow}>
+                        <ThemedText style={styles.modalPriceRowLabel}>Per meal</ThemedText>
+                        <ThemedText style={styles.modalPriceRowValue}>
+                          ₹{(safeNumberConversion(selectedPlan.price) / 
+                            ((selectedPlan.duration || selectedPlan.duration_days || 30) * 
+                             (selectedPlan.mealsPerDay || selectedPlan.meals_per_day || 2))).toFixed(0)}
+                        </ThemedText>
+                      </View>
+                    </View>
+                  </View>
+                </>
+              )}
+            </ScrollView>
+
+            {/* Modal Actions */}
+            <View style={styles.modalActions}>
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.modalSecondaryButton, { borderColor: colors.primary }]}
+                onPress={handleCloseModal}
+              >
+                <ThemedText style={[styles.modalSecondaryButtonText, { color: colors.primary }]}>
+                  Close
+                </ThemedText>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.modalButton, styles.modalPrimaryButton, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  handleCloseModal();
+                  router.push(`/vendor-plans/${id}`);
+                }}
+              >
+                <Ionicons name="cart-outline" size={16} color="white" style={{marginRight: 6}} />
+                <ThemedText style={styles.modalPrimaryButtonText}>
+                  Subscribe Now
+                </ThemedText>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ThemedView>
   );
 }
@@ -562,13 +964,16 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 30,
   },
+  // Header styles
   header: {
     position: 'relative',
-    height: 200,
+    height: 220, // Slightly taller header
   },
   vendorImage: {
     width: '100%',
     height: '100%',
+    borderBottomLeftRadius: 12,
+    borderBottomRightRadius: 12,
   },
   backButton: {
     position: 'absolute',
@@ -577,10 +982,11 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
+    ...shadows.md,
   },
   headerOverlay: {
     position: 'absolute',
@@ -588,16 +994,20 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 16,
+    paddingBottom: 20,
   },
   vendorName: {
     color: 'white',
     fontSize: 24,
     fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 6,
   },
   ratingBadge: {
     flexDirection: 'row',
@@ -614,11 +1024,30 @@ const styles = StyleSheet.create({
   reviewCount: {
     color: 'white',
     marginLeft: 8,
+    fontSize: 12,
   },
-  cuisineText: {
-    color: 'white',
-    marginTop: 4,
+  // Tag container for cuisine type and delivery time
+  tagContainer: {
+    flexDirection: 'row',
+    marginTop: 8,
+    flexWrap: 'wrap',
   },
+  tagBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 16,
+    marginRight: 8,
+    marginBottom: 4,
+  },
+  tagText: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  // Info section styles
   infoSection: {
     padding: 16,
   },
@@ -630,20 +1059,45 @@ const styles = StyleSheet.create({
   description: {
     lineHeight: 22,
     marginBottom: 16,
+    fontSize: 14,
   },
   detailsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 12,
   },
-  detailItem: {
+  // Card-style info items
+  infoCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '50%',
-    marginBottom: 12,
+    width: '48%',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    ...shadows.sm,
   },
-  detailText: {
+  infoCardContent: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  infoCardTitle: {
+    fontSize: 12,
+    opacity: 0.7,
+  },
+  infoCardValue: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  callButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginLeft: 8,
   },
+  // Plans section styles
   plansSection: {
     padding: 16,
     paddingTop: 8,
@@ -651,16 +1105,37 @@ const styles = StyleSheet.create({
   noPlansText: {
     textAlign: 'center',
     marginVertical: 20,
+    opacity: 0.7,
+  },
+  viewPlansButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 10,
+    marginHorizontal: 40,
   },
   planCard: {
     borderRadius: borderRadius.lg,
     padding: 16,
     marginBottom: 16,
+    ...shadows.md,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
   planHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  mealIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
   },
   planName: {
     fontSize: 18,
@@ -680,8 +1155,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
     opacity: 0.7,
   },
+  perDay: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
   planDetails: {
     marginBottom: 16,
+  },
+  planDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  planDetailIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  planDetailLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  planDetailValue: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   planDetailItem: {
     flexDirection: 'row',
@@ -692,12 +1195,275 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   subscribeButton: {
+    flexDirection: 'row',
     paddingVertical: 12,
     borderRadius: borderRadius.md,
+    justifyContent: 'center',
     alignItems: 'center',
+    ...shadows.sm,
   },
   subscribeButtonText: {
     color: 'white',
     fontWeight: 'bold',
+    fontSize: 16,
+  },
+
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+    paddingHorizontal: 20,
+    paddingBottom: 34,
+    maxHeight: Dimensions.get('window').height * 0.85,
+    minHeight: Dimensions.get('window').height * 0.6,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    marginTop: 2,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  modalScrollView: {
+    flex: 1,
+  },
+  modalPlanCard: {
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+  },
+  modalPlanHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  modalPlanIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  modalPlanIconText: {
+    fontSize: 24,
+  },
+  modalPlanInfo: {
+    flex: 1,
+  },
+  modalPlanName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  modalPlanDuration: {
+    fontSize: 14,
+    marginTop: 2,
+  },
+  modalPriceContainer: {
+    alignItems: 'flex-end',
+  },
+  modalPrice: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  modalPriceLabel: {
+    fontSize: 12,
+  },
+  modalDetailsSection: {
+    marginBottom: 20,
+  },
+  modalSectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  modalDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  modalDetailIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  modalDetailInfo: {
+    flex: 1,
+  },
+  modalDetailLabel: {
+    fontSize: 14,
+    opacity: 0.7,
+    marginBottom: 2,
+  },
+  modalDetailValue: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalPriceBreakdown: {
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+  },
+  modalPriceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  modalPriceRowLabel: {
+    fontSize: 14,
+    opacity: 0.7,
+  },
+  modalPriceRowValue: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    paddingTop: 20,
+    gap: 12,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalSecondaryButton: {
+    borderWidth: 1,
+  },
+  modalSecondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalPrimaryButton: {
+    flexDirection: 'row',
+  },
+  modalPrimaryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+  // Menu styles
+  menuContainer: {
+    marginTop: 8,
+  },
+  mealGroupContainer: {
+    gap: 12,
+  },
+  mealTypeBox: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+    overflow: 'hidden',
+    ...shadows.sm,
+  },
+  mealTypeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
+  },
+  mealTypeTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+    flex: 1,
+  },
+  vegIndicator: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  foodItemsList: {
+    padding: 12,
+  },
+  foodItemRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  bulletPoint: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    marginTop: 6,
+    marginRight: 8,
+  },
+  foodItemContent: {
+    flex: 1,
+  },
+  foodItemName: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  foodItemDescription: {
+    fontSize: 12,
+    opacity: 0.7,
+  },
+  noItemsText: {
+    fontSize: 12,
+    opacity: 0.5,
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  noMenuCard: {
+    padding: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+    borderStyle: 'dashed',
+  },
+  noDataText: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  noDataSubtext: {
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  foodTypeIndicator: {
+    marginTop: 6,
+    alignSelf: 'flex-start',
+  },
+  foodTypeText: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
 });
