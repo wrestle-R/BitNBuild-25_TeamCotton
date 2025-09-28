@@ -262,7 +262,7 @@ const VendorDashboard = () => {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Total Earnings</p>
                       <p className="text-3xl font-bold text-foreground">
-                        ₹{stats?.totalEarnings || 0}
+                        ₹{stats?.earnings || 0}
                       </p>
                       <div className="flex items-center gap-1 mt-1">
                         <FaChartLine className="w-3 h-3 text-muted-foreground" />
@@ -568,12 +568,12 @@ const VendorDashboard = () => {
                       {loadingStats ? '...' : (stats?.accountStatus ?? 'Active')}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                  {/* <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                     <span className="font-inter text-muted-foreground">Total Earnings:</span>
                     <span className="font-inter font-medium text-foreground">
                       ₹{loadingStats ? '...' : (stats?.earnings ?? '0')}
                     </span>
-                  </div>
+                  </div> */}
                 </div>
               </CardContent>
             </Card>

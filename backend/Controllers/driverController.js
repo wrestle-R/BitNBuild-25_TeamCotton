@@ -644,15 +644,36 @@ const getActiveDelivery = async (req, res) => {
 // Get delivery tracking info for customers
 const getDeliveryTracking = async (req, res) => {
   try {
-    const { customerId } = req.params;
+    const { customerId } = req.params; // This is actually the Firebase UID
 
+    console.log('Fetching delivery tracking for customerId (Firebase UID):', customerId);
+
+    // First, find the customer by Firebase UID to get their MongoDB _id
+    const customer = await Customer.findOne({ firebaseUid: customerId });
+    
+    if (!customer) {
+      console.log('Customer not found with Firebase UID:', customerId);
+      return res.status(404).json({
+        success: false,
+        message: 'Customer not found'
+      });
+    }
+
+    console.log('Found customer:', {
+      mongoId: customer._id,
+      firebaseUid: customer.firebaseUid,
+      name: customer.name
+    });
+
+    // Now use the customer's MongoDB _id to find deliveries
     const delivery = await Delivery.findOne({
-      'customers.customerId': customerId,
+      'customers.customerId': customer._id, // Use MongoDB _id instead of Firebase UID
       status: { $in: ['started', 'in_progress'] }
     }).populate('driverId', 'name contactNumber vehicleType vehicleNumber rating')
       .populate('vendorId', 'name address');
 
     if (!delivery) {
+      console.log('No active delivery found for customer MongoDB _id:', customer._id);
       return res.status(404).json({
         success: false,
         message: 'No active delivery found for this customer'
@@ -660,8 +681,13 @@ const getDeliveryTracking = async (req, res) => {
     }
 
     const customerDelivery = delivery.customers.find(
-      c => c.customerId.toString() === customerId
+      c => c.customerId.toString() === customer._id.toString() // Compare MongoDB _ids
     );
+
+    console.log('Found delivery tracking:', {
+      deliveryId: delivery._id,
+      customerDelivery: customerDelivery ? 'Found' : 'Not found'
+    });
 
     res.status(200).json({
       success: true,
