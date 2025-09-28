@@ -1,6 +1,9 @@
 // Import the models
 const Vendor = require('../Models/Vendor');
 const Customer = require('../Models/Customer');
+const Payment = require('../Models/Payment');
+const ConsumerSubscription = require('../Models/ConsumerSubscription');
+const Plan = require('../Models/Plan');
 
 // Get all users (customers)
 const getAllUsers = async (req, res) => {
@@ -191,7 +194,7 @@ const getVendorDetails = async (req, res) => {
 };
 
 // Import Plan model
-const Plan = require('../Models/Plan');
+// const Plan = require('../Models/Plan');
 
 // Create test verified vendors
 const createTestVendors = async (req, res) => {
@@ -309,6 +312,230 @@ const createTestVendors = async (req, res) => {
   }
 };
 
+// Get comprehensive dashboard statistics
+const getDashboardStats = async (req, res) => {
+  try {
+    // Get current date for time-based calculations
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Get user statistics
+    const totalUsers = await Customer.countDocuments();
+    const newUsersThisMonth = await Customer.countDocuments({
+      createdAt: { $gte: currentMonth }
+    });
+    const newUsersLastMonth = await Customer.countDocuments({
+      createdAt: { $gte: lastMonth, $lt: currentMonth }
+    });
+
+    // Get vendor statistics
+    const totalVendors = await Vendor.countDocuments();
+    const verifiedVendors = await Vendor.countDocuments({ verified: true });
+    const newVendorsThisMonth = await Vendor.countDocuments({
+      createdAt: { $gte: currentMonth }
+    });
+    const newVendorsLastMonth = await Vendor.countDocuments({
+      createdAt: { $gte: lastMonth, $lt: currentMonth }
+    });
+
+    // Get subscription/order statistics
+    const totalSubscriptions = await ConsumerSubscription.countDocuments();
+    const activeSubscriptions = await ConsumerSubscription.countDocuments({ active: true });
+    const newSubscriptionsThisMonth = await ConsumerSubscription.countDocuments({
+      created_at: { $gte: currentMonth }
+    });
+    const newSubscriptionsLastMonth = await ConsumerSubscription.countDocuments({
+      created_at: { $gte: lastMonth, $lt: currentMonth }
+    });
+
+    // Get payment/revenue statistics
+    const successfulPayments = await Payment.find({ payment_status: 'success' });
+    const totalRevenue = successfulPayments.reduce((sum, payment) => sum + payment.amount, 0);
+    
+    const revenueThisMonth = await Payment.aggregate([
+      {
+        $match: {
+          payment_status: 'success',
+          payment_date: { $gte: currentMonth }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$amount' }
+        }
+      }
+    ]);
+
+    const revenueLastMonth = await Payment.aggregate([
+      {
+        $match: {
+          payment_status: 'success',
+          payment_date: { $gte: lastMonth, $lt: currentMonth }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$amount' }
+        }
+      }
+    ]);
+
+    const thisMonthRevenue = revenueThisMonth[0]?.total || 0;
+    const lastMonthRevenue = revenueLastMonth[0]?.total || 0;
+
+    // Calculate growth percentages
+    const calculateGrowth = (current, previous) => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return ((current - previous) / previous * 100).toFixed(1);
+    };
+
+    const userGrowth = calculateGrowth(newUsersThisMonth, newUsersLastMonth);
+    const vendorGrowth = calculateGrowth(newVendorsThisMonth, newVendorsLastMonth);
+    const orderGrowth = calculateGrowth(newSubscriptionsThisMonth, newSubscriptionsLastMonth);
+    const revenueGrowth = calculateGrowth(thisMonthRevenue, lastMonthRevenue);
+
+    // Get recent activity (mix of recent users, vendors, and subscriptions)
+    const recentUsers = await Customer.find()
+      .sort({ createdAt: -1 })
+      .limit(3)
+      .select('name email createdAt');
+
+    const recentVendors = await Vendor.find()
+      .sort({ createdAt: -1 })
+      .limit(3)
+      .select('name email verified createdAt');
+
+    const recentSubscriptions = await ConsumerSubscription.find()
+      .populate('consumer_id', 'name')
+      .populate('vendor_id', 'name')
+      .populate('plan_id', 'name')
+      .sort({ created_at: -1 })
+      .limit(4);
+
+    // Format recent activity
+    const recentActivity = [
+      ...recentUsers.map(user => ({
+        id: user._id,
+        type: 'user',
+        name: user.name,
+        action: 'New user registration',
+        time: user.createdAt.toLocaleDateString(),
+        status: 'completed'
+      })),
+      ...recentVendors.map(vendor => ({
+        id: vendor._id,
+        type: 'vendor',
+        name: vendor.name,
+        action: vendor.verified ? 'Verified vendor joined' : 'Pending vendor verification',
+        time: vendor.createdAt.toLocaleDateString(),
+        status: vendor.verified ? 'completed' : 'pending'
+      })),
+      ...recentSubscriptions.map(sub => ({
+        id: sub._id,
+        type: 'order',
+        name: sub.consumer_id?.name || 'Unknown',
+        action: `Subscribed to ${sub.plan_id?.name || 'meal plan'} from ${sub.vendor_id?.name || 'vendor'}`,
+        time: sub.created_at.toLocaleDateString(),
+        status: sub.active ? 'active' : 'completed'
+      }))
+    ].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 8);
+
+    // Last 5 days progression data
+    const last5Days = [];
+    for (let i = 4; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      date.setHours(0, 0, 0, 0);
+      
+      const nextDate = new Date(date);
+      nextDate.setDate(nextDate.getDate() + 1);
+      
+      const dayUsers = await Customer.countDocuments({
+        createdAt: { $gte: date, $lt: nextDate }
+      });
+      
+      const dayVendors = await Vendor.countDocuments({
+        createdAt: { $gte: date, $lt: nextDate }
+      });
+      
+      last5Days.push({
+        date: date.toISOString().split('T')[0],
+        users: dayUsers,
+        vendors: dayVendors,
+        day: date.toLocaleDateString('en-US', { weekday: 'short' })
+      });
+    }
+
+    // Top performing vendors
+    const topVendors = await Payment.aggregate([
+      {
+        $match: { payment_status: 'success' }
+      },
+      {
+        $group: {
+          _id: '$vendor_id',
+          totalRevenue: { $sum: '$amount' },
+          orderCount: { $sum: 1 }
+        }
+      },
+      {
+        $lookup: {
+          from: 'vendors',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'vendor'
+        }
+      },
+      {
+        $unwind: '$vendor'
+      },
+      {
+        $sort: { totalRevenue: -1 }
+      },
+      {
+        $limit: 5
+      }
+    ]);
+
+    res.json({
+      success: true,
+      stats: {
+        totalUsers,
+        totalVendors,
+        verifiedVendors,
+        totalOrders: totalSubscriptions,
+        activeSubscriptions,
+        totalRevenue: Math.round(totalRevenue),
+        monthlyGrowth: {
+          users: parseFloat(userGrowth),
+          vendors: parseFloat(vendorGrowth),
+          orders: parseFloat(orderGrowth),
+          revenue: parseFloat(revenueGrowth)
+        },
+        recentActivity,
+        topVendors: topVendors.map(v => ({
+          id: v._id,
+          name: v.vendor.name,
+          revenue: Math.round(v.totalRevenue),
+          orders: v.orderCount
+        })),
+        last5DaysData: last5Days
+      }
+    });
+  } catch (error) {
+    console.error('getDashboardStats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch dashboard statistics',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getAllVendors,
@@ -316,5 +543,6 @@ module.exports = {
   deleteVendor,
   toggleVendorVerification,
   getVendorDetails,
-  createTestVendors
+  createTestVendors,
+  getDashboardStats
 };
