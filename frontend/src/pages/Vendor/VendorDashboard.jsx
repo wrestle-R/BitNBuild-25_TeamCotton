@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
 import { auth } from '../../../firebase.config';
-import { FaStore, FaUsers, FaUser, FaClipboardList, FaUtensils, FaStar, FaBars, FaPlus, FaEye, FaChartLine, FaSignOutAlt, FaTruck, FaRoute } from 'react-icons/fa';
+import { FaStore, FaUsers, FaUser, FaClipboardList, FaUtensils, FaExclamationTriangle, FaStar, FaBars, FaPlus, FaEye, FaChartLine, FaSignOutAlt, FaTruck, FaRoute, FaRupeeSign, FaBell, FaShieldAlt } from 'react-icons/fa';
 import VendorSidebar from '../../components/Vendor/VendorSidebar';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
@@ -21,12 +21,15 @@ const VendorDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
+  // Add these missing state variables:
+  const [stats, setStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(true);
   const [selectedDriver, setSelectedDriver] = useState(null);
   const [availableDrivers, setAvailableDrivers] = useState([]);
   const [subscribersWithLocations, setSubscribersWithLocations] = useState([]);
-  const [vendorLocationData, setVendorLocationData] = useState(null); // Add this state
+  const [vendorLocationData, setVendorLocationData] = useState(null);
   const [isLoadingDrivers, setIsLoadingDrivers] = useState(false);
-  const [isLoadingSubscribers, setIsLoadingSubscribers] = useState(false); // Add this state
+  const [isLoadingSubscribers, setIsLoadingSubscribers] = useState(false);
   const [activeDelivery, setActiveDelivery] = useState(null);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -59,17 +62,19 @@ const VendorDashboard = () => {
       fetchAvailableDrivers();
       fetchSubscribersWithLocations();
       
-      // Poll for location updates every 15 seconds
+      // Poll for updates every 30 seconds
       const interval = setInterval(() => {
         fetchAvailableDrivers();
         fetchSubscribersWithLocations();
-      }, 15000);
+      }, 30000);
 
       return () => clearInterval(interval);
     }
   }, [user, userType]);
 
+  // Fix the fetchStats function
   const fetchStats = async () => {
+    setLoadingStats(true); // Now this will work
     try {
       const idToken = await auth.currentUser.getIdToken();
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/vendor/stats`, {
@@ -82,13 +87,16 @@ const VendorDashboard = () => {
       if (response.ok) {
         const data = await response.json();
         setStats(data);
+        setDashboardData(data); // Also set dashboardData for the UI
       } else {
         console.error('Failed to fetch stats');
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
+      setError('Failed to load dashboard data');
     } finally {
       setLoadingStats(false);
+      setLoadingDashboard(false); // Also set this to false
     }
   };
 
@@ -264,7 +272,36 @@ const VendorDashboard = () => {
     }
   };
 
-  if (loading) {
+  // Add missing helper functions:
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'payment':
+        return <FaRupeeSign className="w-4 h-4 text-green-500" />;
+      case 'subscription':
+        return <FaUsers className="w-4 h-4 text-blue-500" />;
+      case 'system':
+        return <FaBell className="w-4 h-4 text-orange-500" />;
+      default:
+        return <FaBell className="w-4 h-4 text-gray-500" />;
+    }
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  const formatTime = (dateString) => {
+    return new Date(dateString).toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  if (loading || loadingDashboard) {
     return (
       <div className="min-h-screen bg-background flex">
         <VendorSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
@@ -313,7 +350,8 @@ const VendorDashboard = () => {
     );
   }
 
-  if (error || !dashboardData) {
+  // Update the error condition
+  if (error || (!dashboardData && !loadingDashboard)) {
     return (
       <div className="min-h-screen bg-background flex">
         <VendorSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
@@ -359,15 +397,15 @@ const VendorDashboard = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <Avatar className="w-16 h-16 ring-4 ring-primary/20">
-                  <AvatarImage src={dashboardData.vendor?.profileImage} alt={dashboardData.vendor?.name} />
+                  <AvatarImage src={stats?.vendor?.profileImage} alt={stats?.vendor?.name} />
                   <AvatarFallback className="text-lg">
                     <FaStore className="w-8 h-8" />
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-                    Welcome back, {dashboardData.vendor?.name || 'Vendor'}!
-                    {dashboardData.vendor?.verified && (
+                    Welcome back, {stats?.vendor?.name || user?.displayName || 'Vendor'}!
+                    {stats?.vendor?.verified && (
                       <FaShieldAlt className="w-6 h-6 text-green-500" title="Verified Vendor" />
                     )}
                   </h1>
@@ -377,8 +415,8 @@ const VendorDashboard = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant={dashboardData.vendor?.verified ? "default" : "secondary"}>
-                  {dashboardData.stats?.accountStatus}
+                <Badge variant={stats?.vendor?.verified ? "default" : "secondary"}>
+                  {stats?.accountStatus || 'Active'}
                 </Badge>
               </div>
             </div>
@@ -397,10 +435,10 @@ const VendorDashboard = () => {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Active Subscribers</p>
                       <p className="text-3xl font-bold text-foreground">
-                        {dashboardData.stats?.activeSubscribers || 0}
+                        {stats?.activeSubscribers || 0}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        of {dashboardData.stats?.totalSubscribers || 0} total
+                        of {stats?.totalSubscribers || 0} total
                       </p>
                     </div>
                     <div className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center">
@@ -416,7 +454,7 @@ const VendorDashboard = () => {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Total Earnings</p>
                       <p className="text-3xl font-bold text-foreground">
-                        ₹{dashboardData.stats?.totalEarnings || 0}
+                        ₹{stats?.totalEarnings || 0}
                       </p>
                       <div className="flex items-center gap-1 mt-1">
                         <FaChartLine className="w-3 h-3 text-muted-foreground" />
@@ -436,10 +474,10 @@ const VendorDashboard = () => {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Menu Items</p>
                       <p className="text-3xl font-bold text-foreground">
-                        {dashboardData.stats?.menuItems || 0}
+                        {stats?.menuItems || 0}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {dashboardData.stats?.plans || 0} plans created
+                        {stats?.plans || 0} plans created
                       </p>
                     </div>
                     <div className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center">
@@ -455,7 +493,7 @@ const VendorDashboard = () => {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Plans Created</p>
                       <p className="text-3xl font-bold text-foreground">
-                        {dashboardData.stats?.plans || 0}
+                        {stats?.plans || 0}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">Subscription options</p>
                     </div>
@@ -469,7 +507,7 @@ const VendorDashboard = () => {
           </motion.div>
 
           {/* Notifications */}
-          {dashboardData.notifications?.length > 0 && (
+          {stats?.notifications?.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -479,12 +517,12 @@ const VendorDashboard = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FaBell className="w-5 h-5 text-primary" />
-                    Notifications ({dashboardData.notifications.length})
+                    Notifications ({stats.notifications.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {dashboardData.notifications.map((notification) => (
+                    {stats.notifications.map((notification) => (
                       <div key={notification.id} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
                         {getNotificationIcon(notification.type)}
                         <div className="flex-1">
@@ -517,9 +555,9 @@ const VendorDashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex-1 overflow-hidden">
-                  {dashboardData.recentPayments?.length > 0 ? (
+                  {stats?.recentPayments?.length > 0 ? (
                     <div className="space-y-4 h-full overflow-y-auto">
-                      {dashboardData.recentPayments.map((payment, index) => (
+                      {stats.recentPayments.map((payment, index) => (
                         <div key={payment._id} className="flex items-center justify-between p-4 border rounded-lg">
                           <div className="flex items-center gap-3">
                             <Avatar className="w-10 h-10">
@@ -566,9 +604,9 @@ const VendorDashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex-1 overflow-hidden">
-                  {dashboardData.recentPlans?.length > 0 ? (
+                  {stats?.recentPlans?.length > 0 ? (
                     <div className="space-y-4 h-full overflow-y-auto">
-                      {dashboardData.recentPlans.map((plan) => (
+                      {stats.recentPlans.map((plan) => (
                         <div key={plan._id} className="flex items-center justify-between p-4 border rounded-lg">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
