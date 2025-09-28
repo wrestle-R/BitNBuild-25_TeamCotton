@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useUserContext } from '../../../context/UserContextSimplified';
 import { auth } from '../../../firebase.config';
-import { FaChartLine, FaRupeeSign, FaUsers, FaBrain, FaLightbulb, FaExclamationTriangle, FaRobot, FaCalculator, FaSync } from 'react-icons/fa';
+import { FaChartLine, FaRupeeSign, FaUsers, FaBrain, FaLightbulb, FaExclamationTriangle, FaRobot, FaCalculator, FaSync, FaChartPie } from 'react-icons/fa';
 import VendorSidebar from '../../components/Vendor/VendorSidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -10,7 +10,26 @@ import { Progress } from '../../components/ui/progress';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { Button } from '../../components/ui/button';
 import { Separator } from '../../components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { toast } from 'sonner';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ComposedChart,
+  Line,
+  LineChart,
+  Area,
+  AreaChart
+} from 'recharts';
 
 const VendorAnalytics = () => {
   const { user } = useUserContext();
@@ -26,7 +45,20 @@ const VendorAnalytics = () => {
   // Cache keys
   const ANALYTICS_CACHE_KEY = `vendor_analytics_${user?.uid}`;
   const PLAN_CACHE_KEY = `vendor_plan_prediction_${user?.uid}`;
-  const CACHE_EXPIRY_HOURS = 2; // Cache expires after 2 hours
+  const CACHE_EXPIRY_HOURS = 2;
+
+  // Chart colors
+  const COLORS = {
+    revenue: '#3b82f6',
+    costs: '#ef4444',
+    profit: '#10b981',
+    food: '#f59e0b',
+    delivery: '#8b5cf6',
+    platform: '#06b6d4',
+    margin: '#ec4899'
+  };
+
+  const PIE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
   useEffect(() => {
     if (user) {
@@ -34,6 +66,8 @@ const VendorAnalytics = () => {
     }
   }, [user]);
 
+  // ... (keep all existing cache and fetch functions) ...
+  
   // Load cached analytics data
   const loadCachedAnalytics = () => {
     try {
@@ -49,12 +83,10 @@ const VendorAnalytics = () => {
           toast.success('Loaded cached analytics data');
           return;
         } else {
-          // Remove expired cache
           localStorage.removeItem(ANALYTICS_CACHE_KEY);
         }
       }
       
-      // No valid cache found, fetch fresh data
       fetchAnalytics();
     } catch (error) {
       console.error('Error loading cached analytics:', error);
@@ -148,7 +180,6 @@ const VendorAnalytics = () => {
   };
 
   const fetchPlanPrediction = async (planId, isRefresh = false) => {
-    // Check cache first unless it's a refresh
     if (!isRefresh && loadCachedPlanPrediction(planId)) {
       toast.success('Loaded cached prediction data');
       return;
@@ -186,18 +217,14 @@ const VendorAnalytics = () => {
   };
 
   const handleRefreshAnalytics = () => {
-    // Clear all related cache
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith(ANALYTICS_CACHE_KEY) || key.startsWith(PLAN_CACHE_KEY)) {
         localStorage.removeItem(key);
       }
     });
     
-    // Clear current plan prediction
     setPlanPrediction(null);
     setSelectedPlan(null);
-    
-    // Fetch fresh data
     fetchAnalytics(true);
   };
 
@@ -222,6 +249,115 @@ const VendorAnalytics = () => {
   const formatLastUpdated = (date) => {
     if (!date) return '';
     return date.toLocaleString();
+  };
+
+  // Parse AI insights into structured format
+  const parseAIInsights = (insights) => {
+    if (!insights) return { sections: [], recommendations: [] };
+
+    const sections = [];
+    const recommendations = [];
+    
+    const lines = insights.split('\n').filter(line => line.trim());
+    let currentSection = '';
+    let currentContent = [];
+
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      
+      // Check if it's a section header (starts with number or bullet)
+      if (trimmed.match(/^\d+\.\s*\*\*.*\*\*/) || trimmed.match(/^\*\s*\*\*.*\*\*/)) {
+        // Save previous section
+        if (currentSection && currentContent.length > 0) {
+          sections.push({
+            title: currentSection,
+            content: currentContent.join(' ')
+          });
+        }
+        
+        // Start new section
+        currentSection = trimmed.replace(/^\d+\.\s*\*\*/, '').replace(/^\*\s*\*\*/, '').replace(/\*\*/g, '');
+        currentContent = [];
+      } else if (trimmed.match(/^\*.*:/)) {
+        // This is a recommendation
+        recommendations.push(trimmed.replace(/^\*\s*/, ''));
+      } else if (trimmed && currentSection) {
+        currentContent.push(trimmed);
+      }
+    });
+
+    // Add last section
+    if (currentSection && currentContent.length > 0) {
+      sections.push({
+        title: currentSection,
+        content: currentContent.join(' ')
+      });
+    }
+
+    return { sections, recommendations };
+  };
+
+  // Prepare chart data
+  const prepareOverviewChartData = () => {
+    if (!analytics?.predictions) return [];
+    
+    return analytics.predictions.map(plan => ({
+      name: plan.planName?.replace('All ', '') || 'Plan',
+      revenue: plan.revenue?.totalRevenue || 0,
+      costs: plan.costBreakdown?.totalCosts || 0,
+      profit: plan.revenue?.projectedProfit || 0,
+      margin: plan.revenue?.profitMargin || 0,
+      subscribers: plan.predictedSubscribers || 0
+    }));
+  };
+
+  const preparePieChartData = () => {
+    if (!analytics?.predictions) return [];
+    
+    return analytics.predictions.map((plan, index) => ({
+      name: plan.planName?.replace('All ', '') || 'Plan',
+      value: plan.revenue?.totalRevenue || 0,
+      fill: PIE_COLORS[index % PIE_COLORS.length]
+    }));
+  };
+
+  const prepareCostBreakdownData = () => {
+    if (!planPrediction?.optimization?.costBreakdown) return [];
+    
+    const breakdown = planPrediction.optimization.costBreakdown;
+    return [
+      {
+        name: 'Food Costs',
+        value: breakdown.foodCost || 0,
+        fill: COLORS.food
+      },
+      {
+        name: 'Delivery Costs',
+        value: breakdown.deliveryCosts?.totalDeliveryCost || 0,
+        fill: COLORS.delivery
+      },
+      {
+        name: 'Platform Cut',
+        value: breakdown.platformCut || 0,
+        fill: COLORS.platform
+      }
+    ];
+  };
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-background/95 border border-border rounded-lg p-3 shadow-lg">
+          <p className="font-medium">{label}</p>
+          {payload.map((entry) => (
+            <p key={entry.dataKey} style={{ color: entry.color }}>
+              {entry.name}: ₹{entry.value?.toLocaleString() || 0}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
   };
 
   if (loading) {
@@ -292,51 +428,132 @@ const VendorAnalytics = () => {
 
           {analytics && (
             <>
-              {/* Overall Business Metrics */}
-              {analytics.overallInsights && analytics.overallInsights.businessMetrics && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <FaRobot className="w-5 h-5 text-primary" />
-                        AI Business Intelligence
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid gap-4 md:grid-cols-3 mb-4">
-                        <div className="text-center">
-                          <p className="text-2xl font-bold text-primary">
-                            ₹{analytics.overallInsights.businessMetrics.totalRevenue || 0}
-                          </p>
-                          <p className="text-sm text-muted-foreground">Projected Revenue</p>
+              {/* Overall Business Metrics with Charts */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <FaRobot className="w-5 h-5 text-primary" />
+                      Business Performance Overview
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Tabs defaultValue="metrics" className="w-full">
+                      <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="metrics">Key Metrics</TabsTrigger>
+                        <TabsTrigger value="revenue">Revenue Split</TabsTrigger>
+                        <TabsTrigger value="comparison">Plan Comparison</TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="metrics" className="space-y-4">
+                        {analytics.overallInsights?.businessMetrics && (
+                          <div className="grid gap-4 md:grid-cols-3 mb-4">
+                            <div className="text-center">
+                              <p className="text-2xl font-bold text-primary">
+                                ₹{analytics.overallInsights.businessMetrics.totalRevenue?.toLocaleString() || 0}
+                              </p>
+                              <p className="text-sm text-muted-foreground">Projected Revenue</p>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-2xl font-bold text-green-600">
+                                ₹{analytics.overallInsights.businessMetrics.totalProfit?.toLocaleString() || 0}
+                              </p>
+                              <p className="text-sm text-muted-foreground">Projected Profit</p>
+                            </div>
+                            <div className="text-center">
+                              <p className={`text-2xl font-bold ${getProfitColor(analytics.overallInsights.businessMetrics.averageMargin || 0)}`}>
+                                {analytics.overallInsights.businessMetrics.averageMargin || 0}%
+                              </p>
+                              <p className="text-sm text-muted-foreground">Average Margin</p>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* AI Insights - Parsed */}
+                        {analytics.overallInsights?.insights && (
+                          <div className="space-y-4">
+                            {(() => {
+                              const { sections, recommendations } = parseAIInsights(analytics.overallInsights.insights);
+                              return (
+                                <>
+                                  {sections.map((section, index) => (
+                                    <Alert key={index} className="bg-background/50">
+                                      <FaLightbulb className="h-4 w-4" />
+                                      <AlertDescription>
+                                        <strong>{section.title}:</strong> {section.content}
+                                      </AlertDescription>
+                                    </Alert>
+                                  ))}
+                                  
+                                  {recommendations.length > 0 && (
+                                    <div className="mt-4">
+                                      <h4 className="font-semibold mb-2">Key Recommendations:</h4>
+                                      <div className="space-y-1">
+                                        {recommendations.map((rec, index) => (
+                                          <div key={index} className="text-sm text-muted-foreground pl-4 border-l-2 border-primary/30">
+                                            {rec}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
+                        )}
+                      </TabsContent>
+                      
+                      <TabsContent value="revenue" className="space-y-4">
+                        <div className="h-80">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={preparePieChartData()}
+                                cx="50%"
+                                cy="50%"
+                                labelLine={false}
+                                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                outerRadius={80}
+                                fill="#8884d8"
+                                dataKey="value"
+                              >
+                                {preparePieChartData().map((entry, index) => (
+                                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                                ))}
+                              </Pie>
+                              <Tooltip formatter={(value) => [`₹${value.toLocaleString()}`, 'Revenue']} />
+                            </PieChart>
+                          </ResponsiveContainer>
                         </div>
-                        <div className="text-center">
-                          <p className="text-2xl font-bold text-green-600">
-                            ₹{analytics.overallInsights.businessMetrics.totalProfit || 0}
-                          </p>
-                          <p className="text-sm text-muted-foreground">Projected Profit</p>
+                      </TabsContent>
+                      
+                      <TabsContent value="comparison" className="space-y-4">
+                        <div className="h-80">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <ComposedChart data={prepareOverviewChartData()}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="name" />
+                              <YAxis yAxisId="left" />
+                              <YAxis yAxisId="right" orientation="right" />
+                              <Tooltip content={<CustomTooltip />} />
+                              <Legend />
+                              <Bar yAxisId="left" dataKey="revenue" fill={COLORS.revenue} name="Revenue" />
+                              <Bar yAxisId="left" dataKey="costs" fill={COLORS.costs} name="Costs" />
+                              <Bar yAxisId="left" dataKey="profit" fill={COLORS.profit} name="Profit" />
+                              <Line yAxisId="right" type="monotone" dataKey="margin" stroke={COLORS.margin} name="Margin %" />
+                            </ComposedChart>
+                          </ResponsiveContainer>
                         </div>
-                        <div className="text-center">
-                          <p className={`text-2xl font-bold ${getProfitColor(analytics.overallInsights.businessMetrics.averageMargin || 0)}`}>
-                            {analytics.overallInsights.businessMetrics.averageMargin || 0}%
-                          </p>
-                          <p className="text-sm text-muted-foreground">Average Margin</p>
-                        </div>
-                      </div>
-                      <Alert className="bg-background/50">
-                        <FaLightbulb className="h-4 w-4" />
-                        <AlertDescription className="text-sm leading-relaxed">
-                          {analytics.overallInsights.insights || 'No insights available'}
-                        </AlertDescription>
-                      </Alert>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              )}
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+              </motion.div>
 
               {/* Plan Performance Overview */}
               <motion.div
@@ -351,7 +568,7 @@ const VendorAnalytics = () => {
                       Plan Performance Predictions
                     </CardTitle>
                     <CardDescription>
-                      Click on any plan to view detailed AI-powered insights
+                      Click on any plan to view detailed AI-powered insights and cost breakdowns
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -380,25 +597,25 @@ const VendorAnalytics = () => {
                               </Badge>
                             </div>
                             
-                            <div className="grid grid-cols-3 gap-4 text-center">
+                            <div className="grid grid-cols-3 gap-4 text-center mb-3">
                               <div>
-                                <p className="text-lg font-bold text-primary">₹{plan.revenue?.totalRevenue || 0}</p>
+                                <p className="text-lg font-bold text-primary">₹{plan.revenue?.totalRevenue?.toLocaleString() || 0}</p>
                                 <p className="text-xs text-muted-foreground">Revenue</p>
                               </div>
                               <div>
-                                <p className="text-lg font-bold text-orange-600">₹{plan.costBreakdown?.totalCosts || 0}</p>
+                                <p className="text-lg font-bold text-orange-600">₹{plan.costBreakdown?.totalCosts?.toLocaleString() || 0}</p>
                                 <p className="text-xs text-muted-foreground">Total Costs</p>
                               </div>
                               <div>
                                 <p className={`text-lg font-bold ${(plan.revenue?.projectedProfit || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                  ₹{plan.revenue?.projectedProfit || 0}
+                                  ₹{plan.revenue?.projectedProfit?.toLocaleString() || 0}
                                 </p>
                                 <p className="text-xs text-muted-foreground">Profit</p>
                               </div>
                             </div>
 
                             <Progress 
-                              value={plan.revenue?.profitMargin || 0} 
+                              value={Math.min(plan.revenue?.profitMargin || 0, 100)} 
                               className="mt-3" 
                             />
                           </motion.div>
@@ -413,7 +630,7 @@ const VendorAnalytics = () => {
                 </Card>
               </motion.div>
 
-              {/* Detailed Plan Analysis */}
+              {/* Detailed Plan Analysis with Charts */}
               {selectedPlan && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -450,89 +667,248 @@ const VendorAnalytics = () => {
                           ))}
                         </div>
                       ) : planPrediction?.optimization ? (
-                        <div className="space-y-6">
-                          {/* Cost Breakdown */}
-                          <div>
-                            <h4 className="font-semibold mb-3 flex items-center gap-2">
-                              <FaRupeeSign className="w-4 h-4" />
-                              Cost Breakdown
-                            </h4>
-                            <div className="grid gap-3 md:grid-cols-2">
-                              <div className="space-y-2">
-                                <div className="flex justify-between">
-                                  <span className="text-sm">Food Costs:</span>
-                                  <span className="font-medium">₹{planPrediction.optimization.costBreakdown?.foodCost || 0}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-sm">Delivery Costs:</span>
-                                  <span className="font-medium">₹{planPrediction.optimization.costBreakdown?.deliveryCosts?.totalDeliveryCost || 0}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-sm">Platform Cut (5%):</span>
-                                  <span className="font-medium">₹{planPrediction.optimization.costBreakdown?.platformCut || 0}</span>
-                                </div>
-                                <Separator />
-                                <div className="flex justify-between font-semibold">
-                                  <span>Total Costs:</span>
-                                  <span>₹{planPrediction.optimization.costBreakdown?.totalCosts || 0}</span>
-                                </div>
-                              </div>
-                              
-                              <div className="space-y-2">
-                                <div className="flex justify-between">
-                                  <span className="text-sm">Fuel Costs:</span>
-                                  <span className="font-medium">₹{planPrediction.optimization.costBreakdown?.deliveryCosts?.fuelCost || 0}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-sm">Driver Payments:</span>
-                                  <span className="font-medium">₹{planPrediction.optimization.costBreakdown?.deliveryCosts?.driverCost || 0}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-sm">Expected Subscribers:</span>
-                                  <span className="font-medium">{planPrediction.optimization.predictedSubscribers || 0}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+                        <Tabs defaultValue="overview" className="w-full">
+                          <TabsList className="grid w-full grid-cols-4">
+                            <TabsTrigger value="overview">Overview</TabsTrigger>
+                            <TabsTrigger value="costs">Cost Breakdown</TabsTrigger>
+                            <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
+                            <TabsTrigger value="insights">AI Insights</TabsTrigger>
+                          </TabsList>
+                          
+                          <TabsContent value="overview" className="space-y-6">
+                            <div className="grid gap-6 md:grid-cols-2">
+                              {/* Revenue vs Cost Chart */}
+                              <Card>
+                                <CardHeader>
+                                  <CardTitle className="text-lg">Revenue vs Costs</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="h-64">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <BarChart data={[{
+                                        name: selectedPlan.planName?.replace('All ', '') || 'Plan',
+                                        revenue: planPrediction.optimization.revenue?.totalRevenue || 0,
+                                        costs: planPrediction.optimization.costBreakdown?.totalCosts || 0,
+                                        profit: planPrediction.optimization.revenue?.projectedProfit || 0
+                                      }]}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="name" />
+                                        <YAxis />
+                                        <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
+                                        <Legend />
+                                        <Bar dataKey="revenue" fill={COLORS.revenue} name="Revenue" />
+                                        <Bar dataKey="costs" fill={COLORS.costs} name="Costs" />
+                                        <Bar dataKey="profit" fill={COLORS.profit} name="Profit" />
+                                      </BarChart>
+                                    </ResponsiveContainer>
+                                  </div>
+                                </CardContent>
+                              </Card>
 
-                          {/* AI Recommendations */}
-                          {planPrediction.optimization.recommendations && planPrediction.optimization.recommendations.length > 0 && (
-                            <div>
-                              <h4 className="font-semibold mb-3 flex items-center gap-2">
-                                <FaChartLine className="w-4 h-4" />
-                                ML Recommendations
-                              </h4>
-                              <div className="space-y-2">
+                              {/* Key Metrics */}
+                              <Card>
+                                <CardHeader>
+                                  <CardTitle className="text-lg">Key Metrics</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="text-center p-3 bg-primary/5 rounded-lg">
+                                      <p className="text-2xl font-bold text-primary">
+                                        {planPrediction.optimization.predictedSubscribers || 0}
+                                      </p>
+                                      <p className="text-sm text-muted-foreground">Subscribers</p>
+                                    </div>
+                                    <div className="text-center p-3 bg-green-500/5 rounded-lg">
+                                      <p className="text-2xl font-bold text-green-600">
+                                        {planPrediction.optimization.revenue?.profitMargin || 0}%
+                                      </p>
+                                      <p className="text-sm text-muted-foreground">Profit Margin</p>
+                                    </div>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between">
+                                      <span className="text-sm">Total Revenue:</span>
+                                      <span className="font-medium">₹{planPrediction.optimization.revenue?.totalRevenue?.toLocaleString() || 0}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-sm">Total Costs:</span>
+                                      <span className="font-medium">₹{planPrediction.optimization.costBreakdown?.totalCosts?.toLocaleString() || 0}</span>
+                                    </div>
+                                    <Separator />
+                                    <div className="flex justify-between font-semibold">
+                                      <span>Net Profit:</span>
+                                      <span className={`${(planPrediction.optimization.revenue?.projectedProfit || 0) > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        ₹{planPrediction.optimization.revenue?.projectedProfit?.toLocaleString() || 0}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          </TabsContent>
+                          
+                          <TabsContent value="costs" className="space-y-6">
+                            <div className="grid gap-6 md:grid-cols-2">
+                              {/* Cost Breakdown Pie Chart */}
+                              <Card>
+                                <CardHeader>
+                                  <CardTitle className="text-lg flex items-center gap-2">
+                                    <FaChartPie className="w-4 h-4" />
+                                    Cost Distribution
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="h-64">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <PieChart>
+                                        <Pie
+                                          data={prepareCostBreakdownData()}
+                                          cx="50%"
+                                          cy="50%"
+                                          labelLine={false}
+                                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                                          outerRadius={80}
+                                          fill="#8884d8"
+                                          dataKey="value"
+                                        >
+                                          {prepareCostBreakdownData().map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                                          ))}
+                                        </Pie>
+                                        <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
+                                      </PieChart>
+                                    </ResponsiveContainer>
+                                  </div>
+                                </CardContent>
+                              </Card>
+
+                              {/* Detailed Cost Breakdown */}
+                              <Card>
+                                <CardHeader>
+                                  <CardTitle className="text-lg flex items-center gap-2">
+                                    <FaRupeeSign className="w-4 h-4" />
+                                    Detailed Breakdown
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="space-y-3">
+                                    <div className="flex justify-between items-center p-2 bg-amber-50 dark:bg-amber-950/20 rounded">
+                                      <span className="text-sm font-medium">Food Costs:</span>
+                                      <span className="font-bold text-amber-700 dark:text-amber-400">
+                                        ₹{planPrediction.optimization.costBreakdown?.foodCost?.toLocaleString() || 0}
+                                      </span>
+                                    </div>
+                                    <div className="space-y-1 ml-4 text-sm text-muted-foreground">
+                                      <div className="flex justify-between">
+                                        <span>• Fuel Costs:</span>
+                                        <span>₹{planPrediction.optimization.costBreakdown?.deliveryCosts?.fuelCost?.toLocaleString() || 0}</span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span>• Driver Payments:</span>
+                                        <span>₹{planPrediction.optimization.costBreakdown?.deliveryCosts?.driverCost?.toLocaleString() || 0}</span>
+                                      </div>
+                                    </div>
+                                    <div className="flex justify-between items-center p-2 bg-purple-50 dark:bg-purple-950/20 rounded">
+                                      <span className="text-sm font-medium">Delivery Costs:</span>
+                                      <span className="font-bold text-purple-700 dark:text-purple-400">
+                                        ₹{planPrediction.optimization.costBreakdown?.deliveryCosts?.totalDeliveryCost?.toLocaleString() || 0}
+                                      </span>
+                                    </div>
+                                    <div className="flex justify-between items-center p-2 bg-cyan-50 dark:bg-cyan-950/20 rounded">
+                                      <span className="text-sm font-medium">Platform Cut (5%):</span>
+                                      <span className="font-bold text-cyan-700 dark:text-cyan-400">
+                                        ₹{planPrediction.optimization.costBreakdown?.platformCut?.toLocaleString() || 0}
+                                      </span>
+                                    </div>
+                                    <Separator />
+                                    <div className="flex justify-between items-center p-2 bg-gray-100 dark:bg-gray-800 rounded font-semibold">
+                                      <span>Total Costs:</span>
+                                      <span>₹{planPrediction.optimization.costBreakdown?.totalCosts?.toLocaleString() || 0}</span>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          </TabsContent>
+                          
+                          <TabsContent value="recommendations" className="space-y-4">
+                            {planPrediction.optimization.recommendations && planPrediction.optimization.recommendations.length > 0 ? (
+                              <div className="space-y-3">
+                                <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                  <FaChartLine className="w-4 h-4" />
+                                  ML-Powered Recommendations
+                                </h4>
                                 {planPrediction.optimization.recommendations.map((rec, index) => (
-                                  <Alert key={index} variant={rec.impact === 'high' ? 'destructive' : 'default'}>
+                                  <Alert key={index} variant={rec.impact === 'high' ? 'destructive' : rec.impact === 'positive' ? 'default' : 'default'}>
                                     <FaLightbulb className="h-4 w-4" />
-                                    <AlertDescription>{rec.message || rec}</AlertDescription>
+                                    <AlertDescription>
+                                      <span className="font-medium capitalize">{rec.type || 'General'}:</span> {rec.message || rec}
+                                    </AlertDescription>
                                   </Alert>
                                 ))}
                               </div>
-                            </div>
-                          )}
-
-                          {/* Gemini AI Insights */}
-                          {planPrediction.aiInsights && (
-                            <div>
-                              <h4 className="font-semibold mb-3 flex items-center gap-2">
-                                <FaBrain className="w-4 h-4" />
-                                Gemini AI Strategic Insights
-                              </h4>
+                            ) : (
+                              <div className="text-center py-8">
+                                <FaLightbulb className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                                <p className="text-muted-foreground">No specific recommendations available</p>
+                              </div>
+                            )}
+                          </TabsContent>
+                          
+                          <TabsContent value="insights" className="space-y-4">
+                            {planPrediction.aiInsights ? (
                               <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
-                                <CardContent className="pt-4">
-                                  <p className="text-sm leading-relaxed whitespace-pre-line">
-                                    {planPrediction.aiInsights.insights || 'No insights available'}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground mt-2">
+                                <CardHeader>
+                                  <CardTitle className="flex items-center gap-2">
+                                    <FaBrain className="w-5 h-5" />
+                                    Gemini AI Strategic Insights
+                                  </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="space-y-4">
+                                    {(() => {
+                                      const { sections, recommendations } = parseAIInsights(planPrediction.aiInsights.insights);
+                                      return (
+                                        <>
+                                          {sections.map((section, index) => (
+                                            <div key={index} className="border-l-4 border-primary/30 pl-4">
+                                              <h5 className="font-semibold mb-2">{section.title}</h5>
+                                              <p className="text-sm leading-relaxed text-muted-foreground">
+                                                {section.content}
+                                              </p>
+                                            </div>
+                                          ))}
+                                          
+                                          {recommendations.length > 0 && (
+                                            <div className="mt-6">
+                                              <h5 className="font-semibold mb-3">Strategic Actions:</h5>
+                                              <div className="space-y-2">
+                                                {recommendations.map((rec, index) => (
+                                                  <div key={index} className="flex items-start gap-2 text-sm">
+                                                    <FaLightbulb className="w-3 h-3 text-yellow-500 mt-1 flex-shrink-0" />
+                                                    <span>{rec}</span>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </>
+                                      );
+                                    })()}
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-4 pt-4 border-t">
                                     Generated by Gemini AI • {new Date(planPrediction.aiInsights.generatedAt).toLocaleString()}
                                   </p>
                                 </CardContent>
                               </Card>
-                            </div>
-                          )}
-                        </div>
+                            ) : (
+                              <div className="text-center py-8">
+                                <FaBrain className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                                <p className="text-muted-foreground">AI insights not available</p>
+                              </div>
+                            )}
+                          </TabsContent>
+                        </Tabs>
                       ) : (
                         <div className="text-center py-8">
                           <p className="text-muted-foreground">No prediction data available</p>
