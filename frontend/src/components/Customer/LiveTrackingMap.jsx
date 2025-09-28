@@ -17,7 +17,7 @@ import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { toast } from 'sonner';
-import { useTheme } from '../../context/ThemeContext';
+import { useTheme } from '../../../context/ThemeContext';
 
 // Fix for default markers in Leaflet
 delete L.Icon.Default.prototype._getIconUrl;
