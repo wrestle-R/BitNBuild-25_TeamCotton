@@ -454,14 +454,7 @@ const randomScore = Math.floor(Math.random() * (70 - 67 + 1)) + 67;
                       )}
                     </Button>
                     
-                    {/* Debug Info */}
-                    <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded text-sm">
-                      <p><strong>Debug Info:</strong></p>
-                      <p>User UID: {user?.uid || 'undefined'}</p>
-                      <p>User Firebase UID: {user?.firebaseUid || 'undefined'}</p>
-                      <p>Using ID: {user?.uid || user?.firebaseUid || 'undefined'}</p>
-                      <p>API URL: {import.meta.env.VITE_API_URL || 'http://localhost:8000'}</p>
-                    </div>
+
                   </CardContent>
                 </Card>
 
