@@ -108,20 +108,11 @@ const VendorSubscribers = () => {
             animate={{ opacity: 1, y: 0 }}
           >
             <div className="flex items-center gap-4 mb-6">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/vendor/dashboard')}
-                className="flex items-center gap-2"
-              >
-                <FaArrowLeft className="w-4 h-4" />
-                Back to Dashboard
-              </Button>
+
             </div>
             
             <h1 className="text-4xl font-bold text-foreground font-montserrat flex items-center gap-3">
-              <FaUsers className="w-10 h-10 text-primary" />
-              Subscribers
+                  Subscribers
             </h1>
             <p className="text-muted-foreground font-inter mt-2">
               Manage your subscriber base and view subscription details

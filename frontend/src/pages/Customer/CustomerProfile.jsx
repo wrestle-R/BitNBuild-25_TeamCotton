@@ -40,7 +40,10 @@ const CustomerProfile = () => {
       city: '',
       state: '',
       pincode: '',
-      coordinates: null
+      coordinates: {
+        lat: 19.248364,
+        lng: 72.850088
+      }
     }
   });
 
@@ -72,13 +75,10 @@ const CustomerProfile = () => {
             city: data.address?.city || '',
             state: data.address?.state || '',
             pincode: data.address?.pincode || '',
-            coordinates: (
-              data.address?.coordinates &&
-              typeof data.address.coordinates.lat === 'number' &&
-              typeof data.address.coordinates.lng === 'number'
-            )
-              ? data.address.coordinates
-              : null
+            coordinates: {
+              lat: 19.248364,
+              lng: 72.850088
+            }
           }
         });
         
@@ -142,13 +142,26 @@ const CustomerProfile = () => {
     setSaving(true);
     try {
       const idToken = await auth.currentUser.getIdToken();
+      
+      // Ensure hardcoded coordinates are always included
+      const dataToSave = {
+        ...formData,
+        address: {
+          ...formData.address,
+          coordinates: {
+            lat: 19.248364,
+            lng: 72.850088
+          }
+        }
+      };
+      
       const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer/profile`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${idToken}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(dataToSave)
       });
 
       if (response.ok) {
@@ -394,9 +407,12 @@ const CustomerProfile = () => {
                   </div>
                   
                   {formData.address.coordinates && (
-                    <div className="mt-4 p-3 bg-muted rounded-lg">
-                      <p className="text-sm text-muted-foreground">
-                        <strong>Coordinates:</strong> {formData.address.coordinates.lat.toFixed(6)}, {formData.address.coordinates.lng.toFixed(6)}
+                    <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <p className="text-sm text-green-800 dark:text-green-200">
+                        <strong>📍 Delivery Location:</strong> {formData.address.coordinates.lat.toFixed(6)}, {formData.address.coordinates.lng.toFixed(6)}
+                      </p>
+                      <p className="text-xs text-green-600 dark:text-green-300 mt-1">
+                        ✅ Location set for delivery tracking
                       </p>
                     </div>
                   )}
