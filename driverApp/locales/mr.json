@@ -35,6 +35,16 @@
       "passwordsNotMatch": "पासवर्ड जुळत नाहीत"
     }
   },
+  "dashboard": {
+    "welcomeBack": "परत स्वागत आहे सर,",
+    "loadingDashboard": "तुमचा डॅशबोर्ड लोड होत आहे...",
+    "settingUpProfile": "तुमची ड्रायव्हर प्रोफाइल सेट अप होत आहे",
+    "enableLocationTracking": "स्थान ट्रॅकिंग सक्षम करा",
+    "enableLocationSubtitle": "राइड सेवांसाठी GPS ट्रॅकिंग सक्षम करण्यासाठी टॅप करा",
+    "yourLocation": "तुमचे स्थान",
+    "activeDelivery": "सक्रिय डिलिव्हरी",
+    "activeDeliverySubtitle": "तुमची सध्याची डिलिव्हरी स्थिती पाहण्यासाठी टॅप करा"
+  },
   "profile": {
     "title": "तुमची प्रोफाइल पूर्ण करा",
     "subtitle": "कृपया राइड स्वीकारणे सुरू करण्यासाठी तुमचा फोन नंबर आणि वाहनाचे तपशील द्या",
@@ -67,6 +77,28 @@
       "validPhone": "कृपया वैध फोन नंबर प्रविष्ट करा (किमान 10 अंक)",
       "vehicleNumberRequired": "वाहन क्रमांक आवश्यक आहे",
       "somethingWentWrong": "काहीतरी चूक झाली. कृपया पुन्हा प्रयत्न करा."
+    },
+    "profilePage": {
+      "title": "ड्रायव्हर प्रोफाइल",
+      "subtitle": "तुमचे खाते आणि प्राधान्ये व्यवस्थापित करा",
+      "loading": "प्रोफाइल डेटा लोड होत आहे...",
+      "personalInfo": "वैयक्तिक माहिती",
+      "name": "नाव",
+      "email": "ईमेल",
+      "phone": "फोन",
+      "vehicleInfo": "वाहनाची माहिती",
+      "vehicleType": "वाहनाचा प्रकार",
+      "vehicleNumber": "वाहन क्रमांक",
+      "actions": "क्रिया",
+      "editProfile": "प्रोफाइल संपादित करा",
+      "changePassword": "पासवर्ड बदला",
+      "helpSupport": "मदत आणि समर्थन",
+      "logout": "लॉगआउट",
+      "changePhoto": "फोटो बदला",
+      "appInfo": "ड्रायव्हर ऍप v1.0.0 • BitNBuild Solutions",
+      "confirmLogout": "लॉगआउट पुष्टी करा",
+      "logoutMessage": "तुम्ही खरोखर लॉगआउट करू इच्छिता का?",
+      "cancel": "रद्द करा"
     }
   },
   "common": {
