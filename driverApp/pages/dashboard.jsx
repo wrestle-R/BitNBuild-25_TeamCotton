@@ -1,16 +1,20 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Platform, Alert, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDriverContext } from '../context/DriverContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Ionicons } from '@expo/vector-icons';
 import DriverDetailsForm from '../components/DriverDetailsForm';
 import LiveMapView from '../components/LiveMapView';
+import LanguageSelector from '../components/LanguageSelector';
 import * as Location from 'expo-location';
 import '../global.css';
 
 export default function Dashboard() {
   // Add error boundary and logging
   console.log('📊 Dashboard component rendering...');
+  
+  const { t } = useLanguage();
   
   let driverContextData;
   try {
@@ -42,6 +46,7 @@ export default function Dashboard() {
     initializeLocationTracking 
   } = driverContextData;
   const router = useRouter();
+  const [showLanguageSelector, setShowLanguageSelector] = useState(false);
 
   // Manual location permission request
   const requestLocationPermission = async () => {
@@ -129,8 +134,8 @@ export default function Dashboard() {
     return (
       <View className="flex-1 justify-center items-center" style={{ backgroundColor: '#f8f7ff' }}>
         <Ionicons name="car-outline" size={48} color="#8b5cf6" />
-        <Text className="text-base mt-4" style={{ color: '#6b46c1' }}>Loading your dashboard...</Text>
-        <Text className="text-sm mt-2" style={{ color: '#8b5cf6' }}>Setting up your driver profile</Text>
+        <Text className="text-base mt-4" style={{ color: '#6b46c1' }}>{t('dashboard.loadingDashboard')}</Text>
+        <Text className="text-sm mt-2" style={{ color: '#8b5cf6' }}>{t('dashboard.settingUpProfile')}</Text>
       </View>
     );
   }
@@ -147,9 +152,20 @@ export default function Dashboard() {
     <View className="flex-1" style={{ backgroundColor: '#f8f7ff' }}>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="p-5">
+          {/* Language Selector Button */}
+          <TouchableOpacity 
+            style={styles.languageToggle}
+            onPress={() => setShowLanguageSelector(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="language" size={20} color="#8B5CF6" />
+            <Text style={styles.languageToggleText}>{t('common.language')}</Text>
+            <Ionicons name="chevron-down" size={16} color="#8B5CF6" />
+          </TouchableOpacity>
+
           {/* Header */}
           <View className="mb-8 mt-10" style={styles.headerSection}>
-            <Text className="text-base" style={{ color: '#8b5cf6' }}>Welcome back sir,</Text>
+            <Text className="text-base" style={{ color: '#8b5cf6' }}>{t('dashboard.welcomeBack')}</Text>
             <Text className="text-2xl font-bold" style={{ color: '#4c1d95' }}>{driver.name}!</Text>
           </View>
 
@@ -161,9 +177,9 @@ export default function Dashboard() {
             >
               <Ionicons name="location-outline" size={28} color="#8b5cf6" />
               <View style={styles.locationBannerContent}>
-                <Text style={styles.locationBannerTitle}>Enable Location Tracking</Text>
+                <Text style={styles.locationBannerTitle}>{t('dashboard.enableLocationTracking')}</Text>
                 <Text style={styles.locationBannerSubtitle}>
-                  Tap to enable GPS tracking for ride services
+                  {t('dashboard.enableLocationSubtitle')}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={24} color="#8b5cf6" />
@@ -172,7 +188,7 @@ export default function Dashboard() {
 
           {/* Live Map View */}
           <View className="mb-5">
-            <Text className="text-lg font-semibold mb-3" style={{ color: '#4c1d95' }}>Your Location</Text>
+            <Text className="text-lg font-semibold mb-3" style={{ color: '#4c1d95' }}>{t('dashboard.yourLocation')}</Text>
             <LiveMapView height={250} />
           </View>
 
@@ -185,23 +201,29 @@ export default function Dashboard() {
             <View className="flex-row items-center">
               <Ionicons name="bicycle-outline" size={28} color="#ffffff" />
               <Text className="text-lg font-bold ml-3" style={{ color: '#ffffff' }}>
-                Active Delivery
+                {t('dashboard.activeDelivery')}
               </Text>
             </View>
             <Text className="text-sm mt-2" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-              Tap to view your current delivery status
+              {t('dashboard.activeDeliverySubtitle')}
             </Text>
           </TouchableOpacity>
 
           {/* Quick Stats */}
-          <View className="pb-5">
+          {/* <View className="pb-5">
             <View className="p-4 rounded-lg" style={styles.quickStats}>
               <Text className="text-xs mb-0.5" style={{ color: '#6b46c1' }}>Logged in as: {driver?.email}</Text>
               <Text className="text-xs" style={{ color: '#6b46c1' }}>Driver ID: {driver?.mongoid || driver?.id}</Text>
-            </View>
-          </View>
+            </View> */}
+          {/* </View> */}
         </View>
       </ScrollView>
+
+      {/* Language Selector Modal */}
+      <LanguageSelector
+        visible={showLanguageSelector}
+        onClose={() => setShowLanguageSelector(false)}
+      />
     </View>
   );
 }
@@ -212,6 +234,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f8f7ff',
+  },
+  languageToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    marginTop: 10,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.2)',
+  },
+  languageToggleText: {
+    color: '#8B5CF6',
+    fontSize: 14,
+    fontWeight: '600',
+    marginHorizontal: 8,
   },
   headerSection: {
     paddingHorizontal: 20,

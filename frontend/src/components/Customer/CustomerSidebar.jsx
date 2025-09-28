@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
-import { FaUser, FaTachometerAlt, FaUtensils, FaClipboardList, FaSignOutAlt, FaStore, FaHeart, FaTruck } from 'react-icons/fa';
+import { FaUser, FaTachometerAlt, FaUtensils, FaClipboardList, FaSignOutAlt, FaStore, FaHeart, FaTruck, FaExclamationTriangle } from 'react-icons/fa';
 import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import ThemeToggle from '../ui/ThemeToggle';
@@ -27,6 +27,7 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
     { icon: FaStore, label: 'Market', path: '/customer/market' },
     { icon: FaClipboardList, label: 'Subscriptions', path: '/customer/subscriptions' },
     { icon: FaHeart, label: 'Goals', path: '/customer/goals' },
+    { icon: FaExclamationTriangle, label: 'Allergies', path: '/customer/allergies' },
     { icon: FaTruck, label: 'Tracking', path: '/customer/tracking' }
   ];
 
