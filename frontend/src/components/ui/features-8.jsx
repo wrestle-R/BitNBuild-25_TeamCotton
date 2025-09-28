@@ -9,10 +9,10 @@ export function Features() {
                 {/* Features Header */}
                 <div className="flex flex-col items-center gap-4 text-center mb-16 sm:gap-8">
                     <h2 className="max-w-[720px] text-3xl font-semibold leading-tight sm:text-5xl sm:leading-tight text-foreground">
-                        Features
+                        Why Choose NurishNet?
                     </h2>
                     <p className="text-md max-w-[600px] font-medium text-muted-foreground sm:text-xl">
-                        Discover the powerful capabilities that make our platform stand out from the rest.
+                        Experience the future of food delivery with our comprehensive platform designed for customers, vendors, and drivers.
                     </p>
                 </div>
                 
@@ -32,7 +32,7 @@ export function Features() {
                                     </svg>
                                     <span className="mx-auto block w-fit text-5xl font-semibold">100%</span>
                                 </div>
-                                <h2 className="mt-6 text-center text-3xl font-semibold">Customizable</h2>
+                                <h2 className="mt-6 text-center text-3xl font-semibold">Multi-Platform</h2>
                             </CardContent>
                         </Card>
                         <Card
@@ -81,8 +81,8 @@ export function Features() {
                                     </svg>
                                 </div>
                                 <div className="relative z-10 mt-6 space-y-2 text-center">
-                                    <h2 className="text-lg font-medium transition text-foreground">Secure by default</h2>
-                                    <p className="text-muted-foreground">Provident fugit and vero voluptate. magnam magni doloribus dolores voluptates a sapiente nisi.</p>
+                                    <h2 className="text-lg font-medium transition text-foreground">Secure Payments</h2>
+                                    <p className="text-muted-foreground">Advanced encryption and secure payment processing ensure your transactions are always protected and your data remains safe.</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -154,8 +154,8 @@ export function Features() {
                                     </svg>
                                 </div>
                                 <div className="relative z-10 mt-14 space-y-2 text-center">
-                                    <h2 className="text-lg font-medium transition text-foreground">Faster than light</h2>
-                                    <p className="text-muted-foreground">Provident fugit vero voluptate. magnam magni doloribus dolores voluptates inventore nisi.</p>
+                                    <h2 className="text-lg font-medium transition text-foreground">Real-Time Tracking</h2>
+                                    <p className="text-muted-foreground">Track your orders in real-time from kitchen to doorstep with live updates and accurate delivery estimates.</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -168,8 +168,8 @@ export function Features() {
                                         <Shield className="m-auto size-5" strokeWidth={1} />
                                     </div>
                                     <div className="space-y-2">
-                                        <h2 className="text-lg font-medium transition text-foreground">Faster than light</h2>
-                                        <p className="text-muted-foreground">Provident fugit vero voluptate. Voluptates a sapiente inventore nisi.</p>
+                                        <h2 className="text-lg font-medium transition text-foreground">Smart Analytics</h2>
+                                        <p className="text-muted-foreground">Comprehensive dashboard with insights and analytics to help vendors optimize their business operations.</p>
                                     </div>
                                 </div>
                                 <div
@@ -226,8 +226,8 @@ export function Features() {
                                         <Users className="m-auto size-6" strokeWidth={1} />
                                     </div>
                                     <div className="space-y-2">
-                                        <h2 className="text-lg font-medium transition text-foreground">Keep your loved ones safe</h2>
-                                        <p className="text-muted-foreground">Voluptate. magnam magni doloribus dolores voluptates a sapiente inventore nisi.</p>
+                                        <h2 className="text-lg font-medium transition text-foreground">Driver Network</h2>
+                                        <p className="text-muted-foreground">Reliable network of verified drivers ensuring fast and safe delivery of your favorite meals.</p>
                                     </div>
                                 </div>
                                 <div

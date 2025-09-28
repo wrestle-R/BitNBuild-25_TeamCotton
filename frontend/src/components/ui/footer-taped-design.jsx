@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Linkedin, Twitter } from 'lucide-react';
+import { Linkedin, Github } from 'lucide-react';
 
 const tape = <svg
   xmlns="http://www.w3.org/2000/svg"
@@ -33,7 +33,7 @@ export const Component = () => {
               NourishNet
             </Link>
             <p className='text-muted-foreground font-medium text-base w-full md:w-4/5'>
-              Connecting communities with sustainable food networks and smart agriculture.
+              Your complete food delivery ecosystem - connecting vendors, customers, and drivers.
             </p>
           </div>
 
@@ -41,8 +41,8 @@ export const Component = () => {
             <div className='flex flex-col gap-1 md:gap-4'>
               <h4 className='uppercase font-display text-md text-muted-foreground font-semibold'>Explore</h4>
               <div className="flex flex-wrap md:flex-col gap-2 text-sm text-foreground items-start">
-                <Link className='text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap font-medium' to="/#features">Features</Link>
-                <Link className='text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap font-medium' to="/#testimonials">Testimonials</Link>
+                <Link className='text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap font-medium' to="/vendor/auth">For Vendors</Link>
+                <Link className='text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap font-medium' to="/customer/auth">For Customers</Link>
                 <Link className='text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap font-medium' to="/#contact">Contact</Link>
               </div>
             </div>
@@ -60,19 +60,19 @@ export const Component = () => {
       <div className="my-3 px-4 md:px-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-sm text-muted-foreground">
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-8 items-start sm:items-center">
           <p className="whitespace-nowrap">
-            ©{currentYear} NourishNet. All rights reserved.
+            ©{currentYear} NourishNet Platform. All rights reserved.
           </p>
           <div className="flex flex-row gap-4">
             <Link to="/privacy-policy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-foreground transition-colors">Terms & Conditions</Link>
-            <a href="https://www.linkedin.com/in/radu-a-popescu/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
-              Team Cotton
+            <a href="https://github.com/wrestle-R/BitNBuild-25_TeamCotton" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">
+              Source Code
             </a>
           </div>
         </div>
         <div className="flex gap-4 items-center">
           <a
-            href="https://www.linkedin.com/in/radu-a-popescu/"
+            href="https://linkedin.com/in/russel-daniel-970b8a303"
             target="_blank"
             rel="nofollow noopener"
             aria-label="Linkedin"
@@ -80,12 +80,12 @@ export const Component = () => {
             <Linkedin className="w-5 h-5 fill-current" />
           </a>
           <a
-            href="https://x.com/activation_guy"
+            href="https://github.com/wrestle-R"
             target="_blank"
             rel="nofollow noopener"
-            aria-label="Twitter"
+            aria-label="GitHub"
             className="hover:text-foreground transition-colors">
-            <Twitter className="w-5 h-5 fill-current" />
+            <Github className="w-5 h-5 fill-current" />
           </a>
         </div>
       </div>
