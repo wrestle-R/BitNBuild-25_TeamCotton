@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authMiddleware } = require('../middleware/authMiddleware');
+const authMiddleware = require('../middleware/authMiddleware');
 const { getProfitPrediction, getBusinessAnalytics } = require('../Controllers/predictionController');
 
 // Get profit prediction for a specific plan

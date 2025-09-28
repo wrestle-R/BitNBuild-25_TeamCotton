@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDriverContext } from '../context/DriverContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function Profile() {
@@ -31,6 +32,7 @@ export default function Profile() {
   }
 
   const { driver, loading, logout } = driverContextData;
+  const { t } = useLanguage();
   const router = useRouter();
 
   const handleLogout = async () => {
@@ -51,22 +53,10 @@ export default function Profile() {
     }
   };
 
-  const handleEditProfile = () => {
-    console.log('Edit Profile clicked - feature coming soon');
-  };
-
-  const handleChangePassword = () => {
-    console.log('Change Password clicked - feature coming soon');
-  };
-
-  const handleSupport = () => {
-    console.log('Support clicked - feature coming soon');
-  };
-
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={styles.loadingText}>{t('profile.profilePage.loading')}</Text>
       </View>
     );
   }
@@ -85,8 +75,8 @@ export default function Profile() {
         <View style={styles.content}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Driver Profile</Text>
-            <Text style={styles.headerSubtitle}>Manage your account settings</Text>
+            <Text style={styles.headerTitle}>{t('profile.profilePage.title')}</Text>
+            <Text style={styles.headerSubtitle}>{t('profile.profilePage.subtitle')}</Text>
           </View>
 
           {/* Profile Card */}
@@ -97,7 +87,7 @@ export default function Profile() {
                 <Ionicons name="person" size={45} color="#8b5cf6" />
               </View>
               <TouchableOpacity style={styles.changePhotoButton}>
-                <Text style={styles.changePhotoText}>Change Photo</Text>
+                <Text style={styles.changePhotoText}>{t('profile.profilePage.changePhoto')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -106,7 +96,7 @@ export default function Profile() {
               <View style={styles.infoRow}>
                 <Ionicons name="person-outline" size={22} color="#8b5cf6" />
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Full Name</Text>
+                  <Text style={styles.infoLabel}>{t('profile.profilePage.name')}</Text>
                   <Text style={styles.infoValue}>
                     {driver.name || 'Not provided'}
                   </Text>
@@ -116,7 +106,7 @@ export default function Profile() {
               <View style={styles.infoRow}>
                 <Ionicons name="mail-outline" size={22} color="#8b5cf6" />
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Email</Text>
+                  <Text style={styles.infoLabel}>{t('profile.profilePage.email')}</Text>
                   <Text style={styles.infoValue}>{driver.email}</Text>
                 </View>
               </View>
@@ -124,7 +114,7 @@ export default function Profile() {
               <View style={styles.infoRow}>
                 <Ionicons name="call-outline" size={22} color="#8b5cf6" />
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Phone</Text>
+                  <Text style={styles.infoLabel}>{t('profile.profilePage.phone')}</Text>
                   <Text style={styles.infoValue}>
                     {driver.contactNumber || 'Not provided'}
                   </Text>
@@ -134,7 +124,7 @@ export default function Profile() {
               <View style={styles.infoRow}>
                 <Ionicons name="car-outline" size={22} color="#8b5cf6" />
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Vehicle Type</Text>
+                  <Text style={styles.infoLabel}>{t('profile.profilePage.vehicleType')}</Text>
                   <Text style={[styles.infoValue, styles.capitalize]}>
                     {driver.vehicleType || 'Not provided'}
                   </Text>
@@ -144,7 +134,7 @@ export default function Profile() {
               <View style={styles.infoRow}>
                 <Ionicons name="car-sport-outline" size={22} color="#8b5cf6" />
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Vehicle Number</Text>
+                  <Text style={styles.infoLabel}>{t('profile.profilePage.vehicleNumber')}</Text>
                   <Text style={styles.infoValue}>
                     {driver.vehicleNumber || 'Not provided'}
                   </Text>
@@ -169,51 +159,18 @@ export default function Profile() {
           <View style={styles.actionButtons}>
             <TouchableOpacity 
               style={styles.actionButton}
-              onPress={handleEditProfile}
-            >
-              <View style={styles.actionButtonContent}>
-                <Ionicons name="create-outline" size={24} color="#8b5cf6" />
-                <Text style={styles.actionButtonText}>Edit Profile</Text>
-              </View>
-              <Ionicons name="chevron-forward-outline" size={20} color="#8b5cf6" />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={handleChangePassword}
-            >
-              <View style={styles.actionButtonContent}>
-                <Ionicons name="lock-closed-outline" size={24} color="#8b5cf6" />
-                <Text style={styles.actionButtonText}>Change Password</Text>
-              </View>
-              <Ionicons name="chevron-forward-outline" size={20} color="#8b5cf6" />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={handleSupport}
-            >
-              <View style={styles.actionButtonContent}>
-                <Ionicons name="help-circle-outline" size={24} color="#8b5cf6" />
-                <Text style={styles.actionButtonText}>Help & Support</Text>
-              </View>
-              <Ionicons name="chevron-forward-outline" size={20} color="#8b5cf6" />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.actionButton}
               onPress={handleLogout}
             >
               <View style={styles.actionButtonContent}>
                 <Ionicons name="log-out-outline" size={24} color="#dc2626" />
-                <Text style={styles.logoutButtonText}>Sign Out</Text>
+                <Text style={styles.logoutButtonText}>{t('profile.profilePage.logout')}</Text>
               </View>
               <Ionicons name="chevron-forward-outline" size={20} color="#dc2626" />
             </TouchableOpacity>
           </View>
 
           {/* App Info */}
-          <View style={styles.appInfo}>
+          {/* <View style={styles.appInfo}>
             <Text style={styles.appInfoText}>
               Driver App v1.0.0
             </Text>
@@ -223,7 +180,7 @@ export default function Profile() {
             <Text style={styles.appInfoText}>
               Driver ID: {driver.mongoid || driver.id || 'N/A'}
             </Text>
-          </View>
+          </View> */}
         </View>
       </ScrollView>
     </View>
