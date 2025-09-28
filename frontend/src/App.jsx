@@ -19,6 +19,7 @@ import ManageVendors from './pages/Admin/ManageVendors'
 import { Toaster } from 'sonner' 
 import VendorSubscribers from './pages/Vendor/VendorSubscribers'
 import CustomerSubscriptions from './pages/Customer/CustomerSubscriptions'
+import CustomerTracking from './pages/Customer/CustomerTracking'
 
 
 const LandingRoute = () => {
@@ -235,6 +236,7 @@ const App = () => {
           <Route path="/customer/profile" element={<CustomerProfileRoute />} />
           <Route path="/vendor/subscribers" element={<VendorSubscribers />} />
           <Route path="/customer/subscriptions" element={<CustomerSubscriptions />} />
+          <Route path="/customer/tracking" element={<CustomerTracking />} />
 
           {/* Hidden Admin Routes */}
           <Route path="/admin/auth" element={<AdminAuth />} />

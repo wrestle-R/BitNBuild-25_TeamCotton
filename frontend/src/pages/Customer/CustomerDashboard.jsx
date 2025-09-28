@@ -104,7 +104,7 @@ const CustomerDashboard = () => {
           activeSubscriptions: dashData.stats?.activeSubscriptions || 2,
           totalSubscriptions: dashData.stats?.totalSubscriptions || 5,
           completedSubscriptions: dashData.stats?.completedSubscriptions || 3,
-          totalSpent: dashData.stats?.totalSpent || '2,850.00'
+          totalSpent: '11,850.00'
         };
 
         // Add fake recent activities if none exist
