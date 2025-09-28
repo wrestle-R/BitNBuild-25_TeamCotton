@@ -20,6 +20,7 @@ import { Toaster } from 'sonner'
 import VendorSubscribers from './pages/Vendor/VendorSubscribers'
 import CustomerSubscriptions from './pages/Customer/CustomerSubscriptions'
 import CustomerTracking from './pages/Customer/CustomerTracking'
+import VendorAnalytics from './pages/Vendor/VendorAnalytics'
 
 
 const LandingRoute = () => {
@@ -237,6 +238,7 @@ const App = () => {
           <Route path="/vendor/subscribers" element={<VendorSubscribers />} />
           <Route path="/customer/subscriptions" element={<CustomerSubscriptions />} />
           <Route path="/customer/tracking" element={<CustomerTracking />} />
+          <Route path="/vendor/analytics" element={<VendorAnalytics />} />
 
           {/* Hidden Admin Routes */}
           <Route path="/admin/auth" element={<AdminAuth />} />
