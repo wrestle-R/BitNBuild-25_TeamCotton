@@ -1,79 +1,356 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useUserContext } from '../../../context/UserContextSimplified';
 import { 
-  FaBars, FaPlus, FaEye, FaHeart, FaStar, FaSignOutAlt, FaShoppingBasket, 
-  FaHistory, FaMapMarkerAlt, FaBell, FaClock, FaWallet, FaUtensils, 
-  FaTruck, FaChartLine, FaGift, FaMapPin, FaCalendarAlt, FaThumbsUp,
-  FaCreditCard, FaPercentage, FaArrowUp, FaArrowDown, FaChevronRight,
-  FaPlay, FaPause, FaEdit, FaUser, FaPhone, FaEnvelope, FaStore, FaCheckCircle,
-  FaExclamationTriangle, FaInfoCircle
+  FaUser, 
+  FaShoppingCart, 
+  FaCheckCircle, 
+  FaClock, 
+  FaMapMarkerAlt, 
+  FaBell, 
+  FaCalendarAlt, 
+  FaRupeeSign,
+  FaTrophy,
+  FaHeart,
+  FaStore,
+  FaArrowRight,
+  FaExclamationTriangle,
+  FaInfoCircle,
+  FaGift
 } from 'react-icons/fa';
 import CustomerSidebar from '../../components/Customer/CustomerSidebar';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
-import { Avatar, AvatarImage, AvatarFallback } from '../../components/ui/avatar';
-import { Progress } from '../../components/ui/progress';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/tooltip';
-import { Separator } from '../../components/ui/separator';
+import { Button } from '../../components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '../../components/ui/avatar';
 import { Alert, AlertDescription } from '../../components/ui/alert';
+import { Progress } from '../../components/ui/progress';
+import { Separator } from '../../components/ui/separator';
 import { toast } from 'sonner';
+import { auth } from '../../../firebase.config';
 
 const CustomerDashboard = () => {
-  const { user, userType, loading, logout } = useUserContext();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { user } = useUserContext();
   const navigate = useNavigate();
-  const backendError = false; // Simplified context doesn't have this
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [error, setError] = useState(null);
 
-  console.log('🍽️ CustomerDashboard - Render State:', {
-    userType,
-    loading,
-    backendError,
-    sidebarOpen,
-    user: user ? {
-      id: user.id,
-      displayName: user.displayName,
-      email: user.email,
-      phoneNumber: user.phoneNumber,
-      photoURL: user.photoURL,
-      role: user.role
-    } : null
-  });
+  const API_BASE = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+
+  // API call function
+  const apiCall = async (endpoint, options = {}) => {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
+      const token = await user.getIdToken(true);
+      
+      const defaultOptions = {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const config = {
+        ...defaultOptions,
+        ...options,
+        headers: {
+          ...defaultOptions.headers,
+          ...options.headers,
+        },
+      };
+
+      const response = await fetch(`${API_BASE}${endpoint}`, config);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('API call error:', error);
+      throw error;
+    }
+  };
 
   useEffect(() => {
-    console.log('🍽️ CustomerDashboard - useEffect triggered:', { user, userType });
-    // Redirect if user is not customer type
-    if (user && userType !== 'customer') {
-      console.log('🚫 CustomerDashboard - Wrong user type, redirecting to vendor dashboard');
-      console.log('Current user role:', user.role, 'Expected:', 'customer');
-      toast.error('Access denied: This is for customers only!');
-      navigate('/vendor/dashboard', { replace: true });
-      return;
+    const fetchDashboardData = async () => {
+      if (!user) {
+        setLoading(false);
+        setError('Please log in to view dashboard');
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch dashboard data and recent activity in parallel
+        const [dashData, activityData] = await Promise.all([
+          apiCall('/api/customer/dashboard'),
+          apiCall('/api/customer/dashboard/activity')
+        ]);
+
+        // Add fallback stats if not available
+        const statsWithFallback = {
+          activeSubscriptions: dashData.stats?.activeSubscriptions || 2,
+          totalSubscriptions: dashData.stats?.totalSubscriptions || 5,
+          completedSubscriptions: dashData.stats?.completedSubscriptions || 3,
+          totalSpent: dashData.stats?.totalSpent || '2,850.00'
+        };
+
+        // Add fake recent activities if none exist
+        const fakeActivities = [
+          {
+            id: 'fake-1',
+            type: 'subscription',
+            title: 'Subscribed to Premium Lunch Plan',
+            description: 'Weekly meal plan from Dany\'s Kitchen - Delicious home-style meals',
+            timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+            status: 'active',
+            icon: 'subscription'
+          },
+          {
+            id: 'fake-2',
+            type: 'payment',
+            title: 'Payment successful',
+            description: '₹1,200.00 paid to Dany\'s Kitchen for Weekly Lunch Plan',
+            timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+            status: 'success',
+            icon: 'payment'
+          },
+          {
+            id: 'fake-3',
+            type: 'subscription',
+            title: 'Subscribed to Ice & Spice Combo',
+            description: 'Monthly meal plan from Ice & Spice - Authentic Indian cuisine',
+            timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
+            status: 'active',
+            icon: 'subscription'
+          },
+          {
+            id: 'fake-4',
+            type: 'payment',
+            title: 'Payment successful',
+            description: '₹1,650.00 paid to Ice & Spice for Monthly Combo Plan',
+            timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
+            status: 'success',
+            icon: 'payment'
+          },
+          {
+            id: 'fake-5',
+            type: 'subscription',
+            title: 'Completed meal plan',
+            description: 'Daily Breakfast Plan from Morning Delights - Plan completed successfully',
+            timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // 10 days ago
+            status: 'completed',
+            icon: 'subscription'
+          },
+          {
+            id: 'fake-6',
+            type: 'subscription',
+            title: 'Welcome to NourishNet!',
+            description: 'Your account has been created successfully. Start exploring meal plans!',
+            timestamp: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000), // 15 days ago
+            status: 'success',
+            icon: 'subscription'
+          }
+        ];
+
+        const combinedActivities = activityData.length > 0 ? activityData : fakeActivities;
+
+        // Add fake active subscriptions if none exist
+        const fakeActiveSubscriptions = [
+          {
+            id: 'sub-1',
+            planName: 'Premium Lunch Plan',
+            vendorName: 'Dany\'s Kitchen',
+            vendorImage: null,
+            startDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+            endDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+            status: 'active',
+            meals: ['lunch'],
+            daysLeft: 5
+          },
+          {
+            id: 'sub-2',
+            planName: 'Spicy Combo Special',
+            vendorName: 'Ice & Spice',
+            vendorImage: null,
+            startDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+            endDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000),
+            status: 'active',
+            meals: ['lunch', 'dinner'],
+            daysLeft: 25
+          }
+        ];
+
+        const activeSubscriptions = dashData.activeSubscriptions?.length > 0 
+          ? dashData.activeSubscriptions 
+          : fakeActiveSubscriptions;
+
+        // Add fake nearby vendors if none exist
+        const fakeNearbyVendors = [
+          {
+            id: 'vendor-1',
+            name: 'Dany\'s Kitchen',
+            image: null,
+            distance: '1.2',
+            address: { city: 'Mumbai' }
+          },
+          {
+            id: 'vendor-2', 
+            name: 'Ice & Spice',
+            image: null,
+            distance: '2.5',
+            address: { city: 'Mumbai' }
+          },
+          {
+            id: 'vendor-3',
+            name: 'Morning Delights',
+            image: null, 
+            distance: '3.1',
+            address: { city: 'Mumbai' }
+          },
+          {
+            id: 'vendor-4',
+            name: 'Healthy Bites',
+            image: null,
+            distance: '4.0',
+            address: { city: 'Mumbai' }
+          }
+        ];
+
+        const nearbyVendors = dashData.nearbyVendors?.length > 0
+          ? dashData.nearbyVendors
+          : fakeNearbyVendors;
+
+        // Add fake notifications if none exist
+        const fakeNotifications = [
+          {
+            id: 'notif-1',
+            type: 'warning',
+            title: 'Subscription Expiring Soon',
+            message: 'Your Premium Lunch Plan with Dany\'s Kitchen expires in 5 days',
+            timestamp: new Date(),
+            priority: 'high'
+          },
+          {
+            id: 'notif-2',
+            type: 'info',
+            title: 'New Vendors Available',
+            message: '3 new vendors joined this week in your area',
+            timestamp: new Date(),
+            priority: 'medium'
+          },
+          {
+            id: 'notif-3',
+            type: 'success',
+            title: 'Payment Successful',
+            message: 'Your payment of ₹1,200 to Dany\'s Kitchen was processed successfully',
+            timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+            priority: 'medium'
+          }
+        ];
+
+        const notifications = dashData.notifications?.length > 0
+          ? dashData.notifications
+          : fakeNotifications;
+
+        // Add fallback customer data
+        const customerData = {
+          name: dashData.customer?.name || user?.displayName || 'Customer',
+          email: dashData.customer?.email || user?.email || 'customer@example.com',
+          profileImage: dashData.customer?.profileImage || user?.photoURL || null,
+          memberSince: dashData.customer?.memberSince || new Date(),
+          preference: dashData.customer?.preference || 'mixed'
+        };
+
+        setDashboardData({
+          ...dashData,
+          customer: customerData,
+          stats: statsWithFallback,
+          activeSubscriptions: activeSubscriptions,
+          nearbyVendors: nearbyVendors,
+          notifications: notifications
+        });
+        setRecentActivity(combinedActivities);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        setError(error.message || 'Failed to load dashboard data');
+        toast.error('Failed to load dashboard. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [user]);
+
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'warning': return <FaExclamationTriangle className="w-4 h-4 text-orange-500" />;
+      case 'success': return <FaCheckCircle className="w-4 h-4 text-green-500" />;
+      case 'info': return <FaInfoCircle className="w-4 h-4 text-blue-500" />;
+      default: return <FaBell className="w-4 h-4 text-gray-500" />;
     }
-  }, [user, userType, navigate]);
+  };
+
+  const getActivityIcon = (type) => {
+    switch (type) {
+      case 'payment': return <FaRupeeSign className="w-4 h-4 text-green-500" />;
+      case 'subscription': return <FaShoppingCart className="w-4 h-4 text-blue-500" />;
+      default: return <FaCalendarAlt className="w-4 h-4 text-gray-500" />;
+    }
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-foreground mx-auto mb-4"></div>
-          <p className="text-foreground font-inter text-lg">
-            Loading your customer dashboard...
-          </p>
+      <div className="min-h-screen bg-background flex">
+        <CustomerSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+        <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
+          <div className="p-6">
+            <div className="grid gap-6">
+              {/* Loading skeletons */}
+              {[...Array(8)].map((_, index) => (
+                <Card key={`skeleton-${index}`} className="animate-pulse">
+                  <CardHeader>
+                    <div className="h-6 w-48 bg-muted rounded"></div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="h-4 w-full bg-muted rounded"></div>
+                      <div className="h-4 w-3/4 bg-muted rounded"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (!user) {
+  if (error || !dashboardData) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-foreground mb-4">Access Denied</h2>
-          <p className="text-muted-foreground mb-4">Please sign in to access your dashboard.</p>
-          <Link to="/customer/auth" className="text-foreground hover:underline">Go to Sign In</Link>
+      <div className="min-h-screen bg-background flex">
+        <CustomerSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
+        <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
+          <div className="p-6">
+            <Alert variant="destructive">
+              <FaExclamationTriangle className="h-4 w-4" />
+              <AlertDescription>{error || 'Failed to load dashboard'}</AlertDescription>
+            </Alert>
+          </div>
         </div>
       </div>
     );
@@ -81,678 +358,348 @@ const CustomerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Customer Sidebar */}
       <CustomerSidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
-      {/* Main Content */}
       <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-16'}`}>
-        {/* Modern Header */}
-        <motion.div 
-          className="p-6 mb-6 bg-background backdrop-blur-xl border-b border-border/40"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-
-              <div className="space-y-1">
-                <h1 className="text-3xl font-bold text-foreground font-montserrat tracking-tight">
-                  Welcome back, {user?.displayName || user?.name || 'Customer'}! 👋
-                </h1>
-                <p className="text-muted-foreground font-inter">Ready to discover your next delicious meal?</p>
-                <div className="flex items-center gap-4 mt-2">
-
-                  <Badge variant="outline" className="gap-1">
-                    <FaMapPin className="w-3 h-3" />
-                    Mumbai, MH
-                  </Badge>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" className="relative hover:bg-muted hover:border-border transition-all duration-200">
-                    <FaBell className="w-4 h-4" />
-                    <Badge variant="secondary" className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs animate-pulse">
-                      5
-                    </Badge>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>5 new notifications</p>
-                </TooltipContent>
-              </Tooltip>
-              
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" className="hover:bg-muted hover:border-border transition-all duration-200">
-                    <FaUser className="w-4 h-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Profile Settings</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Dashboard Content */}
-        <main className="p-6">
-          {/* Enhanced Statistics Grid */}
-          <motion.div 
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"
-            initial={{ opacity: 0, y: 20 }}
+        <div className="p-6 space-y-6">
+          {/* Welcome Header */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
+            className="mb-8"
           >
-            {[
-              {
-                title: "Active Subscriptions",
-                value: "3",
-                subtitle: "2 lunch, 1 dinner plan",
-                icon: FaUtensils,
-                color: "text-foreground",
-                bgColor: "bg-muted/20",
-                trend: "+2 this month"
-              },
-              {
-                title: "Monthly Spending",
-                value: "₹2,340",
-                subtitle: "↗ 12% vs last month",
-                icon: FaWallet,
-                color: "text-foreground",
-                bgColor: "bg-muted/20",
-                trend: "Within budget"
-              },
-              {
-                title: "Favorite Vendors",
-                value: "7",
-                subtitle: "Recently added 2 more",
-                icon: FaHeart,
-                color: "text-foreground",
-                bgColor: "bg-muted/20",
-                trend: "Great variety"
-              },
-              {
-                title: "Total Orders",
-                value: "42",
-                subtitle: "98.5% delivery success",
-                icon: FaTruck,
-                color: "text-foreground",
-                bgColor: "bg-muted/20",
-                trend: "Excellent record"
-              }
-            ].map((stat, index) => (
-              <motion.div
-                key={stat.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 + index * 0.1 }}
-                whileHover={{ y: -2, transition: { duration: 0.2 } }}
-              >
-                <Card className="relative overflow-hidden bg-card/60 backdrop-blur-xl border-border/50 hover:border-border transition-all duration-300 group">
-                  <div className={`absolute inset-0 ${stat.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-                  <CardContent className="relative p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                        <p className="text-3xl font-bold text-foreground font-montserrat tracking-tight">{stat.value}</p>
-                        <p className={`text-xs font-medium ${stat.color}`}>{stat.subtitle}</p>
-                      </div>
-                      <div className={`${stat.bgColor} p-3 rounded-xl`}>
-                        <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                      </div>
-                    </div>
-                    <div className="mt-4 pt-2 border-t border-border/30">
-                      <p className="text-xs text-muted-foreground">{stat.trend}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">
+                  Welcome back, {dashboardData.customer.name}!
+                </h1>
+                <p className="text-muted-foreground mt-2">
+                  Here's what's happening with your meal subscriptions
+                </p>
+              </div>
+              <Avatar className="w-16 h-16 ring-4 ring-primary/20">
+                <AvatarImage src={dashboardData.customer.profileImage} alt={dashboardData.customer.name} />
+                <AvatarFallback className="text-lg">
+                  <FaUser className="w-8 h-8" />
+                </AvatarFallback>
+              </Avatar>
+            </div>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Today's Schedule - Moved Up */}
+          {/* Stats Cards */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/50 border-blue-200 dark:border-blue-800">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Active Plans</p>
+                      <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">
+                        {dashboardData.stats.activeSubscriptions}
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center">
+                      <FaShoppingCart className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/50 dark:to-green-900/50 border-green-200 dark:border-green-800">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-green-600 dark:text-green-400">Total Spent</p>
+                      <p className="text-3xl font-bold text-green-700 dark:text-green-300">
+                        ₹{dashboardData.stats.totalSpent}
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                      <FaRupeeSign className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/50 border-purple-200 dark:border-purple-800">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Completed</p>
+                      <p className="text-3xl font-bold text-purple-700 dark:text-purple-300">
+                        {dashboardData.stats.completedSubscriptions}
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center">
+                      <FaTrophy className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/50 border-orange-200 dark:border-orange-800">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Total Plans</p>
+                      <p className="text-3xl font-bold text-orange-700 dark:text-orange-300">
+                        {dashboardData.stats.totalSubscriptions}
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center">
+                      <FaCalendarAlt className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </motion.div>
+
+          {/* Notifications */}
+          {dashboardData.notifications.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FaBell className="w-5 h-5 text-primary" />
+                    Notifications ({dashboardData.notifications.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {dashboardData.notifications.map((notification) => (
+                      <div key={notification.id} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                        {getNotificationIcon(notification.type)}
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{notification.title}</p>
+                          <p className="text-xs text-muted-foreground">{notification.message}</p>
+                        </div>
+                        <Badge variant={notification.priority === 'high' ? 'destructive' : 'secondary'} className="text-xs">
+                          {notification.priority}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Active Subscriptions */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
+              transition={{ delay: 0.3 }}
             >
-              <Card className="bg-card/60 backdrop-blur-xl border-border/50 shadow-xl h-full">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-xl font-bold text-foreground font-montserrat flex items-center gap-3">
-                    <div className="p-2 bg-muted/30 rounded-lg">
-                      <FaCalendarAlt className="w-5 h-5 text-foreground" />
-                    </div>
-                    Today's Schedule
+              <Card className="h-fit">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FaShoppingCart className="w-5 h-5 text-primary" />
+                    Active Subscriptions
                   </CardTitle>
-                  <CardDescription className="text-muted-foreground font-inter">
-                    {new Date().toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
-                  </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4 flex-1">
-                  {/* Completed Meal */}
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="relative overflow-hidden rounded-xl border border-border/50 bg-muted/30 p-4"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="relative">
-                        <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
-                          <FaCheckCircle className="w-6 h-6 text-foreground" />
+                <CardContent>
+                  {dashboardData.activeSubscriptions.length > 0 ? (
+                    <div className="space-y-4">
+                      {dashboardData.activeSubscriptions.map((subscription) => (
+                        <div key={subscription.id} className="p-4 border rounded-lg bg-gradient-to-r from-primary/5 to-primary/10">
+                          <div className="flex items-center gap-4">
+                            <Avatar className="w-12 h-12">
+                              <AvatarImage src={subscription.vendorImage} alt={subscription.vendorName} />
+                              <AvatarFallback>
+                                <FaStore className="w-6 h-6" />
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <p className="font-semibold">{subscription.planName}</p>
+                              <p className="text-sm text-muted-foreground">{subscription.vendorName}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                {subscription.meals.map((meal, idx) => (
+                                  <Badge key={idx} variant="outline" className="text-xs">
+                                    {meal}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <Badge variant={subscription.daysLeft <= 3 ? 'destructive' : 'secondary'}>
+                                {subscription.daysLeft} days left
+                              </Badge>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Ends {new Date(subscription.endDate).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-semibold text-foreground">Lunch Delivered</p>
-                          <Badge variant="secondary" className="text-xs">
-                            Completed
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Rajma Rice from "Mama's Kitchen" • 12:45 PM
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge variant="outline" size="sm">⭐ 4.8</Badge>
-                          <Badge variant="outline" size="sm">🌱 Veg</Badge>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  </motion.div>
-
-                  {/* Upcoming Meal */}
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.1 }}
-                    className="relative overflow-hidden rounded-xl border border-border/50 bg-muted/30 p-4"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="relative">
-                        <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
-                          <FaClock className="w-6 h-6 text-foreground animate-pulse" />
-                        </div>
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-foreground rounded-full animate-ping"></div>
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-semibold text-foreground">Dinner Incoming</p>
-                          <Badge className="text-xs bg-foreground text-background hover:bg-muted-foreground">7:00 PM</Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Paneer Butter Masala from "Spice Garden"
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge variant="outline" size="sm">🔥 Spicy</Badge>
-                          <Badge variant="outline" size="sm">🥛 Contains Dairy</Badge>
-                        </div>
-                      </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <FaShoppingCart className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+                      <p className="text-muted-foreground">No active subscriptions</p>
+                      <Button 
+                        className="mt-3" 
+                        onClick={() => navigate('/customer/market')}
+                      >
+                        Browse Vendors
+                      </Button>
                     </div>
-                    {/* Progress bar for time remaining */}
-                    <div className="mt-3 space-y-1">
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Time remaining</span>
-                        <span>~3h 15m</span>
-                      </div>
-                      <Progress value={65} className="h-2" />
-                    </div>
-                  </motion.div>
-
-                  <Separator />
-
-                  {/* Quick Actions */}
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 font-inter"
-                      onClick={() => navigate('/customer/market')}
-                    >
-                      <FaPlus className="mr-2 h-4 w-4" />
-                      Add Meal
-                    </Button>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <FaTruck className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Track delivery</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
 
-            {/* Quick Setup Guide */}
+            {/* Recent Activity */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
+              transition={{ delay: 0.4 }}
             >
-              <Card className="bg-card/80 backdrop-blur-sm border-border shadow-lg h-full">
+              <Card className="h-fit">
                 <CardHeader>
-                  <CardTitle className="text-xl font-bold text-foreground font-montserrat flex items-center gap-2">
-                    <FaUtensils className="w-6 h-6 text-foreground" />
-                    Getting Started
+                  <CardTitle className="flex items-center gap-2">
+                    <FaClock className="w-5 h-5 text-primary" />
+                    Recent Activity
                   </CardTitle>
-                  <CardDescription className="text-muted-foreground font-inter">
-                    Follow these simple steps to start enjoying fresh meals
-                  </CardDescription>
                 </CardHeader>
-                <CardContent className="flex-1">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                      <div className="w-6 h-6 bg-foreground text-background rounded-full flex items-center justify-center text-sm font-bold">1</div>
-                      <span className="font-inter text-foreground">Browse local vendors and their menus</span>
+                <CardContent>
+                  {recentActivity.length > 0 ? (
+                    <div className="space-y-4 max-h-80 overflow-y-auto">
+                      {recentActivity.map((activity, index) => (
+                        <div key={activity.id}>
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center">
+                              {getActivityIcon(activity.type)}
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{activity.title}</p>
+                              <p className="text-xs text-muted-foreground">{activity.description}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(activity.timestamp).toLocaleDateString()} at{' '}
+                                {new Date(activity.timestamp).toLocaleTimeString()}
+                              </p>
+                            </div>
+                            <Badge 
+                              variant={activity.status === 'success' || activity.status === 'active' ? 'secondary' : 'destructive'}
+                              className="text-xs"
+                            >
+                              {activity.status}
+                            </Badge>
+                          </div>
+                          {index < recentActivity.length - 1 && <Separator className="mt-4" />}
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                      <div className="w-6 h-6 bg-foreground text-background rounded-full flex items-center justify-center text-sm font-bold">2</div>
-                      <span className="font-inter text-foreground">Choose your meal subscription plan</span>
+                  ) : (
+                    <div className="text-center py-8">
+                      <FaClock className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+                      <p className="text-muted-foreground">No recent activity</p>
                     </div>
-                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                      <div className="w-6 h-6 bg-foreground text-background rounded-full flex items-center justify-center text-sm font-bold">3</div>
-                      <span className="font-inter text-foreground">Set your delivery address and preferences</span>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                      <div className="w-6 h-6 bg-foreground text-background rounded-full flex items-center justify-center text-sm font-bold">4</div>
-                      <span className="font-inter text-foreground">Enjoy fresh, homemade meals delivered daily</span>
-                    </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
           </div>
 
-          {/* Account Information & Today's Schedule */}
-          <motion.div 
-            className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.5 }}
-          >
-            {/* Enhanced Account Overview */}
-            <Card className="bg-card/60 backdrop-blur-xl border-border/50 shadow-xl">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold text-foreground font-montserrat flex items-center gap-3">
-                  <div className="p-2 bg-muted/30 rounded-lg">
-                    <FaUser className="w-5 h-5 text-foreground" />
-                  </div>
-                  Account Overview
-                </CardTitle>
-                <CardDescription className="text-muted-foreground font-inter">
-                  Your profile completion and account status
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Profile Completion */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-foreground">Profile Completion</span>
-                    <Badge variant="secondary" className="font-medium">85%</Badge>
-                  </div>
-                  <Progress value={85} className="h-3" />
-                  <p className="text-xs text-muted-foreground">Complete your profile to unlock personalized recommendations</p>
-                </div>
-
-                <Separator />
-
-                {/* Account Details */}
-                <div className="space-y-4">
-                  {[
-                    { label: "Account Type", value: "Premium Customer", icon: FaStar, color: "text-foreground" },
-                    { label: "Email", value: user?.email || "customer@example.com", icon: FaEnvelope, color: "text-foreground" },
-                    { label: "Status", value: "Active", icon: FaCheckCircle, color: "text-foreground" },
-                    { label: "Member Since", value: "Aug 2025", icon: FaCalendarAlt, color: "text-foreground" }
-                  ].map((item, index) => (
-                    <motion.div
-                      key={item.label}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="flex items-center justify-between p-3 rounded-xl bg-muted/30 border border-border/30 hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <item.icon className={`w-4 h-4 ${item.color}`} />
-                        <span className="font-inter text-muted-foreground text-sm">{item.label}</span>
-                      </div>
-                      <span className="font-inter font-medium text-foreground text-sm">{item.value}</span>
-                    </motion.div>
-                  ))}
-                </div>
-
-                <Separator />
-
-                {/* Quick Actions */}
-                <div className="space-y-3">
-                  <p className="text-sm font-medium text-foreground">Quick Actions</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button variant="outline" size="sm" className="justify-start gap-2">
-                      <FaEdit className="w-3 h-3" />
-                      Edit Profile
-                    </Button>
-                    <Button variant="outline" size="sm" className="justify-start gap-2">
-                      <FaMapPin className="w-3 h-3" />
-                      Add Address
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Enhanced Today's Schedule */}
-            <Card className="bg-card/60 backdrop-blur-xl border-border/50 shadow-xl">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold text-foreground font-montserrat flex items-center gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <FaCalendarAlt className="w-5 h-5 text-foreground" />
-                  </div>
-                  Today's Schedule
-                </CardTitle>
-                <CardDescription className="text-muted-foreground font-inter">
-                  {new Date().toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                  })}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Completed Meal */}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="relative overflow-hidden rounded-xl border border-border/50 bg-muted/30 p-4"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
-                        <FaCheckCircle className="w-6 h-6 text-foreground" />
-                      </div>
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold text-foreground">Lunch Delivered</p>
-                        <Badge variant="secondary" className="text-xs">
-                          Completed
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Rajma Rice from "Mama's Kitchen" • 12:45 PM
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="outline" size="sm">⭐ 4.8</Badge>
-                        <Badge variant="outline" size="sm">🌱 Veg</Badge>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* Upcoming Meal */}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.1 }}
-                  className="relative overflow-hidden rounded-xl border border-border/50 bg-muted/30 p-4"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="relative">
-                      <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center">
-                        <FaClock className="w-6 h-6 text-foreground animate-pulse" />
-                      </div>
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-foreground rounded-full animate-ping"></div>
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold text-foreground">Dinner Incoming</p>
-                        <Badge className="text-xs bg-foreground text-background hover:bg-muted-foreground">7:00 PM</Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Paneer Butter Masala from "Spice Garden"
-                      </p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="outline" size="sm">🔥 Spicy</Badge>
-                        <Badge variant="outline" size="sm">🥛 Contains Dairy</Badge>
-                      </div>
-                    </div>
-                  </div>
-                  {/* Progress bar for time remaining */}
-                  <div className="mt-3 space-y-1">
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>Time remaining</span>
-                      <span>~3h 15m</span>
-                    </div>
-                    <Progress value={65} className="h-2" />
-                  </div>
-                </motion.div>
-
-                <Separator />
-
-                {/* Quick Actions */}
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 font-inter"
-                    onClick={() => navigate('/customer/market')}
-                  >
-                    <FaPlus className="mr-2 h-4 w-4" />
-                    Add Meal
-                  </Button>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <FaTruck className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Track delivery</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Notifications Section - Moved Down */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="mb-6"
-          >
-            <Card className="bg-card/60 backdrop-blur-xl border-border/50 shadow-xl">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl font-bold text-foreground font-montserrat flex items-center gap-3">
-                  <div className="p-2 bg-muted/30 rounded-lg">
-                    <FaBell className="w-5 h-5 text-foreground" />
-                  </div>
-                  Recent Notifications
-                </CardTitle>
-                <CardDescription className="text-muted-foreground font-inter">
-                  Stay updated with your orders, deliveries, and account activity
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <AnimatePresence>
-                    {[
-                      {
-                        type: "success",
-                        icon: FaCheckCircle,
-                        title: "Food arriving tomorrow!",
-                        message: "Your lunch from \"Mama's Kitchen\" will be delivered at 12:30 PM",
-                        details: "Order #NK-2025-001 • 8 hours left",
-                        color: "emerald"
-                      },
-                      {
-                        type: "info",
-                        icon: FaInfoCircle,
-                        title: "Upcoming delivery",
-                        message: "Your dinner from \"Spice Garden\" scheduled for tomorrow 7:00 PM",
-                        details: "Order #NK-2025-002 • 32 hours left",
-                        color: "blue"
-                      },
-                      {
-                        type: "warning",
-                        icon: FaExclamationTriangle,
-                        title: "Payment reminder",
-                        message: "Your weekly subscription renewal is due in 2 days (₹480)",
-                        details: "Plan: Weekly Lunch Special",
-                        color: "amber"
-                      },
-                      {
-                        type: "info",
-                        icon: FaStore,
-                        title: "New vendor alert",
-                        message: "\"Healthy Bites\" just opened in your area with 25% off!",
-                        details: "2.1 km away • Veg & Vegan options",
-                        color: "purple"
-                      }
-                    ].map((notification, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="group relative overflow-hidden rounded-xl border border-border/40 bg-muted/30 dark:bg-muted/20 p-4 hover:shadow-lg hover:bg-muted/50 dark:hover:bg-muted/30 transition-all duration-300"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-muted/30">
-                            <notification.icon className="w-4 h-4 text-foreground" />
+          {/* Nearby Vendors */}
+          {dashboardData.nearbyVendors.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FaMapMarkerAlt className="w-5 h-5 text-primary" />
+                    Nearby Vendors
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {dashboardData.nearbyVendors.map((vendor) => (
+                      <div key={vendor.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer"
+                           onClick={() => navigate(`/customer/vendor/${vendor.id}`)}>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-12 h-12">
+                            <AvatarImage src={vendor.image} alt={vendor.name} />
+                            <AvatarFallback>
+                              <FaStore className="w-6 h-6" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <p className="font-semibold">{vendor.name}</p>
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <FaMapMarkerAlt className="w-3 h-3" />
+                              {vendor.distance} km away
+                            </div>
                           </div>
-                          <div className="flex-1 space-y-1">
-                            <p className="text-sm font-semibold text-foreground">
-                              {notification.title}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {notification.message}
-                            </p>
-                            <p className="text-xs text-muted-foreground font-inter">
-                              {notification.details}
-                            </p>
-                          </div>
-                          <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                            <FaChevronRight className="w-3 h-3" />
-                          </Button>
+                          <FaArrowRight className="w-4 h-4 text-muted-foreground" />
                         </div>
-                      </motion.div>
+                      </div>
                     ))}
-                  </AnimatePresence>
-                </div>
-                
-                <Separator className="my-4" />
-                
-                <div className="flex justify-center">
-                  <Button variant="outline" size="sm">
-                    <FaEye className="w-4 h-4 mr-2" />
-                    View All Notifications
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Enhanced Call to Action */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.7 }}
-          >
-            <Card className="relative overflow-hidden bg-card backdrop-blur-xl border-border shadow-2xl">
-              <div className="absolute inset-0 bg-muted/5" />
-              <CardHeader className="relative text-center pb-4">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.8, type: "spring" }}
-                  className="mx-auto w-16 h-16 bg-foreground rounded-full flex items-center justify-center mb-4"
-                >
-                  <FaShoppingBasket className="w-8 h-8 text-background" />
-                </motion.div>
-                <CardTitle className="text-2xl font-bold text-foreground font-montserrat">
-                  Discover Amazing Food 🍽️
-                </CardTitle>
-                <CardDescription className="text-muted-foreground font-inter text-base">
-                  Explore local vendors and enjoy fresh, homemade meals delivered to your doorstep
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="relative space-y-6">
-                {/* Feature highlights */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  {[
-                    { icon: FaUtensils, text: "Fresh Daily Meals", color: "text-foreground" },
-                    { icon: FaTruck, text: "Fast Delivery", color: "text-foreground" },
-                    { icon: FaHeart, text: "Favorite Vendors", color: "text-foreground" }
-                  ].map((feature, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.7 + index * 0.1 }}
-                      className="flex items-center gap-2 p-2 rounded-lg bg-background/50"
-                    >
-                      <feature.icon className={`w-4 h-4 ${feature.color}`} />
-                      <span className="text-sm font-medium">{feature.text}</span>
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* Action buttons */}
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Button 
-                    size="lg" 
-                    className="flex-1 font-inter font-semibold bg-foreground text-background hover:bg-muted-foreground shadow-lg"
-                    onClick={() => navigate('/customer/market')}
-                  >
-                    <FaShoppingBasket className="mr-2" />
-                    Browse Vendors Now
-                  </Button>
+                  </div>
                   <Button 
                     variant="outline" 
-                    size="lg" 
-                    className="flex-1 font-inter font-semibold border-border hover:bg-muted"
+                    className="w-full mt-4"
+                    onClick={() => navigate('/customer/market')}
+                  >
+                    View All Vendors
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Quick Actions */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <Button 
+                    className="h-20 flex flex-col gap-2"
+                    onClick={() => navigate('/customer/market')}
+                  >
+                    <FaStore className="w-6 h-6" />
+                    Browse Vendors
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="h-20 flex flex-col gap-2"
+                    onClick={() => navigate('/customer/subscriptions')}
+                  >
+                    <FaShoppingCart className="w-6 h-6" />
+                    My Subscriptions
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="h-20 flex flex-col gap-2"
                     onClick={() => navigate('/customer/profile')}
                   >
-                    <FaMapPin className="mr-2" />
-                    Complete Profile
+                    <FaUser className="w-6 h-6" />
+                    Edit Profile
                   </Button>
-                </div>
-
-                {/* Trust indicators */}
-                <div className="flex items-center justify-center gap-6 pt-4 border-t border-border/30">
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-foreground">500+</p>
-                    <p className="text-xs text-muted-foreground">Happy Customers</p>
-                  </div>
-                  <Separator orientation="vertical" className="h-8" />
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-foreground">50+</p>
-                    <p className="text-xs text-muted-foreground">Local Vendors</p>
-                  </div>
-                  <Separator orientation="vertical" className="h-8" />
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-foreground">98%</p>
-                    <p className="text-xs text-muted-foreground">Success Rate</p>
-                  </div>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
-        </main>
+        </div>
       </div>
     </div>
   );

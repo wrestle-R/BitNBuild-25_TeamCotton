@@ -46,4 +46,8 @@ router.get('/vendor/:vendorId', authMiddleware, customerController.getVendorById
 // Get vendor plans
 router.get('/vendor/:vendorId/plans', authMiddleware, customerController.getVendorPlans);
 
+// Dashboard routes
+router.get('/dashboard', authMiddleware, customerController.getDashboardData);
+router.get('/dashboard/activity', authMiddleware, customerController.getRecentActivity);
+
 module.exports = router;

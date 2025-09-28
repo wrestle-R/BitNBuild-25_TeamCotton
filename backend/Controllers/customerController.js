@@ -276,7 +276,270 @@ const customerController = {
       console.error('Error fetching vendor menus:', error);
       res.status(500).json({ message: 'Server error', error: error.message });
     }
+  },
+
+  // Dashboard - Get comprehensive dashboard data
+  async getDashboardData(req, res) {
+    try {
+      const customerId = req.user.firebaseUid;
+      
+      // Get customer details
+      const customer = await Customer.findOne({ firebaseUid: customerId }).lean();
+      if (!customer) {
+        return res.status(404).json({ message: 'Customer not found' });
+      }
+
+      const Payment = require('../Models/Payment');
+      const ConsumerSubscription = require('../Models/ConsumerSubscription');
+
+      // Get active subscriptions with populated vendor and plan data
+      const activeSubscriptions = await ConsumerSubscription.find({
+        consumer_id: customer._id,
+        status: 'active'
+      })
+      .populate('vendor_id', 'name profileImage address contactNumber')
+      .populate('plan_id', 'name price duration_days selected_meals')
+      .lean();
+
+      // Get recent orders/payments
+      const recentPayments = await Payment.find({
+        customer_id: customer._id
+      })
+      .populate('plan_id', 'name')
+      .populate('vendor_id', 'name')
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+
+      // Get subscription stats
+      const totalSubscriptions = await ConsumerSubscription.countDocuments({
+        consumer_id: customer._id
+      });
+
+      const completedSubscriptions = await ConsumerSubscription.countDocuments({
+        consumer_id: customer._id,
+        status: 'completed'
+      });
+
+      // Calculate total spent
+      const totalSpentResult = await Payment.aggregate([
+        { $match: { customer_id: customer._id, status: 'success' } },
+        { $group: { _id: null, total: { $sum: { $toDouble: "$amount" } } } }
+      ]);
+      const totalSpent = totalSpentResult.length > 0 ? totalSpentResult[0].total : 0;
+
+      // Get nearby vendors (if customer has location)
+      let nearbyVendors = [];
+      if (customer.address && customer.address.coordinates) {
+        const vendorsWithLocation = await Vendor.find({
+          verified: true,
+          'address.coordinates': { $exists: true }
+        }).lean();
+
+        // Calculate distances and get top 5 nearest
+        const vendorsWithDistance = vendorsWithLocation.map(vendor => {
+          const distance = calculateDistance(
+            customer.address.coordinates.lat,
+            customer.address.coordinates.lng,
+            vendor.address.coordinates.lat,
+            vendor.address.coordinates.lng
+          );
+          return { ...vendor, distance };
+        });
+
+        nearbyVendors = vendorsWithDistance
+          .sort((a, b) => a.distance - b.distance)
+          .slice(0, 5);
+      }
+
+      // Generate notifications based on data
+      const notifications = [];
+      
+      // Active subscription notifications
+      activeSubscriptions.forEach(sub => {
+        const daysLeft = Math.ceil((new Date(sub.end_date) - new Date()) / (1000 * 60 * 60 * 24));
+        if (daysLeft <= 3 && daysLeft > 0) {
+          notifications.push({
+            id: `expiring-${sub._id}`,
+            type: 'warning',
+            title: 'Subscription Expiring Soon',
+            message: `Your subscription with ${sub.vendor_id.name} expires in ${daysLeft} day${daysLeft > 1 ? 's' : ''}`,
+            timestamp: new Date(),
+            priority: 'high'
+          });
+        }
+      });
+
+      // New vendor notification
+      const recentVendors = await Vendor.find({
+        verified: true,
+        createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+      }).limit(3).lean();
+
+      if (recentVendors.length > 0) {
+        notifications.push({
+          id: 'new-vendors',
+          type: 'info',
+          title: 'New Vendors Available',
+          message: `${recentVendors.length} new vendor${recentVendors.length > 1 ? 's' : ''} joined this week`,
+          timestamp: new Date(),
+          priority: 'medium'
+        });
+      }
+
+      // Welcome notification for new users
+      if (!totalSubscriptions) {
+        notifications.push({
+          id: 'welcome',
+          type: 'success',
+          title: 'Welcome to NourishNet!',
+          message: 'Explore our verified vendors and find your perfect meal plan',
+          timestamp: new Date(),
+          priority: 'medium'
+        });
+      }
+
+      // Payment reminder
+      if (recentPayments.length === 0) {
+        notifications.push({
+          id: 'first-subscription',
+          type: 'info',
+          title: 'Start Your Food Journey',
+          message: 'Subscribe to your first meal plan and enjoy delicious home-cooked meals',
+          timestamp: new Date(),
+          priority: 'medium'
+        });
+      }
+
+      const dashboardData = {
+        customer: {
+          name: customer.name,
+          email: customer.email,
+          profileImage: customer.photoUrl,
+          memberSince: customer.createdAt,
+          preference: customer.preference
+        },
+        stats: {
+          activeSubscriptions: activeSubscriptions.length,
+          totalSubscriptions,
+          completedSubscriptions,
+          totalSpent: totalSpent.toFixed(2)
+        },
+        activeSubscriptions: activeSubscriptions.map(sub => ({
+          id: sub._id,
+          planName: sub.plan_id.name,
+          vendorName: sub.vendor_id.name,
+          vendorImage: sub.vendor_id.profileImage,
+          startDate: sub.start_date,
+          endDate: sub.end_date,
+          status: sub.status,
+          meals: sub.plan_id.selected_meals,
+          daysLeft: Math.max(0, Math.ceil((new Date(sub.end_date) - new Date()) / (1000 * 60 * 60 * 24)))
+        })),
+        recentOrders: recentPayments.map(payment => ({
+          id: payment._id,
+          planName: payment.plan_id?.name || 'Unknown Plan',
+          vendorName: payment.vendor_id?.name || 'Unknown Vendor',
+          amount: parseFloat(payment.amount),
+          date: payment.createdAt,
+          status: payment.status
+        })),
+        nearbyVendors: nearbyVendors.slice(0, 5).map(vendor => ({
+          id: vendor._id,
+          name: vendor.name,
+          image: vendor.profileImage,
+          distance: vendor.distance?.toFixed(1) || 'N/A',
+          address: vendor.address
+        })),
+        notifications: notifications.sort((a, b) => {
+          const priorityOrder = { high: 3, medium: 2, low: 1 };
+          return priorityOrder[b.priority] - priorityOrder[a.priority];
+        }).slice(0, 10)
+      };
+
+      res.json(dashboardData);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Get recent activity
+  async getRecentActivity(req, res) {
+    try {
+      const customerId = req.user.firebaseUid;
+      const customer = await Customer.findOne({ firebaseUid: customerId });
+      
+      if (!customer) {
+        return res.status(404).json({ message: 'Customer not found' });
+      }
+
+      const Payment = require('../Models/Payment');
+      const ConsumerSubscription = require('../Models/ConsumerSubscription');
+
+      // Get recent activities (payments, subscriptions)
+      const recentPayments = await Payment.find({
+        customer_id: customer._id
+      })
+      .populate('plan_id', 'name')
+      .populate('vendor_id', 'name')
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean();
+
+      const recentSubscriptions = await ConsumerSubscription.find({
+        consumer_id: customer._id
+      })
+      .populate('plan_id', 'name')
+      .populate('vendor_id', 'name')
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean();
+
+      // Combine and format activities
+      const activities = [
+        ...recentPayments.map(payment => ({
+          id: payment._id,
+          type: 'payment',
+          title: `Payment for ${payment.plan_id?.name || 'meal plan'}`,
+          description: `₹${parseFloat(payment.amount).toFixed(2)} paid to ${payment.vendor_id?.name || 'vendor'}`,
+          timestamp: payment.createdAt,
+          status: payment.status,
+          icon: 'payment'
+        })),
+        ...recentSubscriptions.map(sub => ({
+          id: sub._id,
+          type: 'subscription',
+          title: `Subscription ${sub.status}`,
+          description: `${sub.plan_id?.name || 'Meal plan'} from ${sub.vendor_id?.name || 'vendor'}`,
+          timestamp: sub.createdAt,
+          status: sub.status,
+          icon: 'subscription'
+        }))
+      ];
+
+      // Sort by timestamp and limit
+      activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      
+      res.json(activities.slice(0, 15));
+    } catch (error) {
+      console.error('Error fetching recent activity:', error);
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
   }
+};
+
+// Helper function to calculate distance
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Radius of the Earth in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const d = R * c;
+  return d;
 };
 
 module.exports = customerController;
