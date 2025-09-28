@@ -19,8 +19,7 @@ const NavbarComponent = () => {
   const navigate = useNavigate();
 
   const navItems = [
-    { name: "Features", link: "#features" },
-    { name: "Testimonials", link: "#testimonials" }
+
   ];
 
   useEffect(() => {

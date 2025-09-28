@@ -1,5 +1,5 @@
   import { cn } from "@/lib/utils"
-  import { Avatar, AvatarImage } from "./avatar"
+  import { Avatar, AvatarImage, AvatarFallback } from "./avatar"
 
   export function TestimonialCard({
     author,
@@ -24,6 +24,9 @@
         <div className="flex items-center gap-3">
           <Avatar className="h-12 w-12">
             <AvatarImage src={author.avatar} alt={author.name} />
+            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+              {author.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+            </AvatarFallback>
           </Avatar>
           <div className="flex flex-col items-start">
             <h3 className="text-md font-semibold leading-none">
