@@ -15,6 +15,7 @@ const driverRoutes = require('./Routes/driverRoutes');
 const predictionRoutes = require('./Routes/predictionRoutes');
 const goalRoutes = require('./Routes/goalRoutes');
 const allergyRoutes = require('./Routes/allergyRoutes');
+const analysisRoutes = require('./Routes/analysisRoutes');
 const app = express();
 const PORT = process.env.PORT || 8000;
 
@@ -64,6 +65,7 @@ app.use('/api/drivers', driverRoutes);
 app.use('/api/predictions', predictionRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/allergies', allergyRoutes);
+app.use('/api/analysis', analysisRoutes);
 
 // Health check
 app.get('/', (req, res) => {
