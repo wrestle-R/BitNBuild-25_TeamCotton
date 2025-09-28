@@ -176,67 +176,30 @@ export default function Dashboard() {
             <LiveMapView height={250} />
           </View>
 
-      {/* Status Card */}
-      <View className="rounded-2xl p-5 mb-5" style={styles.statusCard}>
-        <View className="flex-row justify-between items-center mb-5">
-          <Text className="text-lg font-semibold" style={{ color: '#4c1d95' }}>Driver Status</Text>
-          <View className="flex-row items-center px-3 py-1.5 rounded-full" style={styles.statusBadge}>
-            <View className="w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: '#10b981' }} />
-            <Text className="text-sm font-medium" style={{ color: '#059669' }}>Available</Text>
-          </View>
-        </View>
-        
-        <View className="flex-row justify-around">
-          <View className="items-center">
-            <Ionicons name="star" size={24} color="#fbbf24" />
-            <Text className="text-xl font-bold mt-2" style={{ color: '#4c1d95' }}>5.0</Text>
-            <Text className="text-xs mt-1" style={{ color: '#8b5cf6' }}>Rating</Text>
-          </View>
-          
-          <View className="items-center">
-            <Ionicons name="car" size={24} color="#8b5cf6" />
-            <Text className="text-xl font-bold mt-2" style={{ color: '#4c1d95' }}>0</Text>
-            <Text className="text-xs mt-1" style={{ color: '#8b5cf6' }}>Rides Today</Text>
-          </View>
-          
-          <View className="items-center">
-            <Ionicons name="cash" size={24} color="#10b981" />
-            <Text className="text-xl font-bold mt-2" style={{ color: '#4c1d95' }}>$0</Text>
-            <Text className="text-xs mt-1" style={{ color: '#8b5cf6' }}>Earnings</Text>
-          </View>
-        </View>
-      </View>
+          {/* Active Delivery Button */}
+          <TouchableOpacity 
+            className="rounded-xl p-5 items-center mb-6"
+            style={styles.activeDeliveryButton}
+            onPress={() => router.push('/active-delivery')}
+          >
+            <View className="flex-row items-center">
+              <Ionicons name="bicycle-outline" size={28} color="#ffffff" />
+              <Text className="text-lg font-bold ml-3" style={{ color: '#ffffff' }}>
+                Active Delivery
+              </Text>
+            </View>
+            <Text className="text-sm mt-2" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+              Tap to view your current delivery status
+            </Text>
+          </TouchableOpacity>
 
-      {/* Action Buttons */}
-      <View className="flex-row flex-wrap justify-between">
-        <TouchableOpacity className="w-[48%] rounded-xl p-5 items-center mb-4" style={styles.actionButton}>
-          <Ionicons name="person-circle-outline" size={24} color="#8b5cf6" />
-          <Text className="text-sm mt-2 font-medium" style={{ color: '#6b46c1' }}>Profile</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity className="w-[48%] rounded-xl p-5 items-center mb-4" style={styles.actionButton}>
-          <Ionicons name="car-outline" size={24} color="#8b5cf6" />
-          <Text className="text-sm mt-2 font-medium" style={{ color: '#6b46c1' }}>Vehicle Info</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity className="w-[48%] rounded-xl p-5 items-center mb-4" style={styles.actionButton}>
-          <Ionicons name="document-text-outline" size={24} color="#8b5cf6" />
-          <Text className="text-sm mt-2 font-medium" style={{ color: '#6b46c1' }}>Trip History</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity className="w-[48%] rounded-xl p-5 items-center mb-4" style={styles.actionButton}>
-          <Ionicons name="settings-outline" size={24} color="#8b5cf6" />
-          <Text className="text-sm mt-2 font-medium" style={{ color: '#6b46c1' }}>Settings</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Quick Stats */}
-      <View className="mt-8 pb-5">
-        <View className="p-4 rounded-lg" style={styles.quickStats}>
-          <Text className="text-xs mb-0.5" style={{ color: '#6b46c1' }}>Logged in as: {driver?.email}</Text>
-          <Text className="text-xs" style={{ color: '#6b46c1' }}>Driver ID: {driver?.mongoid || driver?.id}</Text>
-        </View>
-      </View>
+          {/* Quick Stats */}
+          <View className="pb-5">
+            <View className="p-4 rounded-lg" style={styles.quickStats}>
+              <Text className="text-xs mb-0.5" style={{ color: '#6b46c1' }}>Logged in as: {driver?.email}</Text>
+              <Text className="text-xs" style={{ color: '#6b46c1' }}>Driver ID: {driver?.mongoid || driver?.id}</Text>
+            </View>
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -257,28 +220,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginHorizontal: -4,
   },
-  statusCard: {
-    backgroundColor: '#ffffff',
+  activeDeliveryButton: {
+    backgroundColor: '#8b5cf6',
     elevation: 4,
     shadowColor: '#8b5cf6',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.25,
     shadowRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.1)',
-  },
-  statusBadge: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-  },
-  actionButton: {
-    backgroundColor: '#ffffff',
-    elevation: 3,
-    shadowColor: '#8b5cf6',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(139, 92, 246, 0.1)',
   },
   quickStats: {
     backgroundColor: 'rgba(139, 92, 246, 0.08)',

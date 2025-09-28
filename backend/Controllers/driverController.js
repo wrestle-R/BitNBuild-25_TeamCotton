@@ -615,11 +615,29 @@ const getActiveDelivery = async (req, res) => {
   try {
     const { driverId } = req.params;
 
+    console.log('🔍 Fetching active delivery for driverId:', driverId);
+
+    // Convert string ID to MongoDB ObjectId for proper comparison
+    const mongoose = require('mongoose');
+    let objectId;
+    try {
+      objectId = new mongoose.Types.ObjectId(driverId);
+      console.log('✅ Successfully created ObjectId:', objectId);
+    } catch (error) {
+      console.error('❌ Invalid ObjectId format:', driverId);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid driver ID format'
+      });
+    }
+
     const delivery = await Delivery.findOne({
-      driverId,
+      driverId: objectId,
       status: { $in: ['assigned', 'started', 'in_progress'] }
     }).populate('vendorId', 'name address location')
       .populate('customers.customerId', 'name address contactNumber');
+
+    console.log('🚚 Found active delivery:', delivery ? 'Yes' : 'No');
 
     if (!delivery) {
       return res.status(404).json({
@@ -637,6 +655,118 @@ const getActiveDelivery = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch active delivery'
+    });
+  }
+};
+
+// Get all deliveries for a driver (including completed ones)
+const getAllDriverDeliveries = async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    console.log('🔍 Fetching deliveries for driverId:', driverId);
+
+    // Convert string ID to MongoDB ObjectId for proper comparison
+    const mongoose = require('mongoose');
+    let driverObjectId;
+    try {
+      driverObjectId = new mongoose.Types.ObjectId(driverId);
+      console.log('✅ Successfully created ObjectId:', driverObjectId.toString());
+    } catch (error) {
+      console.error('❌ Invalid ObjectId format:', driverId);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid driver ID format'
+      });
+    }
+
+    // Step 1: Verify the driver exists
+    const driver = await Driver.findById(driverObjectId);
+    if (!driver) {
+      console.log('❌ Driver not found with ID:', driverId);
+      return res.status(404).json({
+        success: false,
+        message: 'Driver not found'
+      });
+    }
+
+    console.log('✅ Driver found:', driver.name, driver.email);
+
+    // Step 2: Find all deliveries where driverId matches
+    const deliveries = await Delivery.find({ driverId: driverObjectId })
+      .populate('vendorId', 'name address location email contactNumber')
+      .populate('customers.customerId', 'name address contactNumber email')
+      .sort({ createdAt: -1 }); // Most recent first
+
+    // Format the deliveries to ensure address objects are converted to strings
+    const formattedDeliveries = deliveries.map(delivery => {
+      const deliveryObj = delivery.toObject();
+      
+      // Format vendor address if it's an object
+      if (deliveryObj.vendorId && deliveryObj.vendorId.address && typeof deliveryObj.vendorId.address === 'object') {
+        const addr = deliveryObj.vendorId.address;
+        const parts = [];
+        if (addr.street) parts.push(addr.street);
+        if (addr.city) parts.push(addr.city);
+        if (addr.state) parts.push(addr.state);
+        if (addr.pincode) parts.push(addr.pincode);
+        deliveryObj.vendorId.address = parts.length > 0 ? parts.join(', ') : 'Address not available';
+      }
+
+      // Format customer addresses if they're objects
+      if (deliveryObj.customers) {
+        deliveryObj.customers = deliveryObj.customers.map(customer => {
+          if (customer.customerId && customer.customerId.address && typeof customer.customerId.address === 'object') {
+            const addr = customer.customerId.address;
+            const parts = [];
+            if (addr.street) parts.push(addr.street);
+            if (addr.city) parts.push(addr.city);
+            if (addr.state) parts.push(addr.state);
+            if (addr.pincode) parts.push(addr.pincode);
+            customer.customerId.address = parts.length > 0 ? parts.join(', ') : 'Address not available';
+          }
+          return customer;
+        });
+      }
+
+      return deliveryObj;
+    });
+
+    console.log('📦 Found', formattedDeliveries.length, 'deliveries for driver:', driver.name);
+
+    // Step 3: Log some debug info
+    formattedDeliveries.forEach((delivery, index) => {
+      console.log(`📝 Delivery ${index + 1}:`, {
+        id: delivery._id.toString(),
+        vendor: delivery.vendorId?.name,
+        vendorAddress: delivery.vendorId?.address,
+        customers: delivery.customers.length,
+        status: delivery.status,
+        createdAt: delivery.createdAt
+      });
+    });
+
+    // Step 4: Return the deliveries with driver info
+    res.status(200).json({
+      success: true,
+      driver: {
+        id: driver._id.toString(),
+        name: driver.name,
+        email: driver.email,
+        contactNumber: driver.contactNumber,
+        vehicleType: driver.vehicleType,
+        vehicleNumber: driver.vehicleNumber
+      },
+      deliveries: formattedDeliveries,
+      totalDeliveries: formattedDeliveries.length,
+      message: `Found ${formattedDeliveries.length} deliveries for ${driver.name}`
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching driver deliveries:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch driver deliveries',
+      error: error.message
     });
   }
 };
@@ -722,5 +852,6 @@ module.exports = {
   startDelivery,
   updateDriverLocationInDelivery,
   getActiveDelivery,
+  getAllDriverDeliveries,
   getDeliveryTracking
 };
