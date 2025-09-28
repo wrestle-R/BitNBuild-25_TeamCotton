@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, Alert, ScrollView, RefreshControl, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, ScrollView, RefreshControl, FlatList, Modal } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { useDriverContext } from '../context/DriverContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import DriverDeliveryMap from '../components/DriverDeliveryMap';
 
 const MyDeliveries = () => {
   const { driver } = useDriverContext();
@@ -15,6 +16,8 @@ const MyDeliveries = () => {
   const [proximityDistance, setProximityDistance] = useState(null);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [selectedTab, setSelectedTab] = useState('active'); // active, completed, all
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [selectedDeliveryForMap, setSelectedDeliveryForMap] = useState(null);
   const locationIntervalRef = useRef(null);
   const router = useRouter();
 
@@ -331,6 +334,7 @@ const MyDeliveries = () => {
     if (typeof value === 'number') return value.toString();
     if (typeof value === 'object') {
       // If it's an address object, format it
+      if (value.formatted) return value.formatted; // Use pre-formatted string from backend
       if (value.street || value.city || value.state || value.pincode) {
         return formatAddress(value);
       }
@@ -445,7 +449,7 @@ const MyDeliveries = () => {
               🚚 Delivery Route
             </Text>
             {delivery.customers.slice(0, 2).map((customer, index) => (
-              <View key={customer.customerId?._id || index} style={{ 
+              <View key={`${customer.customerId?._id || 'unknown'}-${index}`} style={{ 
                 flexDirection: 'row', 
                 alignItems: 'center', 
                 marginBottom: 6,
@@ -497,10 +501,12 @@ const MyDeliveries = () => {
           )}
         </View>
 
-        {/* Action button for active deliveries */}
-        {['assigned', 'started', 'in_progress'].includes(delivery.status) && (
+        {/* Action buttons */}
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          {/* Map button for all deliveries */}
           <TouchableOpacity
             style={{
+              flex: 1,
               backgroundColor: '#8b5cf6',
               paddingHorizontal: 20,
               paddingVertical: 12,
@@ -511,20 +517,42 @@ const MyDeliveries = () => {
               alignItems: 'center'
             }}
             onPress={() => {
-              setActiveDelivery(delivery);
-              Alert.alert(
-                'Active Delivery',
-                `This is your ${delivery.status} delivery from ${safeRender(delivery.vendorId?.name, 'Unknown Vendor')}`,
-                [{ text: 'OK' }]
-              );
+              setSelectedDeliveryForMap(delivery);
+              setShowMapModal(true);
             }}
           >
-            <Ionicons name="eye-outline" size={18} color="white" />
+            <Ionicons name="map-outline" size={18} color="white" />
             <Text style={{ color: 'white', fontSize: 14, fontWeight: '600', marginLeft: 8 }}>
-              View Details
+              View Route Map
             </Text>
           </TouchableOpacity>
-        )}
+          
+          {/* Details button for active deliveries only */}
+          {['assigned', 'started', 'in_progress'].includes(delivery.status) && (
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#10b981',
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                borderRadius: 8,
+                elevation: 2,
+                flexDirection: 'row',
+                justifyContent: 'center',
+                alignItems: 'center'
+              }}
+              onPress={() => {
+                setActiveDelivery(delivery);
+                Alert.alert(
+                  'Active Delivery',
+                  `This is your ${delivery.status} delivery from ${safeRender(delivery.vendorId?.name, 'Unknown Vendor')}`,
+                  [{ text: 'OK' }]
+                );
+              }}
+            >
+              <Ionicons name="eye-outline" size={18} color="white" />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -646,6 +674,70 @@ const MyDeliveries = () => {
           </View>
         )}
       />
+
+      {/* Map Modal */}
+      <Modal
+        visible={showMapModal}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => setShowMapModal(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: '#f8f7ff' }}>
+          {/* Modal Header */}
+          <View style={{
+            paddingTop: 50,
+            paddingHorizontal: 20,
+            paddingBottom: 15,
+            backgroundColor: 'white',
+            borderBottomWidth: 1,
+            borderBottomColor: 'rgba(139, 92, 246, 0.1)',
+            elevation: 2,
+            shadowColor: '#8b5cf6',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#4c1d95' }}>
+                  📍 Delivery Route Map
+                </Text>
+                {selectedDeliveryForMap && (
+                  <Text style={{ fontSize: 14, color: '#8b5cf6', marginTop: 2 }}>
+                    {safeRender(selectedDeliveryForMap.vendorId?.name, 'Unknown Vendor')} • {selectedDeliveryForMap.customers?.length || 0} stops
+                  </Text>
+                )}
+              </View>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: '#8b5cf6',
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  elevation: 3,
+                  shadowColor: '#8b5cf6',
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 4,
+                }}
+                onPress={() => setShowMapModal(false)}
+              >
+                <Ionicons name="close" size={24} color="white" />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Map Component */}
+          {selectedDeliveryForMap && (
+            <DriverDeliveryMap
+              delivery={selectedDeliveryForMap}
+              driverLocation={currentLocation}
+            />
+          )}
+        </View>
+      </Modal>
     </View>
   );
 };
