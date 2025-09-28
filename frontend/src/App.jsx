@@ -22,6 +22,7 @@ import CustomerSubscriptions from './pages/Customer/CustomerSubscriptions'
 import CustomerTracking from './pages/Customer/CustomerTracking'
 import VendorAnalytics from './pages/Vendor/VendorAnalytics'
 import CustomerGoals from './pages/Customer/Goals/CustomerGoals'
+import CustomerAllergies from './pages/Customer/CustomerAllergies'
 
 
 const LandingRoute = () => {
@@ -219,6 +220,34 @@ const CustomerGoalsRoute = () => {
   return <CustomerGoals />;
 };
 
+const CustomerAllergiesRoute = () => {
+  const { user, loading } = useUserContext();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary mx-auto mb-4"></div>
+          <p className="text-foreground font-inter text-lg">Loading allergies...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/customer/auth" replace />;
+  }
+  
+  if (user.role !== 'customer') {
+    if (user.role === 'vendor') {
+      return <Navigate to="/vendor/dashboard" replace />;
+    }
+    return <Navigate to="/customer/auth" replace />;
+  }
+  
+  return <CustomerAllergies />;
+};
+
 // Vendor details route
 const VendorDetailsRoute = () => {
   const { user, loading } = useUserContext();
@@ -266,6 +295,7 @@ const App = () => {
           <Route path="/customer/vendor/:vendorId" element={<VendorDetailsRoute />} />
           <Route path="/customer/profile" element={<CustomerProfileRoute />} />
           <Route path="/customer/goals" element={<CustomerGoalsRoute />} />
+          <Route path="/customer/allergies" element={<CustomerAllergiesRoute />} />
           <Route path="/vendor/subscribers" element={<VendorSubscribers />} />
           <Route path="/customer/subscriptions" element={<CustomerSubscriptions />} />
           <Route path="/customer/tracking" element={<CustomerTracking />} />
