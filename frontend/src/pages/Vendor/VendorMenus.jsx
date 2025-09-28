@@ -233,10 +233,10 @@ const VendorMenus = () => {
                     Add Menu
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-background border-border">
                   <DialogHeader>
-                    <DialogTitle>{editingMenu ? 'Edit Menu' : 'Create New Menu'}</DialogTitle>
-                    <DialogDescription>
+                    <DialogTitle className="text-foreground">{editingMenu ? 'Edit Menu' : 'Create New Menu'}</DialogTitle>
+                    <DialogDescription className="text-muted-foreground">
                       Add menu items for a specific meal type
                     </DialogDescription>
                   </DialogHeader>
@@ -244,12 +244,12 @@ const VendorMenus = () => {
                   <div className="space-y-6">
                     {/* Meal Type */}
                     <div className="space-y-2">
-                      <Label>Meal Type</Label>
+                      <Label className="text-foreground">Meal Type</Label>
                       <Select value={formData.meal_type} onValueChange={(value) => setFormData(prev => ({ ...prev, meal_type: value }))}>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-background border-border text-foreground">
                           <SelectValue placeholder="Select meal type" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-popover border-border">
                           <SelectItem value="breakfast">Breakfast</SelectItem>
                           <SelectItem value="lunch">Lunch</SelectItem>
                           <SelectItem value="dinner">Dinner</SelectItem>
@@ -264,15 +264,15 @@ const VendorMenus = () => {
                         id="nonveg"
                         checked={formData.non_veg}
                         onChange={(e) => setFormData(prev => ({ ...prev, non_veg: e.target.checked }))}
-                        className="rounded"
+                        className="rounded border-input bg-background text-primary focus:ring-primary focus:ring-2 focus:ring-offset-2 focus:ring-offset-background"
                       />
-                      <Label htmlFor="nonveg">Non-Vegetarian Menu</Label>
+                      <Label htmlFor="nonveg" className="text-foreground">Non-Vegetarian Menu</Label>
                     </div>
 
                     {/* Menu Items */}
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <Label className="text-base font-semibold">Menu Items</Label>
+                        <Label className="text-base font-semibold text-foreground">Menu Items</Label>
                         <Button type="button" variant="outline" size="sm" onClick={addItem}>
                           <FaPlus className="w-3 h-3 mr-1" />
                           Add Item
@@ -280,17 +280,17 @@ const VendorMenus = () => {
                       </div>
 
                       {formData.items.map((item, index) => (
-                        <Card key={index} className="p-4">
+                        <Card key={index} className="p-4 bg-card border-border">
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                              <Label className="font-medium">Item {index + 1}</Label>
+                              <Label className="font-medium text-foreground">Item {index + 1}</Label>
                               {formData.items.length > 1 && (
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => removeItem(index)}
-                                  className="text-destructive"
+                                  className="text-destructive hover:text-destructive"
                                 >
                                   <FaTrash className="w-3 h-3" />
                                 </Button>
@@ -299,29 +299,30 @@ const VendorMenus = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div>
-                                <Label htmlFor={`name-${index}`}>Item Name *</Label>
+                                <Label htmlFor={`name-${index}`} className="text-foreground">Item Name *</Label>
                                 <Input
                                   id={`name-${index}`}
                                   value={item.name}
                                   onChange={(e) => updateItem(index, 'name', e.target.value)}
                                   placeholder="Enter item name"
+                                  className="bg-background border-input text-foreground placeholder:text-muted-foreground"
                                 />
                               </div>
                               
                               <div>
-                                <Label htmlFor={`image-${index}`}>Item Image</Label>
+                                <Label htmlFor={`image-${index}`} className="text-foreground">Item Image</Label>
                                 <div className="flex gap-2">
                                   <Input
                                     type="file"
                                     accept="image/*"
                                     onChange={(e) => handleImageUpload(e, index)}
-                                    className="flex-1"
+                                    className="flex-1 bg-background border-input text-foreground file:text-foreground file:bg-muted file:border-0 file:rounded-md file:px-3 file:py-1"
                                   />
                                   {item.image_url && (
                                     <img
                                       src={item.image_url}
                                       alt={item.name}
-                                      className="w-10 h-10 object-cover rounded border"
+                                      className="w-10 h-10 object-cover rounded border border-border"
                                     />
                                   )}
                                 </div>
@@ -329,12 +330,13 @@ const VendorMenus = () => {
                             </div>
 
                             <div>
-                              <Label htmlFor={`desc-${index}`}>Description</Label>
+                              <Label htmlFor={`desc-${index}`} className="text-foreground">Description</Label>
                               <Input
                                 id={`desc-${index}`}
                                 value={item.description}
                                 onChange={(e) => updateItem(index, 'description', e.target.value)}
                                 placeholder="Enter item description"
+                                className="bg-background border-input text-foreground placeholder:text-muted-foreground"
                               />
                             </div>
                           </div>
@@ -342,11 +344,11 @@ const VendorMenus = () => {
                       ))}
                     </div>
 
-                    <div className="flex gap-2 pt-4">
+                    <div className="flex gap-2 pt-4 border-t border-border">
                       <Button onClick={handleSubmit} className="flex-1">
                         {editingMenu ? 'Update Menu' : 'Create Menu'}
                       </Button>
-                      <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                      <Button variant="outline" onClick={() => setDialogOpen(false)} className="border-border text-foreground hover:bg-accent">
                         Cancel
                       </Button>
                     </div>

@@ -328,7 +328,7 @@ const ManageVendors = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold text-foreground font-montserrat flex items-center gap-3 mb-2">
-                  <FaStore className="w-8 h-8 text-primary" />
+                  {/* <FaStore className="w-8 h-8 text-primary" /> */}
                   Manage Vendors
                   {!isConnected && (
                     <Badge variant="destructive" className="ml-2">
@@ -348,7 +348,7 @@ const ManageVendors = () => {
           </motion.div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             <motion.div
               whileHover={{ scale: 1.02, y: -2 }}
               transition={{ duration: 0.2 }}
@@ -412,7 +412,7 @@ const ManageVendors = () => {
               </Card>
             </motion.div>
 
-            <motion.div
+            {/* <motion.div
               whileHover={{ scale: 1.02, y: -2 }}
               transition={{ duration: 0.2 }}
             >
@@ -431,7 +431,7 @@ const ManageVendors = () => {
                   </div>
                 </CardContent>
               </Card>
-            </motion.div>
+            </motion.div> */}
           </div>
 
           {/* Search and Filters */}

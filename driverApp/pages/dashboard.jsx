@@ -127,10 +127,10 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-gray-50">
-        <Ionicons name="car-outline" size={48} color="#007AFF" />
-        <Text className="text-base text-gray-600 mt-4">Loading your dashboard...</Text>
-        <Text className="text-sm text-gray-400 mt-2">Setting up your driver profile</Text>
+      <View className="flex-1 justify-center items-center" style={{ backgroundColor: '#f8f7ff' }}>
+        <Ionicons name="car-outline" size={48} color="#8b5cf6" />
+        <Text className="text-base mt-4" style={{ color: '#6b46c1' }}>Loading your dashboard...</Text>
+        <Text className="text-sm mt-2" style={{ color: '#8b5cf6' }}>Setting up your driver profile</Text>
       </View>
     );
   }
@@ -144,13 +144,13 @@ export default function Dashboard() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1" style={{ backgroundColor: '#f8f7ff' }}>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="p-5">
           {/* Header */}
-          <View className="mb-8 mt-10">
-            <Text className="text-base text-gray-600">Welcome back sir,</Text>
-            <Text className="text-2xl font-bold text-gray-900">{driver.name}!</Text>
+          <View className="mb-8 mt-10" style={styles.headerSection}>
+            <Text className="text-base" style={{ color: '#8b5cf6' }}>Welcome back sir,</Text>
+            <Text className="text-2xl font-bold" style={{ color: '#4c1d95' }}>{driver.name}!</Text>
           </View>
 
           {/* Location Permission Notice */}
@@ -159,82 +159,82 @@ export default function Dashboard() {
               style={styles.locationBanner}
               onPress={requestLocationPermission}
             >
-              <Ionicons name="location-outline" size={28} color="#FF6B35" />
+              <Ionicons name="location-outline" size={28} color="#8b5cf6" />
               <View style={styles.locationBannerContent}>
                 <Text style={styles.locationBannerTitle}>Enable Location Tracking</Text>
                 <Text style={styles.locationBannerSubtitle}>
                   Tap to enable GPS tracking for ride services
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={24} color="#FF6B35" />
+              <Ionicons name="chevron-forward" size={24} color="#8b5cf6" />
             </TouchableOpacity>
           )}
 
           {/* Live Map View */}
           <View className="mb-5">
-            <Text className="text-lg font-semibold text-gray-900 mb-3">Your Location</Text>
+            <Text className="text-lg font-semibold mb-3" style={{ color: '#4c1d95' }}>Your Location</Text>
             <LiveMapView height={250} />
           </View>
 
       {/* Status Card */}
-      <View className="bg-white rounded-2xl p-5 mb-5 shadow-sm">
+      <View className="rounded-2xl p-5 mb-5" style={styles.statusCard}>
         <View className="flex-row justify-between items-center mb-5">
-          <Text className="text-lg font-semibold text-gray-900">Driver Status</Text>
-          <View className="flex-row items-center bg-green-100 px-3 py-1.5 rounded-full">
-            <View className="w-2 h-2 rounded-full bg-green-600 mr-1.5" />
-            <Text className="text-sm text-green-600 font-medium">Available</Text>
+          <Text className="text-lg font-semibold" style={{ color: '#4c1d95' }}>Driver Status</Text>
+          <View className="flex-row items-center px-3 py-1.5 rounded-full" style={styles.statusBadge}>
+            <View className="w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: '#10b981' }} />
+            <Text className="text-sm font-medium" style={{ color: '#059669' }}>Available</Text>
           </View>
         </View>
         
         <View className="flex-row justify-around">
           <View className="items-center">
-            <Ionicons name="star" size={24} color="#ffd700" />
-            <Text className="text-xl font-bold text-gray-900 mt-2">5.0</Text>
-            <Text className="text-xs text-gray-600 mt-1">Rating</Text>
+            <Ionicons name="star" size={24} color="#fbbf24" />
+            <Text className="text-xl font-bold mt-2" style={{ color: '#4c1d95' }}>5.0</Text>
+            <Text className="text-xs mt-1" style={{ color: '#8b5cf6' }}>Rating</Text>
           </View>
           
           <View className="items-center">
-            <Ionicons name="car" size={24} color="#007AFF" />
-            <Text className="text-xl font-bold text-gray-900 mt-2">0</Text>
-            <Text className="text-xs text-gray-600 mt-1">Rides Today</Text>
+            <Ionicons name="car" size={24} color="#8b5cf6" />
+            <Text className="text-xl font-bold mt-2" style={{ color: '#4c1d95' }}>0</Text>
+            <Text className="text-xs mt-1" style={{ color: '#8b5cf6' }}>Rides Today</Text>
           </View>
           
           <View className="items-center">
-            <Ionicons name="cash" size={24} color="#28a745" />
-            <Text className="text-xl font-bold text-gray-900 mt-2">$0</Text>
-            <Text className="text-xs text-gray-600 mt-1">Earnings</Text>
+            <Ionicons name="cash" size={24} color="#10b981" />
+            <Text className="text-xl font-bold mt-2" style={{ color: '#4c1d95' }}>$0</Text>
+            <Text className="text-xs mt-1" style={{ color: '#8b5cf6' }}>Earnings</Text>
           </View>
         </View>
       </View>
 
       {/* Action Buttons */}
       <View className="flex-row flex-wrap justify-between">
-        <TouchableOpacity className="w-[48%] bg-white rounded-xl p-5 items-center mb-4 shadow-sm">
-          <Ionicons name="person-circle-outline" size={24} color="#007AFF" />
-          <Text className="text-sm text-blue-500 mt-2 font-medium">Profile</Text>
+        <TouchableOpacity className="w-[48%] rounded-xl p-5 items-center mb-4" style={styles.actionButton}>
+          <Ionicons name="person-circle-outline" size={24} color="#8b5cf6" />
+          <Text className="text-sm mt-2 font-medium" style={{ color: '#6b46c1' }}>Profile</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity className="w-[48%] bg-white rounded-xl p-5 items-center mb-4 shadow-sm">
-          <Ionicons name="car-outline" size={24} color="#007AFF" />
-          <Text className="text-sm text-blue-500 mt-2 font-medium">Vehicle Info</Text>
+        <TouchableOpacity className="w-[48%] rounded-xl p-5 items-center mb-4" style={styles.actionButton}>
+          <Ionicons name="car-outline" size={24} color="#8b5cf6" />
+          <Text className="text-sm mt-2 font-medium" style={{ color: '#6b46c1' }}>Vehicle Info</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity className="w-[48%] bg-white rounded-xl p-5 items-center mb-4 shadow-sm">
-          <Ionicons name="document-text-outline" size={24} color="#007AFF" />
-          <Text className="text-sm text-blue-500 mt-2 font-medium">Trip History</Text>
+        <TouchableOpacity className="w-[48%] rounded-xl p-5 items-center mb-4" style={styles.actionButton}>
+          <Ionicons name="document-text-outline" size={24} color="#8b5cf6" />
+          <Text className="text-sm mt-2 font-medium" style={{ color: '#6b46c1' }}>Trip History</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity className="w-[48%] bg-white rounded-xl p-5 items-center mb-4 shadow-sm">
-          <Ionicons name="settings-outline" size={24} color="#007AFF" />
-          <Text className="text-sm text-blue-500 mt-2 font-medium">Settings</Text>
+        <TouchableOpacity className="w-[48%] rounded-xl p-5 items-center mb-4" style={styles.actionButton}>
+          <Ionicons name="settings-outline" size={24} color="#8b5cf6" />
+          <Text className="text-sm mt-2 font-medium" style={{ color: '#6b46c1' }}>Settings</Text>
         </TouchableOpacity>
       </View>
 
       {/* Quick Stats */}
       <View className="mt-8 pb-5">
-        <View className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <Text className="text-xs text-gray-500 mb-0.5">Logged in as: {driver?.email}</Text>
-          <Text className="text-xs text-gray-500">Driver ID: {driver?.mongoid || driver?.id}</Text>
+        <View className="p-4 rounded-lg" style={styles.quickStats}>
+          <Text className="text-xs mb-0.5" style={{ color: '#6b46c1' }}>Logged in as: {driver?.email}</Text>
+          <Text className="text-xs" style={{ color: '#6b46c1' }}>Driver ID: {driver?.mongoid || driver?.id}</Text>
         </View>
       </View>
         </View>
@@ -248,34 +248,69 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f8f7ff',
+  },
+  headerSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    backgroundColor: 'rgba(139, 92, 246, 0.05)',
+    borderRadius: 20,
+    marginHorizontal: -4,
+  },
+  statusCard: {
+    backgroundColor: '#ffffff',
+    elevation: 4,
+    shadowColor: '#8b5cf6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.1)',
+  },
+  statusBadge: {
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+  },
+  actionButton: {
+    backgroundColor: '#ffffff',
+    elevation: 3,
+    shadowColor: '#8b5cf6',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.1)',
+  },
+  quickStats: {
+    backgroundColor: 'rgba(139, 92, 246, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(139, 92, 246, 0.15)',
   },
   locationBanner: {
-    backgroundColor: '#fff3f0',
-    borderColor: '#FF6B35',
+    backgroundColor: 'rgba(139, 92, 246, 0.08)',
+    borderColor: '#8b5cf6',
     borderWidth: 2,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    padding: 18,
     marginBottom: 20,
     flexDirection: 'row',
     alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    elevation: 4,
+    shadowColor: '#8b5cf6',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
   },
   locationBannerContent: {
     flex: 1,
     marginLeft: 12,
   },
   locationBannerTitle: {
-    color: '#FF6B35',
+    color: '#6b46c1',
     fontSize: 16,
     fontWeight: '600',
   },
   locationBannerSubtitle: {
-    color: '#FF6B35',
+    color: '#8b5cf6',
     fontSize: 14,
     marginTop: 4,
   },
