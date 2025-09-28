@@ -148,6 +148,81 @@ export const getVendorPlans = async (vendorId) => {
   }
 };
 
+export const getVendorMenus = async (vendorId) => {
+  const tryUrl = `${API_URL}/api/customer/vendors/${vendorId}/menus`;
+  const headers = await getAuthHeaders();
+
+  const fetchWithAuthFallback = async (url, init) => {
+    let res;
+    try {
+      res = await fetch(url, init);
+    } catch (err) {
+      console.error('Network error while fetching menus:', err);
+      throw err;
+    }
+    if (res.status === 401 && init && init.headers && init.headers.Authorization) {
+      try {
+        const initNoAuth = { ...init };
+        const headersCopy = { ...init.headers };
+        delete headersCopy.Authorization;
+        initNoAuth.headers = headersCopy;
+        const retryRes = await fetch(url, initNoAuth);
+        return retryRes;
+      } catch (retryErr) {
+        console.error('Retry without auth failed:', retryErr);
+        throw retryErr;
+      }
+    }
+    return res;
+  };
+
+  try {
+    const res = await fetchWithAuthFallback(tryUrl, { method: 'GET', headers });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `Failed to fetch menus for vendor ${vendorId} (status ${res.status})`);
+    }
+    return res.json();
+  } catch (error) {
+    console.error('Error fetching vendor menus:', error);
+    throw error;
+  }
+};
+
+export const getPlanMenus = async (planId, vendorId) => {
+  try {
+    // First get the plan to know which meal types it includes
+    const planRes = await fetch(`${API_URL}/api/customer/vendors/${vendorId}/plans`, {
+      method: 'GET',
+      headers: await getAuthHeaders(),
+    });
+    
+    if (!planRes.ok) {
+      throw new Error(`Failed to fetch plans (status ${planRes.status})`);
+    }
+    
+    const plans = await planRes.json();
+    const plan = plans.find(p => p._id === planId);
+    
+    if (!plan) {
+      throw new Error('Plan not found');
+    }
+    
+    // Get all vendor menus
+    const allMenus = await getVendorMenus(vendorId);
+    
+    // Filter menus to only include meal types that are in the plan's selected_meals
+    const planMenus = allMenus.filter(menu => 
+      plan.selected_meals && plan.selected_meals.includes(menu.meal_type)
+    );
+    
+    return planMenus;
+  } catch (error) {
+    console.error('Error fetching plan menus:', error);
+    throw error;
+  }
+};
+
 export const getProfile = async () => {
   const headers = await getAuthHeaders();
   const res = await fetch(`${API_URL}/api/customer/profile`, {
@@ -241,6 +316,49 @@ export const getSubscriptions = async () => {
     return res.json();
   } catch (error) {
     console.error('Error fetching subscriptions:', error);
+    throw error;
+  }
+};
+
+// Payment API functions
+export const createOrder = async (orderData) => {
+  const headers = await getAuthHeaders();
+  try {
+    const res = await fetch(`${API_URL}/api/payment/create-order`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(orderData),
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Failed to create order');
+    }
+    
+    return res.json();
+  } catch (error) {
+    console.error('Error creating order:', error);
+    throw error;
+  }
+};
+
+export const verifyPayment = async (paymentData) => {
+  const headers = await getAuthHeaders();
+  try {
+    const res = await fetch(`${API_URL}/api/payment/verify-payment`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(paymentData),
+    });
+    
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || 'Failed to verify payment');
+    }
+    
+    return res.json();
+  } catch (error) {
+    console.error('Error verifying payment:', error);
     throw error;
   }
 };

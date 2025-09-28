@@ -53,6 +53,7 @@ const LiveMapView = ({ height = 200 }) => {
                 box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
                 font-size: 12px;
                 z-index: 1000;
+                display: none !important; /* Hide the coordinate information panel */
             }
             .coords {
                 color: #007AFF;
@@ -182,7 +183,7 @@ const LiveMapView = ({ height = 200 }) => {
                     duration: 1.5
                 });
 
-                // Update location info
+                // Update location info (but keep it hidden)
                 const coordsElement = document.getElementById('coordinates');
                 const addressElement = document.getElementById('address');
                 const timestampElement = document.getElementById('timestamp');
@@ -204,8 +205,9 @@ const LiveMapView = ({ height = 200 }) => {
                     timestampElement.textContent = \`Last updated: \${time}\`;
                 }
 
+                // Keep location info hidden - don't show the coordinate panel
                 if (locationInfo) {
-                    locationInfo.style.display = 'block';
+                    locationInfo.style.display = 'none';
                 }
 
                 console.log('✅ Location updated on map');
