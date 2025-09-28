@@ -344,7 +344,7 @@ const DriverDeliveryMap = ({ delivery, driverLocation }) => {
                 🛣️ Optimized Sequence
               </Text>
               {routeInfo.optimizedOrder?.slice(0, 2).map((customer, index) => (
-                <Text key={`route-order-${customer.id || index}-${customer.name}`} style={{ fontSize: 11, color: '#047857', marginBottom: 2 }}>
+                <Text key={`route-order-${index}-${customer.id || `customer-${index}`}-${customer.name?.replace(/\s+/g, '-') || 'unknown'}`} style={{ fontSize: 11, color: '#047857', marginBottom: 2 }}>
                   {index + 1}. {customer.name}
                 </Text>
               ))}
@@ -418,7 +418,7 @@ const DriverDeliveryMap = ({ delivery, driverLocation }) => {
           
           return (
             <Marker
-              key={`customer-marker-${index}-${customer.id || 'unknown'}-${Date.now()}-${Math.random()}`}
+              key={`customer-marker-${index}-${customer.id || `unknown-${index}`}-${customer.name?.replace(/\s+/g, '-') || 'customer'}`}
               coordinate={{
                 latitude: coords[1],
                 longitude: coords[0]

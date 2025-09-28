@@ -229,7 +229,7 @@ const DriverDeliveryMap = ({ delivery, driverLocation }) => {
             
             {routeInfo.optimizedOrder.map((customer, index) => (
               <View 
-                key={`customer-${customer.id || index}`}
+                key={`customer-web-${index}-${customer.id || `customer-${index}`}-${customer.name?.replace(/\s+/g, '-') || 'unknown'}`}
                 style={{
                   backgroundColor: 'white',
                   padding: 16,
