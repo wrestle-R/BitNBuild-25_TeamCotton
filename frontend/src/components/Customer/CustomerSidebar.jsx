@@ -26,7 +26,7 @@ const CustomerSidebar = ({ isOpen, setIsOpen }) => {
     { icon: FaUser, label: 'Profile', path: '/customer/profile' },
     { icon: FaStore, label: 'Market', path: '/customer/market' },
     { icon: FaClipboardList, label: 'Subscriptions', path: '/customer/subscriptions' },
-    // { icon: FaHeart, label: 'Favorites', path: '/customer/favorites' },
+    { icon: FaHeart, label: 'Goals', path: '/customer/goals' },
     { icon: FaTruck, label: 'Tracking', path: '/customer/tracking' }
   ];
 

@@ -20,6 +20,7 @@ import { Toaster } from 'sonner'
 import VendorSubscribers from './pages/Vendor/VendorSubscribers'
 import CustomerSubscriptions from './pages/Customer/CustomerSubscriptions'
 import CustomerTracking from './pages/Customer/CustomerTracking'
+import CustomerGoals from './pages/Customer/Goals/CustomerGoals'
 
 
 const LandingRoute = () => {
@@ -188,6 +189,35 @@ const CustomerProfileRoute = () => {
   return <CustomerProfile />;
 };
 
+// Customer goals route  
+const CustomerGoalsRoute = () => {
+  const { user, loading } = useUserContext();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-primary mx-auto mb-4"></div>
+          <p className="text-foreground font-inter text-lg">Loading goals...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/customer/auth" replace />;
+  }
+  
+  if (user.role !== 'customer') {
+    if (user.role === 'vendor') {
+      return <Navigate to="/vendor/dashboard" replace />;
+    }
+    return <Navigate to="/customer/auth" replace />;
+  }
+  
+  return <CustomerGoals />;
+};
+
 // Vendor details route
 const VendorDetailsRoute = () => {
   const { user, loading } = useUserContext();
@@ -234,6 +264,7 @@ const App = () => {
           <Route path="/customer/market" element={<CustomerMarketRoute />} />
           <Route path="/customer/vendor/:vendorId" element={<VendorDetailsRoute />} />
           <Route path="/customer/profile" element={<CustomerProfileRoute />} />
+          <Route path="/customer/goals" element={<CustomerGoalsRoute />} />
           <Route path="/vendor/subscribers" element={<VendorSubscribers />} />
           <Route path="/customer/subscriptions" element={<CustomerSubscriptions />} />
           <Route path="/customer/tracking" element={<CustomerTracking />} />
