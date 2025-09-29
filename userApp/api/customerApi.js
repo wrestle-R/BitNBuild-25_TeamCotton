@@ -469,3 +469,46 @@ export const getDashboardActivity = async () => {
     throw error;
   }
 };
+
+// Delivery Tracking API functions
+export const getDeliveryTracking = async (customerId) => {
+  const headers = await getAuthHeaders();
+  
+  try {
+    const res = await fetch(`${API_URL}/api/drivers/delivery/tracking/${customerId}`, {
+      method: 'GET',
+      headers,
+    });
+    
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || 'Failed to fetch delivery tracking');
+    }
+    
+    return res.json();
+  } catch (error) {
+    console.error('Error fetching delivery tracking:', error);
+    throw error;
+  }
+};
+
+export const getCustomerDeliveries = async (customerId) => {
+  const headers = await getAuthHeaders();
+  
+  try {
+    const res = await fetch(`${API_URL}/api/drivers/customer/deliveries/${customerId}`, {
+      method: 'GET',
+      headers,
+    });
+    
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || 'Failed to fetch customer deliveries');
+    }
+    
+    return res.json();
+  } catch (error) {
+    console.error('Error fetching customer deliveries:', error);
+    throw error;
+  }
+};

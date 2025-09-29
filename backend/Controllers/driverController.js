@@ -803,14 +803,57 @@ const getDeliveryTracking = async (req, res) => {
     console.log('🔍 Fetching delivery tracking for customerId (Firebase UID):', customerId);
 
     // First, find the customer by Firebase UID to get their MongoDB _id
-    const customer = await Customer.findOne({ firebaseUid: customerId });
+    let customer = await Customer.findOne({ firebaseUid: customerId });
     
     if (!customer) {
       console.log('❌ Customer not found with Firebase UID:', customerId);
-      return res.status(404).json({
-        success: false,
-        message: 'Customer not found'
-      });
+      console.log('� Attempting to create customer record automatically...');
+      
+      // Auto-create customer record for Firebase users who haven't registered through the app
+      try {
+        customer = new Customer({
+          name: 'User', // Default name - user can update later through profile
+          email: `user-${customerId}@temp.com`, // Temporary email - user should update
+          firebaseUid: customerId,
+          contactNumber: '',
+          address: {
+            street: '',
+            city: '',
+            state: '',
+            pincode: '',
+            coordinates: { lat: 0, lng: 0 }
+          }
+        });
+        
+        await customer.save();
+        console.log('✅ Successfully created customer record with Firebase UID:', customerId);
+        console.log('📋 Customer details:', {
+          mongoId: customer._id,
+          firebaseUid: customer.firebaseUid,
+          name: customer.name
+        });
+        
+      } catch (createError) {
+        console.error('❌ Failed to create customer record:', createError);
+        
+        // Show debug info about existing customers
+        const allCustomers = await Customer.find({}, { firebaseUid: 1, name: 1, email: 1 }).limit(5);
+        console.log('📝 Available customers in database:');
+        allCustomers.forEach(c => {
+          console.log(`   - Firebase UID: ${c.firebaseUid}, Name: ${c.name}, Email: ${c.email}`);
+        });
+        
+        return res.status(404).json({
+          success: false,
+          message: 'Customer not found and could not create customer record',
+          error: createError.message,
+          debug: {
+            searchedFirebaseUid: customerId,
+            availableCustomers: allCustomers.length,
+            createAttempted: true
+          }
+        });
+      }
     }
 
     console.log('✅ Found customer:', {
@@ -828,9 +871,79 @@ const getDeliveryTracking = async (req, res) => {
 
     if (!delivery) {
       console.log('❌ No active delivery found for customer MongoDB _id:', customer._id);
+      
+      // Debug: Check what deliveries exist in the database
+      const allDeliveries = await Delivery.find({}).limit(5);
+      console.log('🔍 Available deliveries in database:');
+      allDeliveries.forEach((d, index) => {
+        console.log(`   ${index + 1}. Delivery ID: ${d._id}, Status: ${d.status}, Customers: ${d.customers?.length || 0}`);
+        if (d.customers && d.customers.length > 0) {
+          d.customers.forEach((c, ci) => {
+            console.log(`      Customer ${ci + 1}: ID: ${c.customerId}, Status: ${c.status || 'unknown'}`);
+          });
+        }
+      });
+      
+      // Check for any active deliveries regardless of customer
+      const anyActiveDelivery = await Delivery.findOne({
+        status: { $in: ['assigned', 'started', 'in_progress'] }
+      });
+      
+      if (anyActiveDelivery) {
+        console.log('🚨 FOUND ACTIVE DELIVERY - Customer ID mismatch issue!');
+        console.log('Active delivery details:', {
+          deliveryId: anyActiveDelivery._id,
+          status: anyActiveDelivery.status,
+          customers: anyActiveDelivery.customers
+        });
+        console.log('Our customer MongoDB _id:', customer._id);
+        console.log('Our customer Firebase UID:', customer.firebaseUid);
+        
+        // Try to match by Firebase UID instead
+        const deliveryByFirebaseUid = await Delivery.findOne({
+          'customers.firebaseUid': customer.firebaseUid,
+          status: { $in: ['assigned', 'started', 'in_progress'] }
+        }).populate('driverId', 'name contactNumber vehicleType vehicleNumber rating location')
+          .populate('vendorId', 'name address firebaseUid');
+          
+        if (deliveryByFirebaseUid) {
+          console.log('✅ Found delivery by Firebase UID instead!');
+          // Return this delivery instead
+          const customerDelivery = deliveryByFirebaseUid.customers.find(
+            c => c.firebaseUid === customer.firebaseUid
+          );
+          
+          return res.status(200).json({
+            success: true,
+            delivery: {
+              id: deliveryByFirebaseUid._id,
+              status: deliveryByFirebaseUid.status,
+              estimatedDeliveryTime: deliveryByFirebaseUid.estimatedDeliveryTime,
+              driver: deliveryByFirebaseUid.driverId,
+              vendor: deliveryByFirebaseUid.vendorId,
+              customer: {
+                ...customerDelivery,
+                address: customerDelivery.deliveryAddress
+              }
+            }
+          });
+        }
+      }
+      
+      // Also check if there are any deliveries for this specific customer (including completed ones)
+      const customerDeliveries = await Delivery.find({
+        'customers.customerId': customer._id
+      });
+      console.log(`📦 Total deliveries for customer ${customer._id}: ${customerDeliveries.length}`);
+      
       return res.status(404).json({
         success: false,
-        message: 'No active delivery found for this customer'
+        message: 'No active delivery found for this customer',
+        debug: {
+          customerId: customer._id,
+          totalDeliveriesInDB: allDeliveries.length,
+          customerSpecificDeliveries: customerDeliveries.length
+        }
       });
     }
 
@@ -938,14 +1051,57 @@ const getCustomerDeliveries = async (req, res) => {
     console.log('🔍 Fetching all deliveries for customerId (Firebase UID):', customerId);
 
     // First, find the customer by Firebase UID
-    const customer = await Customer.findOne({ firebaseUid: customerId });
+    let customer = await Customer.findOne({ firebaseUid: customerId });
     
     if (!customer) {
       console.log('❌ Customer not found with Firebase UID:', customerId);
-      return res.status(404).json({
-        success: false,
-        message: 'Customer not found'
-      });
+      console.log('� Attempting to create customer record automatically...');
+      
+      // Auto-create customer record for Firebase users who haven't registered through the app
+      try {
+        customer = new Customer({
+          name: 'User', // Default name - user can update later through profile
+          email: `user-${customerId}@temp.com`, // Temporary email - user should update
+          firebaseUid: customerId,
+          contactNumber: '',
+          address: {
+            street: '',
+            city: '',
+            state: '',
+            pincode: '',
+            coordinates: { lat: 0, lng: 0 }
+          }
+        });
+        
+        await customer.save();
+        console.log('✅ Successfully created customer record with Firebase UID:', customerId);
+        console.log('📋 Customer details:', {
+          mongoId: customer._id,
+          firebaseUid: customer.firebaseUid,
+          name: customer.name
+        });
+        
+      } catch (createError) {
+        console.error('❌ Failed to create customer record:', createError);
+        
+        // Show debug info about existing customers
+        const allCustomers = await Customer.find({}, { firebaseUid: 1, name: 1, email: 1 }).limit(5);
+        console.log('📝 Available customers in database:');
+        allCustomers.forEach(c => {
+          console.log(`   - Firebase UID: ${c.firebaseUid}, Name: ${c.name}, Email: ${c.email}`);
+        });
+        
+        return res.status(404).json({
+          success: false,
+          message: 'Customer not found and could not create customer record',
+          error: createError.message,
+          debug: {
+            searchedFirebaseUid: customerId,
+            availableCustomers: allCustomers.length,
+            createAttempted: true
+          }
+        });
+      }
     }
 
     console.log('✅ Found customer:', customer.name);

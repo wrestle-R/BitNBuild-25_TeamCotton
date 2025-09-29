@@ -14,7 +14,7 @@ const {
   getAllDriverDeliveries,
   getDeliveryTracking,
   getCustomerDeliveries
-} = require('../Controllers/driverController');
+} = require('../controllers/driverController');
 const authMiddleware = require('../middleware/authMiddleware');
 const hybridAuthMiddleware = require('../middleware/hybridAuthMiddleware');
 
