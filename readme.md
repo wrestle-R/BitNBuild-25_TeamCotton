@@ -44,7 +44,7 @@ NourishNet/
 - **File Upload**: Cloudinary
 - **Push Notifications**: Expo Server SDK
 
-#### Frontend (Admin Dashboard)
+#### Frontend
 - **Framework**: React 19.1.0 + Vite
 - **Styling**: TailwindCSS + Radix UI Components
 - **State Management**: React Context API
@@ -330,3 +330,10 @@ For support and queries, please reach out to:
 ---
 
 **Built with ❤️ by Team Cotton for BitNBuild 2025**
+## 👥 Team Cotton
+
+**Team Members:**
+- **Gavin Soares** - [GitHub](https://github.com/gavin100305)
+- **Romeiro Fernandes** - [GitHub](https://github.com/romeirofernandes)
+- **Russel Daniel Paul** - [GitHub](https://github.com/wrestle-R)
+- **Aditya Dabreo** - [GitHub](https://github.com/Adityadab10)
