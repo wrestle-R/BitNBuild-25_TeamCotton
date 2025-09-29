@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useDriverContext } from '../context/DriverContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Ionicons } from '@expo/vector-icons';
 
 const DriverSignup = () => {
@@ -24,6 +25,7 @@ const DriverSignup = () => {
     registerWithEmail, 
     loginWithGoogle
   } = useDriverContext();
+  const { t } = useLanguage();
 
   const [formData, setFormData] = useState({
     email: '',
@@ -52,28 +54,28 @@ const DriverSignup = () => {
     const { email, password, confirmPassword, displayName } = formData;
     
     if (!email || !password || !confirmPassword || !displayName) {
-      Alert.alert('Error', 'Please fill in all fields');
+      Alert.alert(t('common.error'), t('signup.errors.fillAllFields'));
       return false;
     }
 
     if (displayName.trim().length < 2) {
-      Alert.alert('Error', 'Please enter a valid name (at least 2 characters)');
+      Alert.alert(t('common.error'), t('signup.errors.validName'));
       return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      Alert.alert(t('common.error'), t('signup.errors.validEmail'));
       return false;
     }
 
     if (password.length < 6) {
-      Alert.alert('Error', 'Password should be at least 6 characters long');
+      Alert.alert(t('common.error'), t('signup.errors.passwordLength'));
       return false;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Alert.alert(t('common.error'), t('signup.errors.passwordsNotMatch'));
       return false;
     }
 
@@ -109,7 +111,7 @@ const DriverSignup = () => {
       <View style={styles.loadingContainer}>
         <View style={styles.loadingContent}>
           <ActivityIndicator size="large" color="#8B5CF6" />
-          <Text style={styles.loadingText}>Creating your account...</Text>
+          <Text style={styles.loadingText}>{t('signup.creatingYourAccount')}</Text>
         </View>
       </View>
     );
@@ -133,8 +135,8 @@ const DriverSignup = () => {
             <View style={styles.logoContainer}>
               <Ionicons name="person-add" size={48} color="#8B5CF6" />
             </View>
-            <Text style={styles.title}>Join Our Team</Text>
-            <Text style={styles.subtitle}>Create your driver account and start earning</Text>
+            <Text style={styles.title}>{t('signup.title')}</Text>
+            <Text style={styles.subtitle}>{t('signup.subtitle')}</Text>
           </View>
 
           <View style={styles.formCard}>
@@ -145,7 +147,7 @@ const DriverSignup = () => {
                 </View>
                 <TextInput
                   style={styles.input}
-                  placeholder="Full name"
+                  placeholder={t('signup.fullNamePlaceholder')}
                   placeholderTextColor="#9CA3AF"
                   value={formData.displayName}
                   onChangeText={(value) => handleInputChange('displayName', value)}
@@ -160,7 +162,7 @@ const DriverSignup = () => {
                 </View>
                 <TextInput
                   style={styles.input}
-                  placeholder="Email address"
+                  placeholder={t('signup.emailPlaceholder')}
                   placeholderTextColor="#9CA3AF"
                   value={formData.email}
                   onChangeText={(value) => handleInputChange('email', value)}
@@ -176,7 +178,7 @@ const DriverSignup = () => {
                 </View>
                 <TextInput
                   style={styles.input}
-                  placeholder="Password (min. 6 characters)"
+                  placeholder={t('signup.passwordPlaceholder')}
                   placeholderTextColor="#9CA3AF"
                   value={formData.password}
                   onChangeText={(value) => handleInputChange('password', value)}
@@ -201,7 +203,7 @@ const DriverSignup = () => {
                 </View>
                 <TextInput
                   style={styles.input}
-                  placeholder="Confirm password"
+                  placeholder={t('signup.confirmPasswordPlaceholder')}
                   placeholderTextColor="#9CA3AF"
                   value={formData.confirmPassword}
                   onChangeText={(value) => handleInputChange('confirmPassword', value)}
@@ -229,7 +231,7 @@ const DriverSignup = () => {
                 <View style={styles.signupButtonContent}>
                   {loading && <ActivityIndicator size="small" color="#FFFFFF" style={styles.buttonLoader} />}
                   <Text style={styles.signupButtonText}>
-                    {loading ? 'Creating Account...' : 'Create Account'}
+                    {loading ? t('signup.creatingAccount') : t('signup.createAccount')}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -243,7 +245,7 @@ const DriverSignup = () => {
 
               <View style={styles.divider}>
                 <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>or</Text>
+                <Text style={styles.dividerText}>{t('signup.or')}</Text>
                 <View style={styles.dividerLine} />
               </View>
 
@@ -252,7 +254,7 @@ const DriverSignup = () => {
                 onPress={() => router.push('/auth/login')}
                 activeOpacity={0.7}
               >
-                <Text style={styles.loginButtonText}>Already have an account?</Text>
+                <Text style={styles.loginButtonText}>{t('signup.alreadyHaveAccount')}</Text>
                 <Ionicons name="arrow-forward" size={18} color="#8B5CF6" />
               </TouchableOpacity>
             </View>
@@ -260,7 +262,7 @@ const DriverSignup = () => {
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              By creating an account, you agree to our Terms of Service & Privacy Policy
+              {t('signup.termsText')}
             </Text>
           </View>
         </View>

@@ -1,0 +1,109 @@
+{
+  "login": {
+    "title": "Welcome Back",
+    "subtitle": "Sign in to continue your journey",
+    "emailPlaceholder": "Email address",
+    "passwordPlaceholder": "Password",
+    "signingIn": "Signing In...",
+    "signIn": "Sign In",
+    "signingYouIn": "Signing you in...",
+    "createNewAccount": "Create New Account",
+    "or": "or",
+    "termsText": "By signing in, you agree to our Terms & Privacy Policy",
+    "errors": {
+      "fillAllFields": "Please fill in all fields"
+    }
+  },
+  "signup": {
+    "title": "Join Our Team",
+    "subtitle": "Create your driver account and start earning",
+    "fullNamePlaceholder": "Full name",
+    "emailPlaceholder": "Email address",
+    "passwordPlaceholder": "Password (min. 6 characters)",
+    "confirmPasswordPlaceholder": "Confirm password",
+    "creatingAccount": "Creating Account...",
+    "createAccount": "Create Account",
+    "creatingYourAccount": "Creating your account...",
+    "alreadyHaveAccount": "Already have an account?",
+    "or": "or",
+    "termsText": "By creating an account, you agree to our Terms of Service & Privacy Policy",
+    "errors": {
+      "fillAllFields": "Please fill in all fields",
+      "validName": "Please enter a valid name (at least 2 characters)",
+      "validEmail": "Please enter a valid email address",
+      "passwordLength": "Password should be at least 6 characters long",
+      "passwordsNotMatch": "Passwords do not match"
+    }
+  },
+  "dashboard": {
+    "welcomeBack": "Welcome back sir,",
+    "loadingDashboard": "Loading your dashboard...",
+    "settingUpProfile": "Setting up your driver profile",
+    "enableLocationTracking": "Enable Location Tracking",
+    "enableLocationSubtitle": "Tap to enable GPS tracking for ride services",
+    "yourLocation": "Your Location",
+    "activeDelivery": "Active Delivery",
+    "activeDeliverySubtitle": "Tap to view your current delivery status"
+  },
+  "profile": {
+    "title": "Complete Your Profile",
+    "subtitle": "Please provide your phone number and vehicle details to start accepting rides",
+    "phoneNumber": "Phone Number",
+    "phoneNumberPlaceholder": "Enter your phone number",
+    "vehicleType": "Vehicle Type",
+    "vehicleNumber": "Vehicle Number",
+    "vehicleNumberPlaceholder": "e.g., MH12AB1234",
+    "completeProfile": "Complete Profile",
+    "updatingProfile": "Updating Profile...",
+    "skipForNow": "Skip for Now",
+    "loading": "Loading...",
+    "vehicles": {
+      "bike": "🏍️ Bike",
+      "car": "🚗 Car",
+      "truck": "🚚 Truck",
+      "van": "🚐 Van"
+    },
+    "profileCompletionRequired": "Profile Completion Required",
+    "profileCompletionText": "Complete your profile to start accepting ride requests and access all driver features.",
+    "skipConfirmTitle": "Skip Profile Completion?",
+    "skipConfirmText": "You can complete your profile later from the Profile tab. Some features may be limited until your profile is complete.",
+    "completeNow": "Complete Now",
+    "skip": "Skip",
+    "profileUpdated": "Profile Updated!",
+    "profileUpdatedText": "Your driver profile has been completed successfully.",
+    "continue": "Continue",
+    "errors": {
+      "phoneRequired": "Phone number is required",
+      "validPhone": "Please enter a valid phone number (at least 10 digits)",
+      "vehicleNumberRequired": "Vehicle number is required",
+      "somethingWentWrong": "Something went wrong. Please try again."
+    },
+    "profilePage": {
+      "title": "Driver Profile",
+      "subtitle": "Manage your account and preferences",
+      "loading": "Loading profile data...",
+      "personalInfo": "Personal Information",
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "vehicleInfo": "Vehicle Information",
+      "vehicleType": "Vehicle Type",
+      "vehicleNumber": "Vehicle Number",
+      "actions": "Actions",
+      "editProfile": "Edit Profile",
+      "changePassword": "Change Password",
+      "helpSupport": "Help & Support",
+      "logout": "Logout",
+      "changePhoto": "Change Photo",
+      "appInfo": "Driver App v1.0.0 • BitNBuild Solutions",
+      "confirmLogout": "Confirm Logout",
+      "logoutMessage": "Are you sure you want to logout?",
+      "cancel": "Cancel"
+    }
+  },
+  "common": {
+    "error": "Error",
+    "required": "*",
+    "language": "Language"
+  }
+}

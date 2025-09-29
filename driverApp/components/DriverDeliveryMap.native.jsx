@@ -1,32 +1,24 @@
-// React Native will automatically resolve the correct platform file:// React Native will automatically resolve the correct platform file:
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, ScrollView, Dimensions, Alert, TouchableOpacity, Modal } from 'react-native';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import { Ionicons } from '@expo/vector-icons';
 
-// - DriverDeliveryMap.native.jsx for iOS/Android// - DriverDeliveryMap.native.jsx for iOS/Android
-
-// - DriverDeliveryMap.web.jsx for web// - DriverDeliveryMap.web.jsx for web
-
-// This prevents the react-native-maps import error on web// This prevents the react-native-maps import error on web
-
-
-
-import DriverDeliveryMapImplementation from './DriverDeliveryMap.native';import DriverDeliveryMapImplementation from './DriverDeliveryMap.native';
-
-
-
-const DriverDeliveryMap = (props) => {const DriverDeliveryMap = (props) => {
-
-  return <DriverDeliveryMapImplementation {...props} />;  return <DriverDeliveryMapImplementation {...props} />;
-
-};};
-
-
-
-export default DriverDeliveryMap;  const [routeInfo, setRouteInfo] = useState(null);
+const DriverDeliveryMap = ({ delivery, driverLocation }) => {
+  const mapRef = useRef(null);
+  const [routeInfo, setRouteInfo] = useState(null);
   const [optimizedRoute, setOptimizedRoute] = useState([]);
   const [polylineCoords, setPolylineCoords] = useState([]);
   const [mapError, setMapError] = useState(null);
-  const mapRef = useRef(null);
+  const [chatVisible, setChatVisible] = useState(false);
 
-  // TSP Solver and all existing logic...
+  // Hardcoded chat messages
+  const chatMessages = [
+    { id: 1, sender: 'RusselDaniel', message: 'Where are you', type: 'customer', timestamp: '2:45 PM' },
+    { id: 2, sender: 'You', message: 'i am stuck in traffic', type: 'driver', timestamp: '2:46 PM' },
+    { id: 3, sender: 'RusselDaniel', message: 'okay', type: 'customer', timestamp: '2:47 PM' }
+  ];
+
+  // TSP Solver for route optimization
   const solveTSP = (startPoint, points) => {
     if (!points || points.length === 0) return { route: [], totalDistance: 0 };
     
@@ -320,53 +312,50 @@ export default DriverDeliveryMap;  const [routeInfo, setRouteInfo] = useState(nu
         <ScrollView 
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={{ maxHeight: 120, backgroundColor: 'white', paddingVertical: 10 }}
-          contentContainerStyle={{ paddingHorizontal: 20 }}
+          style={{ maxHeight: 80, backgroundColor: 'white', paddingVertical: 8 }}
+          contentContainerStyle={{ paddingHorizontal: 15 }}
         >
-          <View style={{ flexDirection: 'row', gap: 15 }}>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
             {/* TSP Route Info */}
             <View style={{
               backgroundColor: '#f0f0ff',
-              padding: 15,
-              borderRadius: 12,
-              borderLeftWidth: 4,
+              padding: 12,
+              borderRadius: 10,
+              borderLeftWidth: 3,
               borderLeftColor: '#8b5cf6',
-              minWidth: 160
+              minWidth: 140
             }}>
-              <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#4c1d95', marginBottom: 8 }}>
-                📍 Route Optimization
+              <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#4c1d95', marginBottom: 6 }}>
+                📍 Route Info
               </Text>
-              <Text style={{ fontSize: 12, color: '#6b46c1', marginBottom: 3 }}>
-                🚚 Stops: {routeInfo.customers}
+              <Text style={{ fontSize: 10, color: '#6b46c1', marginBottom: 2 }}>
+                Stops: {routeInfo.customers} | Time: {routeInfo.totalTime}m
               </Text>
-              <Text style={{ fontSize: 12, color: '#6b46c1', marginBottom: 3 }}>
-                ⏱️ Time: {routeInfo.totalTime} min
-              </Text>
-              <Text style={{ fontSize: 12, color: '#6b46c1' }}>
-                📏 Distance: {routeInfo.totalDistance} km
+              <Text style={{ fontSize: 10, color: '#6b46c1' }}>
+                Distance: {routeInfo.totalDistance} km
               </Text>
             </View>
 
             {/* Delivery Sequence */}
             <View style={{
               backgroundColor: '#f0fff4',
-              padding: 15,
-              borderRadius: 12,
-              borderLeftWidth: 4,
+              padding: 12,
+              borderRadius: 10,
+              borderLeftWidth: 3,
               borderLeftColor: '#10b981',
-              minWidth: 200
+              minWidth: 160
             }}>
-              <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#065f46', marginBottom: 8 }}>
-                🛣️ Optimized Sequence
+              <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#065f46', marginBottom: 6 }}>
+                🛣️ Next Stops
               </Text>
               {routeInfo.optimizedOrder?.slice(0, 2).map((customer, index) => (
-                <Text key={`route-order-${customer.id || index}-${customer.name}`} style={{ fontSize: 11, color: '#047857', marginBottom: 2 }}>
-                  {index + 1}. {customer.name}
+                <Text key={`route-order-${index}-${customer.id || `customer-${index}`}-${customer.name?.replace(/\s+/g, '-') || 'unknown'}`} style={{ fontSize: 9, color: '#047857', marginBottom: 1 }}>
+                  {index + 1}. {customer.name?.length > 15 ? customer.name.substring(0, 15) + '...' : customer.name}
                 </Text>
               ))}
               {routeInfo.optimizedOrder?.length > 2 && (
-                <Text style={{ fontSize: 10, color: '#6b7280', fontStyle: 'italic' }}>
-                  +{routeInfo.optimizedOrder.length - 2} more stops
+                <Text style={{ fontSize: 8, color: '#6b7280', fontStyle: 'italic' }}>
+                  +{routeInfo.optimizedOrder.length - 2} more
                 </Text>
               )}
             </View>
@@ -374,23 +363,23 @@ export default DriverDeliveryMap;  const [routeInfo, setRouteInfo] = useState(nu
             {/* Delivery Info */}
             <View style={{
               backgroundColor: '#fff7ed',
-              padding: 15,
-              borderRadius: 12,
-              borderLeftWidth: 4,
+              padding: 12,
+              borderRadius: 10,
+              borderLeftWidth: 3,
               borderLeftColor: '#f59e0b',
-              minWidth: 160
+              minWidth: 130
             }}>
-              <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#92400e', marginBottom: 8 }}>
-                📦 Delivery Status
+              <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#92400e', marginBottom: 6 }}>
+                📦 Status
               </Text>
-              <Text style={{ fontSize: 12, color: '#b45309', marginBottom: 3 }}>
-                Status: {delivery.status?.toUpperCase()}
+              <Text style={{ fontSize: 10, color: '#b45309', marginBottom: 2 }}>
+                {delivery.status?.toUpperCase()}
               </Text>
-              <Text style={{ fontSize: 12, color: '#b45309', marginBottom: 3 }}>
-                Vendor: {safeRender(delivery.vendorId?.name)}
+              <Text style={{ fontSize: 9, color: '#b45309', marginBottom: 2 }} numberOfLines={1} ellipsizeMode="tail">
+                {safeRender(delivery.vendorId?.name)}
               </Text>
-              <Text style={{ fontSize: 12, color: '#b45309' }}>
-                ID: {delivery._id?.toString()?.substring(0, 8)}...
+              <Text style={{ fontSize: 9, color: '#b45309' }}>
+                ID: {delivery._id?.toString()?.substring(0, 6)}...
               </Text>
             </View>
           </View>
@@ -434,7 +423,7 @@ export default DriverDeliveryMap;  const [routeInfo, setRouteInfo] = useState(nu
           
           return (
             <Marker
-              key={`customer-marker-${index}-${customer.id || 'unknown'}-${Date.now()}-${Math.random()}`}
+              key={`customer-marker-${index}-${customer.id || `unknown-${index}`}-${customer.name?.replace(/\s+/g, '-') || 'customer'}`}
               coordinate={{
                 latitude: coords[1],
                 longitude: coords[0]
@@ -516,31 +505,31 @@ export default DriverDeliveryMap;  const [routeInfo, setRouteInfo] = useState(nu
       {/* Map Legend */}
       <View style={{
         position: 'absolute',
-        bottom: 20,
-        left: 20,
+        bottom: 15,
+        left: 15,
         backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        padding: 12,
-        borderRadius: 8,
+        padding: 8,
+        borderRadius: 6,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3
+        shadowRadius: 2,
+        elevation: 2
       }}>
-        <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#4c1d95', marginBottom: 6 }}>
-          Map Legend
+        <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#4c1d95', marginBottom: 4 }}>
+          Legend
         </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 3 }}>
-          <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#10B981', marginRight: 6 }} />
-          <Text style={{ fontSize: 10, color: '#374151' }}>Vendor</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981', marginRight: 4 }} />
+          <Text style={{ fontSize: 8, color: '#374151' }}>Vendor</Text>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 3 }}>
-          <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#3B82F6', marginRight: 6 }} />
-          <Text style={{ fontSize: 10, color: '#374151' }}>Delivery Order</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#3B82F6', marginRight: 4 }} />
+          <Text style={{ fontSize: 8, color: '#374151' }}>Stops</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#F59E0B', marginRight: 6 }} />
-          <Text style={{ fontSize: 10, color: '#374151' }}>Your Location</Text>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#F59E0B', marginRight: 4 }} />
+          <Text style={{ fontSize: 8, color: '#374151' }}>You</Text>
         </View>
       </View>
 
@@ -548,32 +537,177 @@ export default DriverDeliveryMap;  const [routeInfo, setRouteInfo] = useState(nu
       {delivery.status === 'started' && (
         <View style={{
           position: 'absolute',
-          top: 20,
-          left: 20,
+          top: 15,
+          left: 15,
           backgroundColor: 'rgba(16, 185, 129, 0.9)',
-          paddingHorizontal: 12,
-          paddingVertical: 8,
-          borderRadius: 20,
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+          borderRadius: 12,
           flexDirection: 'row',
           alignItems: 'center',
           shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
+          shadowOffset: { width: 0, height: 1 },
           shadowOpacity: 0.1,
-          shadowRadius: 4,
-          elevation: 3
+          shadowRadius: 2,
+          elevation: 2
         }}>
           <View style={{
-            width: 8,
-            height: 8,
-            borderRadius: 4,
+            width: 6,
+            height: 6,
+            borderRadius: 3,
             backgroundColor: 'white',
-            marginRight: 6
+            marginRight: 4
           }} />
-          <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>
-            🚛 Live Tracking Active
+          <Text style={{ color: 'white', fontSize: 10, fontWeight: '600' }}>
+            Live
           </Text>
         </View>
       )}
+
+      {/* Chat Button */}
+      <TouchableOpacity
+        style={{
+          position: 'absolute',
+          bottom: 20,
+          right: 20,
+          backgroundColor: '#3b82f6',
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          justifyContent: 'center',
+          alignItems: 'center',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.25,
+          shadowRadius: 4,
+          elevation: 5
+        }}
+        onPress={() => setChatVisible(true)}
+      >
+        <Ionicons name="chatbubble" size={24} color="white" />
+      </TouchableOpacity>
+
+      {/* Chat Modal */}
+      <Modal
+        visible={chatVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setChatVisible(false)}
+      >
+        <View style={{
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'flex-end'
+        }}>
+          <View style={{
+            backgroundColor: 'white',
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            paddingTop: 20,
+            paddingBottom: 40,
+            paddingHorizontal: 20,
+            maxHeight: '70%'
+          }}>
+            {/* Chat Header */}
+            <View style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: 20,
+              paddingBottom: 15,
+              borderBottomWidth: 1,
+              borderBottomColor: '#e5e7eb'
+            }}>
+              <View>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1f2937' }}>
+                  Chat with Customer
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                  <View style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: '#10b981',
+                    marginRight: 6
+                  }} />
+                  <Text style={{ fontSize: 12, color: '#6b7280' }}>
+                    WebSocket Connected
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={() => setChatVisible(false)}
+                style={{
+                  padding: 8,
+                  borderRadius: 20,
+                  backgroundColor: '#f3f4f6'
+                }}
+              >
+                <Ionicons name="close" size={20} color="#6b7280" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Chat Messages */}
+            <ScrollView style={{ maxHeight: 300 }}>
+              {chatMessages.map((msg) => (
+                <View
+                  key={msg.id}
+                  style={{
+                    marginBottom: 12,
+                    alignItems: msg.type === 'driver' ? 'flex-end' : 'flex-start'
+                  }}
+                >
+                  <View style={{
+                    backgroundColor: msg.type === 'driver' ? '#3b82f6' : '#f3f4f6',
+                    padding: 12,
+                    borderRadius: 16,
+                    maxWidth: '80%',
+                    borderBottomRightRadius: msg.type === 'driver' ? 4 : 16,
+                    borderBottomLeftRadius: msg.type === 'customer' ? 4 : 16
+                  }}>
+                    {msg.type === 'customer' && (
+                      <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#4b5563', marginBottom: 4 }}>
+                        {msg.sender}
+                      </Text>
+                    )}
+                    <Text style={{
+                      color: msg.type === 'driver' ? 'white' : '#1f2937',
+                      fontSize: 14
+                    }}>
+                      {msg.message}
+                    </Text>
+                    <Text style={{
+                      color: msg.type === 'driver' ? 'rgba(255,255,255,0.7)' : '#6b7280',
+                      fontSize: 10,
+                      marginTop: 4,
+                      textAlign: 'right'
+                    }}>
+                      {msg.timestamp}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+
+            {/* Chat Input Area (Disabled/Fake) */}
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              marginTop: 15,
+              backgroundColor: '#f9fafb',
+              borderRadius: 25,
+              paddingHorizontal: 15,
+              paddingVertical: 10,
+              opacity: 0.6
+            }}>
+              <Text style={{ flex: 1, color: '#9ca3af', fontSize: 14 }}>
+                Type a message...
+              </Text>
+              <Ionicons name="send" size={20} color="#9ca3af" />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
